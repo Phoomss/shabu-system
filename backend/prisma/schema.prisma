@@ -1,0 +1,218 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Enums ---
+
+enum TableStatus {
+  AVAILABLE // ว่าง
+  OCCUPIED // มีลูกค้านั่งอยู่
+  RESERVED // จองแล้ว
+  CLEANING // รอทำความสะอาด
+}
+
+enum SessionStatus {
+  ACTIVE // กำลังทานอยู่
+  CLOSED // ปิดโต๊ะแล้ว
+  EXPIRED // หมดเวลา
+}
+
+enum OrderStatus {
+  PENDING // รอยืนยัน
+  CONFIRMED // ยืนยันแล้ว
+  CANCELLED // ยกเลิก
+}
+
+enum ItemStatus {
+  PENDING // รอดำเนินการ
+  PREPARING // กำลังทำ
+  SERVED // เสิร์ฟแล้ว
+  VOIDED // ยกเลิก
+}
+
+// --- 1. กลุ่มจัดการผู้ใช้งานและสิทธิ์ (User & Access Control) ---
+
+/// เก็บระดับสิทธิ์การเข้าใช้งาน เช่น OWNER, MANAGER, STAFF, KITCHEN
+model Role {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[]
+}
+
+/// ข้อมูลพนักงานและผู้บริหาร ใช้สำหรับการ Login และเก็บประวัติการทำงาน
+model User {
+  id           String    @id @default(uuid())
+  roleId       Int
+  role         Role      @relation(fields: [roleId], references: [id])
+  username     String    @unique
+  passwordHash String
+  fullName     String
+  avatarUrl    String? // URL รูปภาพโปรไฟล์พนักงาน
+  isActive     Boolean   @default(true)
+  invoices     Invoice[] // ประวัติการปิดยอดชำระเงินโดยพนักงานคนนี้
+  voidedLogs   VoidLog[] // ประวัติการอนุมัติยกเลิกออเดอร์ (เฉพาะ Manager/Owner)
+}
+
+// --- 2. กลุ่มตั้งค่าเมนูและการแยกแผนกครัว (Menu & Kitchen Configuration) ---
+
+/// ข้อมูลแผนกครัว เพื่อแยกหน้าจอออเดอร์ระหว่าง ครัวร้อน และ ครัวเย็น
+model KitchenSection {
+  id         Int         @id @default(autoincrement())
+  name       String      @unique // เช่น HOT_KITCHEN, COLD_KITCHEN
+  menuItems  MenuItem[]
+  orderItems OrderItem[]
+}
+
+/// หมวดหมู่ของอาหาร เช่น เนื้อวัว, ลูกชิ้น, ผัก, ขนมหวาน
+model Category {
+  id        Int        @id @default(autoincrement())
+  name      String
+  iconUrl   String? // ไอคอนสำหรับแสดงบนหน้าจอสั่งอาหาร
+  menuItems MenuItem[]
+}
+
+/// ระดับราคาบุฟเฟต์ เช่น Silver 399, Gold 599, Platinum 799
+model Tier {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique
+  priceAdult    Decimal
+  priceChild    Decimal
+  timeLimit     Int            @default(90) // จำกัดเวลาทาน (นาที)
+  sessions      Session[]
+  tierMenuItems TierMenuItem[]
+}
+
+/// รายการอาหารแต่ละอย่าง พร้อมรูปภาพและจุดที่ต้องทำอาหาร
+model MenuItem {
+  id          String         @id @default(uuid())
+  categoryId  Int
+  category    Category       @relation(fields: [categoryId], references: [id])
+  kitchenId   Int
+  kitchen     KitchenSection @relation(fields: [kitchenId], references: [id])
+  name        String
+  imageUrl    String? // รูปภาพประกอบเมนู
+  isAvailable Boolean        @default(true) // สถานะเมนู (ของหมด/พร้อมขาย)
+  tierItems   TierMenuItem[]
+  orderItems  OrderItem[]
+  recipe      Recipe[]
+}
+
+/// ตารางกลางที่กำหนดว่า "ระดับราคา (Tier) ไหน" สามารถสั่ง "อาหารชนิดใด" ได้บ้าง
+model TierMenuItem {
+  tierId     Int
+  menuItemId String
+  tier       Tier     @relation(fields: [tierId], references: [id])
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@id([tierId, menuItemId])
+}
+
+// --- 3. กลุ่มจัดการโต๊ะและรอบการนั่งทาน (Table & Session Management) ---
+
+/// ข้อมูลโต๊ะในร้านและสถานะปัจจุบัน (ว่าง, มีลูกค้า, รอทำความสะอาด)
+model Table {
+  id       Int         @id @default(autoincrement())
+  number   String      @unique // เช่น A01, B05
+  zone     String?
+  status   TableStatus @default(AVAILABLE)
+  sessions Session[]
+}
+
+/// รอบการนั่งทานของลูกค้า เชื่อมโยงกับโต๊ะและ QR Token สำหรับสั่งอาหาร
+model Session {
+  id        String        @id @default(uuid())
+  tableId   Int
+  table     Table         @relation(fields: [tableId], references: [id])
+  tierId    Int
+  tier      Tier          @relation(fields: [tierId], references: [id])
+  qrToken   String        @unique // Token ที่ใช้ใน QR Code เพื่อยืนยันตัวตนลูกค้า
+  startTime DateTime      @default(now())
+  endTime   DateTime // เวลาที่ลูกค้าต้องทานเสร็จ
+  status    SessionStatus @default(ACTIVE)
+  orders    Order[]
+  invoices  Invoice[]
+}
+
+// --- 4. กลุ่มการสั่งอาหารและสถานะออเดอร์ (Ordering System) ---
+
+/// หัวข้อออเดอร์ในแต่ละครั้งที่ลูกค้ากด "ยืนยันการสั่ง"
+model Order {
+  id        String      @id @default(uuid())
+  sessionId String
+  session   Session     @relation(fields: [sessionId], references: [id])
+  status    OrderStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  items     OrderItem[]
+}
+
+/// รายการอาหารแต่ละรายการในออเดอร์นั้นๆ พร้อมระบุครัวที่ต้องรับผิดชอบ
+model OrderItem {
+  id         String         @id @default(uuid())
+  orderId    String
+  order      Order          @relation(fields: [orderId], references: [id])
+  menuItemId String
+  menuItem   MenuItem       @relation(fields: [menuItemId], references: [id])
+  kitchenId  Int // เพื่อแยกไปแสดงผลที่จอครัวร้อนหรือครัวเย็น
+  kitchen    KitchenSection @relation(fields: [kitchenId], references: [id])
+  quantity   Int
+  status     ItemStatus     @default(PENDING) // รอดำเนินการ, กำลังทำ, เสิร์ฟแล้ว
+  voidLog    VoidLog?
+}
+
+// --- 5. กลุ่มคลังวัตถุดิบและระบบบัญชี (Inventory & Finance) ---
+
+/// ข้อมูลวัตถุดิบในคลังเพื่อใช้ตัดสต็อก
+model Ingredient {
+  id           Int      @id @default(autoincrement())
+  name         String
+  unit         String // เช่น กรัม, กิโลกรัม, ชิ้น
+  currentStock Decimal
+  imageUrl     String?
+  recipes      Recipe[]
+}
+
+/// สูตรอาหาร กำหนดว่าเมนู 1 จาน ใช้ชิ้นส่วนวัตถุดิบอะไรบ้างและปริมาณเท่าไหร่
+model Recipe {
+  menuItemId   String
+  ingredientId Int
+  quantityUsed Decimal
+  menuItem     MenuItem   @relation(fields: [menuItemId], references: [id])
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@id([menuItemId, ingredientId])
+}
+
+/// ข้อมูลใบชำระเงินและสรุปยอดหลังจากลูกค้าทานเสร็จ
+model Invoice {
+  id            String   @id @default(uuid())
+  sessionId     String
+  session       Session  @relation(fields: [sessionId], references: [id])
+  totalAmount   Decimal
+  discount      Decimal  @default(0)
+  netAmount     Decimal
+  paymentMethod String // เช่น เงินสด, โอนเงิน, บัตรเครดิต
+  createdBy     String // พนักงานที่ทำรายการเก็บเงิน
+  user          User     @relation(fields: [createdBy], references: [id])
+  createdAt     DateTime @default(now())
+}
+
+/// บันทึกเหตุผลการยกเลิกอาหาร เพื่อใช้ตรวจสอบย้อนหลังป้องกันการทุจริต
+model VoidLog {
+  id          Int       @id @default(autoincrement())
+  orderItemId String    @unique
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+  reason      String
+  approvedBy  String // Manager ที่เป็นคนกดยืนยันการยกเลิก
+  manager     User      @relation(fields: [approvedBy], references: [id])
+  createdAt   DateTime  @default(now())
+}
