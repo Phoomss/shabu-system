@@ -59,6 +59,7 @@ model User {
   fullName     String
   avatarUrl    String? // URL รูปภาพโปรไฟล์พนักงาน
   isActive     Boolean   @default(true)
+  refreshToken String?
   invoices     Invoice[] // ประวัติการปิดยอดชำระเงินโดยพนักงานคนนี้
   voidedLogs   VoidLog[] // ประวัติการอนุมัติยกเลิกออเดอร์ (เฉพาะ Manager/Owner)
 }
