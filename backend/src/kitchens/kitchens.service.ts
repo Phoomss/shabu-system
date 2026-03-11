@@ -1,11 +1,11 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { CreateKitchenDto } from './dto/create-kitchen.dto';
+import { UpdateKitchenDto } from './dto/update-kitchen.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { KitchenSection } from '@prisma/client';
-import { CreateKitchenDto } from './dto/create-kitechen.dto';
-import { UpdateKitchenDto } from './dto/update-kitechen.dto';
 
 @Injectable()
-export class KitechensService {
+export class KitchensService {
   constructor(private prisma: PrismaService) { }
 
   async findAll(): Promise<KitchenSection[]> {

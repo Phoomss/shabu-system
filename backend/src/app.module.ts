@@ -4,15 +4,17 @@ import { RoleModule } from './role/role.module';
 import { UsersModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
-import { KitechensModule } from './kitechens/kitechens.module';
+import { KitchensModule } from './kitchens/kitchens.module';
+
 
 @Module({
   imports: [
-    ConfigModule.forRoot({isGlobal: true}),
-    PrismaModule, 
-    RoleModule, 
-    UsersModule, 
-    AuthModule, KitechensModule
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaModule,
+    RoleModule,
+    UsersModule,
+    AuthModule,
+    KitchensModule
   ],
 })
-export class AppModule {}
+export class AppModule { }
