@@ -4,6 +4,7 @@ import { RoleModule } from './role/role.module';
 import { UsersModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { KitechensModule } from './kitechens/kitechens.module';
 
 @Module({
   imports: [
@@ -11,7 +12,7 @@ import { ConfigModule } from '@nestjs/config';
     PrismaModule, 
     RoleModule, 
     UsersModule, 
-    AuthModule
+    AuthModule, KitechensModule
   ],
 })
 export class AppModule {}
