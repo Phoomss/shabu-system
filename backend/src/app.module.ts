@@ -5,6 +5,7 @@ import { UsersModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
 import { KitchensModule } from './kitchens/kitchens.module';
+import { CategoriesModule } from './categories/categories.module';
 
 
 @Module({
@@ -14,7 +15,8 @@ import { KitchensModule } from './kitchens/kitchens.module';
     RoleModule,
     UsersModule,
     AuthModule,
-    KitchensModule
+    KitchensModule,
+    CategoriesModule
   ],
 })
 export class AppModule { }
