@@ -1,0 +1,90 @@
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
+
+@WebSocketGateway({
+  cors: { origin: '*' },
+})
+export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer()
+  server: Server;
+
+  handleConnection(client: Socket) {
+    console.log(`Client connected: ${client.id}`);
+  }
+
+  handleDisconnect(client: Socket) {
+    console.log(`Client disconnected: ${client.id}`);
+  }
+
+  // ครัวเข้า join room ของตัวเอง
+  @SubscribeMessage('kitchen:join')
+  handleKitchenJoin(
+    @MessageBody() data: { kitchenId: number },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const room = `kitchen:${data.kitchenId}`;
+    client.join(room);
+    console.log(`Kitchen client ${client.id} joined room: ${room}`);
+    return { event: 'kitchen:joined', room };
+  }
+
+  // โต๊ะ/ลูกค้า join room ของ session
+  @SubscribeMessage('session:join')
+  handleSessionJoin(
+    @MessageBody() data: { sessionId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const room = `session:${data.sessionId}`;
+    client.join(room);
+    console.log(`Client ${client.id} joined room: ${room}`);
+    return { event: 'session:joined', room };
+  }
+
+  // --- Emit methods (เรียกจาก service อื่น) ---
+
+  // [MenuItem] แจ้งทุก client เมื่อเมนูหมด/มีของ
+  emitMenuAvailability(menuItemId: string, isAvailable: boolean, name: string) {
+    this.server.emit('menu:availability_changed', {
+      menuItemId,
+      isAvailable,
+      name,
+    });
+  }
+
+  // [Order] แจ้งครัวเมื่อมี order item ใหม่
+  emitNewOrderItem(kitchenId: number, orderItem: any) {
+    this.server.to(`kitchen:${kitchenId}`).emit('kitchen:new_order', orderItem);
+  }
+
+  // [Order] แจ้งครัวเมื่อ order item ถูก void
+  emitVoidOrderItem(kitchenId: number, orderItem: any) {
+    this.server.to(`kitchen:${kitchenId}`).emit('kitchen:void_order', orderItem);
+  }
+
+  // [Order] แจ้ง session เมื่อ order status เปลี่ยน
+  emitOrderStatus(sessionId: string, order: any) {
+    this.server
+      .to(`session:${sessionId}`)
+      .emit('order:status_changed', order);
+  }
+
+  // [OrderItem] แจ้ง session เมื่อ item status เปลี่ยน
+  emitItemStatus(sessionId: string, orderItem: any) {
+    this.server
+      .to(`session:${sessionId}`)
+      .emit('order:item_status_changed', orderItem);
+  }
+
+  // [Table] แจ้งทุก client เมื่อ table status เปลี่ยน
+  emitTableStatus(tableId: number, status: string) {
+    this.server.emit('table:status_changed', { tableId, status });
+  }
+}
