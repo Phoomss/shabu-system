@@ -5,5 +5,6 @@ import { MenuItemController } from './menu-item.controller';
 @Module({
   controllers: [MenuItemController],
   providers: [MenuItemService],
+  exports: [MenuItemService]
 })
-export class MenuItemModule {}
+export class MenuItemModule { }
