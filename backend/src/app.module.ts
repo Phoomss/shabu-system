@@ -13,6 +13,7 @@ import { TablesModule } from './tables/tables.module';
 import { SessionsModule } from './sessions/sessions.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { OrdersModule } from './orders/orders.module';
+import { IngredientsModule } from './ingredients/ingredients.module';
 
 
 @Module({
@@ -30,7 +31,8 @@ import { OrdersModule } from './orders/orders.module';
     MenuItemModule,
     TablesModule,
     SessionsModule,
-    OrdersModule
+    OrdersModule,
+    IngredientsModule
   ],
 })
 export class AppModule { }

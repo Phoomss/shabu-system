@@ -100,4 +100,15 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
       .to(`session:${sessionId}`)
       .emit('session:time_warning', { sessionId, minutesLeft });
   }
+
+  // [Ingredient] แจ้งเตือน stock ต่ำ
+  emitLowStock(data: {
+    ingredientId: number;
+    name: string;
+    currentStock: number;
+    unit: string;
+    isEmpty: boolean;
+  }) {
+    this.server.emit('ingredient:low_stock', data);
+  }
 }
