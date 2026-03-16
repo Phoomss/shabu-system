@@ -35,3 +35,9 @@ jobs:
       - name: Delete feature branch
         run: |
           git push origin --delete ${GITHUB_REF_NAME}
+      
+      - name: Notify Discord
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d '{"content": "✅ Feature branch '${GITHUB_REF_NAME}' merged into develop and deleted"}' \
+          ${{ secrets.DISCORD_WEBHOOK }}
