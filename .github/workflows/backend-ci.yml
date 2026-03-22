@@ -1,16 +1,22 @@
-name: Auto Merge Feature
+name: Backend CI
 
 on:
   push:
     branches:
       - "feature/*"
+    paths:
+      - "backend/**"
 
 permissions:
   contents: write
 
 jobs:
-  merge:
+  backend-ci:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
 
     steps:
       - name: Checkout
@@ -18,6 +24,18 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      # 🔥 ถ้า test ผ่าน → ค่อย merge
       - name: Merge to develop
         run: |
           git config --global user.name "github-actions"
@@ -35,9 +53,9 @@ jobs:
       - name: Delete feature branch
         run: |
           git push origin --delete ${GITHUB_REF_NAME}
-      
+
       - name: Notify Discord
         run: |
           curl -H "Content-Type: application/json" \
-          -d '{"content": "✅ Feature branch '${GITHUB_REF_NAME}' merged into develop and deleted"}' \
+          -d "{\"content\": \"✅ Backend: ${GITHUB_REF_NAME} merged into develop and deleted\"}" \
           ${{ secrets.DISCORD_WEBHOOK }}
