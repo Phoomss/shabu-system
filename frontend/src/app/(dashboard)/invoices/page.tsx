@@ -97,11 +97,32 @@ export default function InvoicesPage() {
     }
 
     try {
-      await api.post("/invoices", {
+      // Fetch session details with tier info
+      const sessionRes = await api.get(`/sessions/${selectedSession}`);
+      const session = sessionRes.data.data;
+      
+      console.log("Session data:", session);
+      
+      // Get tier prices
+      const priceAdult = session.tier?.priceAdult || 0;
+      const priceChild = session.tier?.priceChild || 0;
+      
+      console.log("Tier prices:", { priceAdult, priceChild });
+      
+      // For simplicity, use adult price as base (you can customize this logic)
+      // In real scenario, you might want to track adult/child count separately
+      const totalAmount = priceAdult;
+
+      const payload = {
         sessionId: selectedSession,
+        totalAmount,
         discount,
         paymentMethod,
-      });
+      };
+
+      console.log("Creating invoice with payload:", payload);
+
+      await api.post("/invoices", payload);
       toast.success("สร้างใบเสร็จสำเร็จ");
       setIsCreateOpen(false);
       setSelectedSession("");
@@ -109,6 +130,7 @@ export default function InvoicesPage() {
       fetchData();
     } catch (error: any) {
       console.error("Failed to create invoice:", error);
+      console.error("Error response:", error.response?.data);
       toast.error(error.response?.data?.message || "ไม่สามารถสร้างใบเสร็จได้");
     }
   };
