@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { getSocket } from "@/lib/socket";
+import { getSocket, addConnectListener, removeConnectListener } from "@/lib/socket";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,13 +55,17 @@ export default function OrdersPage() {
   const [isVoidOpen, setIsVoidOpen] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
     fetchData();
 
+    // Initialize socket
     const s = getSocket();
     setSocket(s);
+    socketRef.current = s;
 
+    // Register socket listeners
     s.on("order:status_changed", (data) => {
       console.log("Order status changed:", data);
       fetchData();

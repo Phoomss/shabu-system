@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { getSocket } from "@/lib/socket";
+import { getSocket, addConnectListener, removeConnectListener } from "@/lib/socket";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
