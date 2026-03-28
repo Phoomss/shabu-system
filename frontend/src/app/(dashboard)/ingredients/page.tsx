@@ -55,6 +55,7 @@ export default function IngredientsPage() {
     imageUrl: "",
   });
   const [stockValue, setStockValue] = useState(0);
+  const [stockReason, setStockReason] = useState("");
 
   useEffect(() => {
     fetchData();
@@ -114,14 +115,23 @@ export default function IngredientsPage() {
 
   const handleUpdateStock = async () => {
     if (!selectedIngredient) return;
+    if (!stockReason) {
+      toast.error("กรุณากรอกเหตุผล");
+      return;
+    }
 
     try {
+      // Calculate the difference (amount to adjust)
+      const amount = stockValue - selectedIngredient.currentStock;
+      
       await api.patch(`/ingredients/${selectedIngredient.id}/stock`, {
-        currentStock: stockValue,
+        amount,
+        reason: stockReason,
       });
       toast.success("อัปเดตสต็อกสำเร็จ");
       setIsStockOpen(false);
       setStockValue(0);
+      setStockReason("");
       setSelectedIngredient(null);
       fetchData();
     } catch (error: any) {
@@ -455,11 +465,36 @@ export default function IngredientsPage() {
             <div>
               <Label>สต็อกปัจจุบัน</Label>
               <Input
+                disabled
+                type="number"
+                value={selectedIngredient?.currentStock || 0}
+              />
+            </div>
+            <div>
+              <Label>สต็อกใหม่</Label>
+              <Input
                 type="number"
                 value={stockValue}
                 onChange={(e) => setStockValue(Number(e.target.value))}
+                placeholder="ระบุสต็อกใหม่"
               />
             </div>
+            <div>
+              <Label>เหตุผล <span className="text-red-500">*</span></Label>
+              <Input
+                type="text"
+                value={stockReason}
+                onChange={(e) => setStockReason(e.target.value)}
+                placeholder="เช่น รับของเข้าคลัง, นับสต็อก, วัตถุดิบหมดอายุ"
+              />
+            </div>
+            {stockValue !== (selectedIngredient?.currentStock || 0) && (
+              <div className="text-sm text-gray-500">
+                ปรับเปลี่ยน: <span className={stockValue > (selectedIngredient?.currentStock || 0) ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
+                  {stockValue > (selectedIngredient?.currentStock || 0) ? "+" : ""}{stockValue - (selectedIngredient?.currentStock || 0)} {selectedIngredient?.unit}
+                </span>
+              </div>
+            )}
             <div className="flex gap-2">
               <Button
                 variant="outline"
