@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { getSocket, addConnectListener, removeConnectListener } from "@/lib/socket";
+import { getSocket } from "@/lib/socket";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -39,6 +39,11 @@ import {
   AlertCircle,
   Eye,
   ChefHat,
+  Package,
+  UtensilsCrossed,
+  Timer,
+  Hash,
+  Users,
 } from "lucide-react";
 import { Socket } from "socket.io-client";
 import type { Order, Session } from "@/types";
@@ -158,7 +163,12 @@ export default function OrdersPage() {
   const getItemStatusBadge = (status: string) => {
     switch (status) {
       case "PENDING":
-        return <Badge variant="warning">รอดำเนินการ</Badge>;
+        return (
+          <Badge variant="warning" className="gap-1">
+            <Clock className="h-3 w-3" />
+            รอทำ
+          </Badge>
+        );
       case "PREPARING":
         return (
           <Badge variant="default" className="gap-1">
@@ -193,14 +203,62 @@ export default function OrdersPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // Stats
+  const stats = {
+    total: orders.length,
+    pending: orders.filter((o) => o.status === "PENDING").length,
+    confirmed: orders.filter((o) => o.status === "CONFIRMED").length,
+    cancelled: orders.filter((o) => o.status === "CANCELLED").length,
+  };
+
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col gap-4">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">จัดการออเดอร์</h1>
           <p className="text-gray-500">ดูและจัดการออเดอร์ทั้งหมด</p>
         </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">ออเดอร์ทั้งหมด</CardTitle>
+            <Package className="h-4 w-4 text-gray-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">รอดำเนินการ</CardTitle>
+            <Clock className="h-4 w-4 text-orange-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats.pending}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">ยืนยันแล้ว</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats.confirmed}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">ยกเลิก</CardTitle>
+            <XCircle className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{stats.cancelled}</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Filters */}
@@ -233,14 +291,34 @@ export default function OrdersPage() {
 
       {/* Orders Table */}
       <Card className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
+        <ScrollArea className="h-[calc(100vh-22rem)]">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Order ID</TableHead>
-                <TableHead>โต๊ะ</TableHead>
-                <TableHead>จำนวนไอเทม</TableHead>
-                <TableHead>เวลาสั่ง</TableHead>
+                <TableHead>
+                  <div className="flex items-center gap-2">
+                    <Hash className="h-4 w-4" />
+                    Order ID
+                  </div>
+                </TableHead>
+                <TableHead>
+                  <div className="flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    โต๊ะ
+                  </div>
+                </TableHead>
+                <TableHead>
+                  <div className="flex items-center gap-2">
+                    <UtensilsCrossed className="h-4 w-4" />
+                    รายการ
+                  </div>
+                </TableHead>
+                <TableHead>
+                  <div className="flex items-center gap-2">
+                    <Timer className="h-4 w-4" />
+                    เวลาสั่ง
+                  </div>
+                </TableHead>
                 <TableHead>สถานะ</TableHead>
                 <TableHead>จัดการ</TableHead>
               </TableRow>
@@ -249,21 +327,38 @@ export default function OrdersPage() {
               {filteredOrders.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                    ไม่พบออเดอร์
+                    <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>ไม่พบออเดอร์</p>
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredOrders.map((order) => (
-                  <TableRow key={order.id}>
+                  <TableRow key={order.id} className={order.status === "CANCELLED" ? "bg-red-50" : ""}>
                     <TableCell className="font-mono text-sm">
-                      {order.id.slice(-8)}
+                      #{order.id.slice(-8).toUpperCase()}
                     </TableCell>
-                    <TableCell className="font-medium">
-                      {order.session?.table.number || "-"}
-                    </TableCell>
-                    <TableCell>{order.items.length}</TableCell>
                     <TableCell>
-                      {new Date(order.createdAt).toLocaleString("th-TH")}
+                      <Badge 
+                        variant="default" 
+                        className="h-8 px-3 text-base font-bold bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Users className="h-4 w-4 mr-1" />
+                        โต๊ะ {order.session?.table.number || "-"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="gap-1">
+                        <UtensilsCrossed className="h-3 w-3" />
+                        {order.items.length}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">
+                      {new Date(order.createdAt).toLocaleString("th-TH", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
                     </TableCell>
                     <TableCell>{getStatusBadge(order.status)}</TableCell>
                     <TableCell>
@@ -277,12 +372,14 @@ export default function OrdersPage() {
                           }}
                         >
                           <Eye className="h-4 w-4" />
+                          <span className="ml-1">ดู</span>
                         </Button>
                         {order.status === "PENDING" && (
                           <>
                             <Button
                               variant="default"
                               size="sm"
+                              className="bg-green-600 hover:bg-green-700"
                               onClick={() =>
                                 handleUpdateOrderStatus(order.id, "CONFIRMED")
                               }
@@ -312,46 +409,75 @@ export default function OrdersPage() {
 
       {/* Order Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>รายละเอียดออเดอร์</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              รายละเอียดออเดอร์
+            </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              {/* Order Info */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
                 <div>
-                  <p className="text-sm text-gray-500">Order ID</p>
-                  <p className="font-mono">{selectedOrder.id}</p>
+                  <p className="text-xs text-gray-500 uppercase">Order ID</p>
+                  <p className="font-mono text-sm font-semibold">#{selectedOrder.id.slice(-8).toUpperCase()}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">โต๊ะ</p>
-                  <p className="font-medium">{selectedOrder.session?.table.number || "-"}</p>
+                  <p className="text-xs text-gray-500 uppercase">โต๊ะ</p>
+                  <p className="font-semibold">{selectedOrder.session?.table.number || "-"}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">สถานะ</p>
-                  {getStatusBadge(selectedOrder.status)}
+                  <p className="text-xs text-gray-500 uppercase">สถานะ</p>
+                  <div className="mt-1">{getStatusBadge(selectedOrder.status)}</div>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">เวลาสั่ง</p>
-                  <p>{new Date(selectedOrder.createdAt).toLocaleString("th-TH")}</p>
+                  <p className="text-xs text-gray-500 uppercase">เวลาสั่ง</p>
+                  <p className="text-sm">
+                    {new Date(selectedOrder.createdAt).toLocaleString("th-TH", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
                 </div>
               </div>
 
+              {/* Items List */}
               <div>
-                <h3 className="font-semibold mb-2">รายการอาหาร</h3>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <UtensilsCrossed className="h-4 w-4" />
+                  รายการอาหาร ({selectedOrder.items.length})
+                </h3>
                 <div className="space-y-2">
                   {selectedOrder.items.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className={`flex items-center justify-between p-4 rounded-lg border ${
+                        item.status === "VOIDED" 
+                          ? "bg-red-50 border-red-200" 
+                          : item.status === "SERVED"
+                          ? "bg-green-50 border-green-200"
+                          : "bg-white border-gray-200"
+                      }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <Badge variant="outline">{item.quantity}x</Badge>
+                      <div className="flex items-center gap-4">
+                        <Badge 
+                          variant="outline" 
+                          className="h-8 w-8 p-0 flex items-center justify-center font-bold"
+                        >
+                          {item.quantity}
+                        </Badge>
                         <div>
-                          <p className="font-medium">{item.menuItem.name}</p>
-                          <p className="text-sm text-gray-500">
-                            {item.kitchen.name}
-                          </p>
+                          <p className="font-medium text-base">{item.menuItem.name}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="secondary" className="text-xs">
+                              <ChefHat className="h-3 w-3 mr-1" />
+                              {item.kitchen.name}
+                            </Badge>
+                          </div>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -365,6 +491,7 @@ export default function OrdersPage() {
                               setIsVoidOpen(true);
                             }}
                           >
+                            <XCircle className="h-4 w-4 mr-1" />
                             ยกเลิก
                           </Button>
                         )}
@@ -382,7 +509,10 @@ export default function OrdersPage() {
       <Dialog open={isVoidOpen} onOpenChange={setIsVoidOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>ยกเลิกไอเทม</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              ยกเลิกไอเทม
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -391,6 +521,7 @@ export default function OrdersPage() {
                 value={voidReason}
                 onChange={(e) => setVoidReason(e.target.value)}
                 placeholder="กรอกเหตุผล..."
+                className="min-h-[100px]"
               />
             </div>
             <div className="flex gap-2">
@@ -398,6 +529,7 @@ export default function OrdersPage() {
                 ยกเลิก
               </Button>
               <Button variant="destructive" className="flex-1" onClick={handleVoidItem}>
+                <CheckCircle className="h-4 w-4 mr-1" />
                 ยืนยันการยกเลิก
               </Button>
             </div>
