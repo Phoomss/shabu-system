@@ -32,7 +32,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     const room = `kitchen:${data.kitchenId}`;
     client.join(room);
-    console.log(`Kitchen client ${client.id} joined room: ${room}`);
+    console.log(`✅ [Socket] Kitchen client ${client.id} joined room: ${room}`);
     return { event: 'kitchen:joined', room };
   }
 
@@ -61,7 +61,10 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // [Order] แจ้งครัวเมื่อมี order item ใหม่
   emitNewOrderItem(kitchenId: number, orderItem: any) {
-    this.server.to(`kitchen:${kitchenId}`).emit('kitchen:new_order', orderItem);
+    const room = `kitchen:${kitchenId}`;
+    console.log(`📡 [Socket] Emitting new order to room: ${room}`);
+    console.log(`📦 [Socket] Order data:`, orderItem);
+    this.server.to(room).emit('kitchen:new_order', orderItem);
   }
 
   // [Order] แจ้งครัวเมื่อ order item ถูก void

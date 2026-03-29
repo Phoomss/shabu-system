@@ -100,6 +100,7 @@ export class OrdersService {
     }
 
     kitchenGroups.forEach((items, kitchenId) => {
+      console.log(`[Socket] Emitting new order to kitchen ${kitchenId}:`, items);
       this.events.emitNewOrderItem(kitchenId, {
         orderId: order.id,
         sessionId: dto.sessionId,
@@ -122,6 +123,30 @@ export class OrdersService {
       include: { items: { select: orderItemSelect } },
     });
 
+    // ถ้า staff ยืนยันออเดอร์ → เปลี่ยน item status เป็น PREPARING
+    if (dto.status === OrderStatus.CONFIRMED) {
+      await this.prisma.orderItem.updateMany({
+        where: {
+          orderId: id,
+          status: ItemStatus.PENDING,
+        },
+        data: {
+          status: ItemStatus.PREPARING,
+        },
+      });
+
+      // [Socket] แจ้งครัวว่า item ถูกเปลี่ยนเป็น PREPARING
+      for (const item of updated.items) {
+        this.events.emitItemStatus(order.sessionId, {
+          orderItemId: item.id,
+          orderId: id,
+          menuItem: item.menuItem,
+          kitchen: item.kitchen,
+          status: ItemStatus.PREPARING,
+        });
+      }
+    }
+
     // [Socket] แจ้ง session
     this.events.emitOrderStatus(order.sessionId, updated);
 
@@ -134,12 +159,28 @@ export class OrdersService {
     return this.prisma.orderItem.findMany({
       where: {
         kitchenId,
-        status: { in: [ItemStatus.PENDING, ItemStatus.PREPARING] },
         voidLog: null,
       },
       include: {
         menuItem: { select: { id: true, name: true, imageUrl: true } },
-        order: { select: { id: true, sessionId: true, createdAt: true } },
+        kitchen: { select: { id: true, name: true } },
+        order: {
+          select: {
+            id: true,
+            sessionId: true,
+            createdAt: true,
+            session: {
+              select: {
+                table: {
+                  select: {
+                    id: true,
+                    number: true,
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: { order: { createdAt: 'asc' } },
     });
@@ -238,5 +279,27 @@ export class OrdersService {
     });
 
     return updatedItem;
+  }
+
+  async findVoidLogs() {
+    return this.prisma.voidLog.findMany({
+      include: {
+        orderItem: {
+          include: {
+            menuItem: true,
+            order: {
+              include: {
+                session: {
+                  include: {
+                    table: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

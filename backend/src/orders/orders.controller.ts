@@ -38,9 +38,7 @@ export class OrdersController {
   }
 
   @Get()
-  @UseGuards(JwtGuard)
-  @ApiBearerAuth('JWT')
-  @ApiOperation({ summary: 'Get all orders' })
+  @ApiOperation({ summary: 'Get all orders (public when sessionId provided)' })
   @ApiQuery({ name: 'sessionId', required: false })
   findAll(@Query('sessionId') sessionId?: string) {
     return this.ordersService.findAll(sessionId);
@@ -94,5 +92,13 @@ export class OrdersController {
   ) {
     const user = req.user as any;
     return this.ordersService.voidItem(itemId, dto, user.id);
+  }
+
+  @Get('void-logs')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Get all void logs' })
+  findVoidLogs() {
+    return this.ordersService.findVoidLogs();
   }
 }
