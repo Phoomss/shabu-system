@@ -1,6 +1,33 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsNumber, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
+
+// --- Child classes first (to avoid reference errors) ---
+
+export class SessionInfo {
+  @ApiProperty({ example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Session ID (prefixed)' })
+  id: string;
+
+  @ApiProperty({ example: 1, description: 'Session Number (sequential)' })
+  sessionNumber: number;
+
+  @ApiProperty({ example: 'tbl_000001', description: 'Table ID (prefixed)' })
+  tableId: number;
+
+  @ApiProperty({ example: 'tier_1', description: 'Tier ID (prefixed)' })
+  tierId: number;
+
+  @ApiProperty({ example: 'A1' })
+  tableNumber: string;
+
+  @ApiProperty({ example: 'Silver' })
+  tierName: string;
+
+  @ApiProperty({ example: 399.00 })
+  tierPrice: number;
+}
+
+// --- Main DTO classes ---
 
 export class InvoiceResponse {
   @ApiProperty({ example: 'inv_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Invoice ID (prefixed)' })
@@ -38,27 +65,4 @@ export class InvoiceResponse {
 
   @ApiProperty({ type: () => SessionInfo })
   session: SessionInfo;
-}
-
-export class SessionInfo {
-  @ApiProperty({ example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Session ID (prefixed)' })
-  id: string;
-
-  @ApiProperty({ example: 1, description: 'Session Number (sequential)' })
-  sessionNumber: number;
-
-  @ApiProperty({ example: 'tbl_000001', description: 'Table ID (prefixed)' })
-  tableId: number;
-
-  @ApiProperty({ example: 'tier_1', description: 'Tier ID (prefixed)' })
-  tierId: number;
-
-  @ApiProperty({ example: 'A1' })
-  tableNumber: string;
-
-  @ApiProperty({ example: 'Silver' })
-  tierName: string;
-
-  @ApiProperty({ example: 399.00 })
-  tierPrice: number;
 }

@@ -1,7 +1,47 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsString, IsOptional, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
-import { SessionStatus } from '@prisma/client';
+import { SessionStatus, TableStatus } from '@prisma/client';
+
+// --- Child classes first (to avoid reference errors) ---
+
+export class TableInfo {
+  @ApiProperty({ example: 'tbl_000001', description: 'Table ID (prefixed)' })
+  id: number;
+
+  @ApiProperty({ example: 'A1' })
+  number: string;
+
+  @ApiPropertyOptional({ example: 'Zone A' })
+  zone?: string;
+
+  @ApiProperty({ enum: TableStatus })
+  status: TableStatus;
+}
+
+export class TierInfo {
+  @ApiProperty({ example: 'tier_1', description: 'Tier ID (prefixed)' })
+  id: number;
+
+  @ApiProperty({ example: 'Silver' })
+  name: string;
+
+  @ApiProperty({ example: 399.00 })
+  priceAdult: number;
+
+  @ApiProperty({ example: 199.00 })
+  priceChild: number;
+
+  @ApiProperty({ example: 90 })
+  timeLimit: number;
+}
+
+export class OrderCountInfo {
+  @ApiProperty({ example: 5 })
+  orders: number;
+}
+
+// --- Main DTO classes ---
 
 export class CreateSessionDto {
   @ApiProperty({ example: 1, description: 'Table ID' })
@@ -62,48 +102,4 @@ export class SessionResponse {
   _count?: {
     orders: number;
   };
-}
-
-export class TableInfo {
-  @ApiProperty({ example: 'tbl_000001', description: 'Table ID (prefixed)' })
-  id: number;
-
-  @ApiProperty({ example: 'A1' })
-  number: string;
-
-  @ApiPropertyOptional({ example: 'Zone A' })
-  zone?: string;
-
-  @ApiProperty({ enum: () => TableStatus })
-  status: TableStatus;
-}
-
-export class TierInfo {
-  @ApiProperty({ example: 'tier_1', description: 'Tier ID (prefixed)' })
-  id: number;
-
-  @ApiProperty({ example: 'Silver' })
-  name: string;
-
-  @ApiProperty({ example: 399.00 })
-  priceAdult: number;
-
-  @ApiProperty({ example: 199.00 })
-  priceChild: number;
-
-  @ApiProperty({ example: 90 })
-  timeLimit: number;
-}
-
-export class OrderCountInfo {
-  @ApiProperty({ example: 5 })
-  orders: number;
-}
-
-// Import TableStatus from Prisma
-enum TableStatus {
-  AVAILABLE = 'AVAILABLE',
-  OCCUPIED = 'OCCUPIED',
-  RESERVED = 'RESERVED',
-  CLEANING = 'CLEANING',
 }
