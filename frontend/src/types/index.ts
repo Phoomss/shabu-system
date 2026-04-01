@@ -31,6 +31,8 @@ export interface Session {
   tierId: number;
   tier: Tier;
   qrToken: string;
+  adultCount: number;
+  childCount: number;
   startTime: string;
   endTime: string;
   status: SessionStatus;
@@ -129,6 +131,7 @@ export interface Invoice {
   discount: number;
   netAmount: number;
   paymentMethod: PaymentMethod;
+  promptPayNumber?: string | null;
   createdBy: string;
   createdAt: string;
 }

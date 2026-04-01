@@ -56,6 +56,7 @@ export class InvoicesService {
           discount,
           netAmount,
           paymentMethod: dto.paymentMethod,
+          promptPayNumber: dto.promptPayNumber,
           createdBy: staffId,
         },
         include: {

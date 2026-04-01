@@ -23,4 +23,9 @@ export class CreateInvoiceDto {
     @ApiProperty({ example: 'เงินสด', description: 'วิธีชำระเงิน' })
     @IsString()
     paymentMethod: string;
+
+    @ApiPropertyOptional({ example: '0839987275', description: 'เบอร์โทรศัพท์ PromptPay (สำหรับ QR_CODE)' })
+    @IsOptional()
+    @IsString()
+    promptPayNumber?: string;
 }

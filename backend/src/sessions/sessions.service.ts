@@ -85,6 +85,8 @@ export class SessionsService {
         data: {
           tableId: dto.tableId,
           tierId: dto.tierId,
+          adultCount: dto.adultCount,
+          childCount: dto.childCount,
           qrToken: uuidv4(),
           startTime,
           endTime,

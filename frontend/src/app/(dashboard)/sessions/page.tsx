@@ -47,7 +47,7 @@ export default function SessionsPage() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [selectedTable, setSelectedTable] = useState("");
   const [selectedTier, setSelectedTier] = useState("");
-  const [adultCount, setAdultCount] = useState(2);
+  const [adultCount, setAdultCount] = useState(0);
   const [childCount, setChildCount] = useState(0);
   const [filter, setFilter] = useState<"all" | "ACTIVE" | "CLOSED" | "EXPIRED">("all");
 

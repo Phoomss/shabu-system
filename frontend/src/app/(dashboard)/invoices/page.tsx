@@ -42,9 +42,14 @@ import {
   Building,
   FileText,
   Printer,
+  QrCode,
+  Settings,
+  Save,
+  Users,
 } from "lucide-react";
 import { Socket } from "socket.io-client";
 import type { Invoice, Session } from "@/types";
+import { QRCodeSVG } from "qrcode.react";
 
 export default function InvoicesPage() {
   const { user } = useAuthStore();
@@ -55,12 +60,19 @@ export default function InvoicesPage() {
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CREDIT_CARD" | "DEBIT_CARD" | "QR_CODE" | "BANK_TRANSFER">("CASH");
   const [discount, setDiscount] = useState(0);
+  const [promptPayNumber, setPromptPayNumber] = useState("08XXXXXXXX");
+  const [savedPromptPayNumber, setSavedPromptPayNumber] = useState("08XXXXXXXX");
+  const [sessionPrice, setSessionPrice] = useState(0);
+  const [adultCount, setAdultCount] = useState(1);
+  const [childCount, setChildCount] = useState(0);
 
   useEffect(() => {
     fetchData();
+    fetchPaymentSettings();
 
     const s = getSocket();
     setSocket(s);
@@ -75,6 +87,55 @@ export default function InvoicesPage() {
       s.off("invoice:new");
     };
   }, []);
+
+  // Recalculate price when adult/child count or session changes
+  useEffect(() => {
+    if (selectedSession) {
+      const fetchSessionPrice = async () => {
+        try {
+          const sessionRes = await api.get(`/sessions/${selectedSession}`);
+          const session = sessionRes.data.data;
+          const priceAdult = session.tier?.priceAdult || 0;
+          const priceChild = session.tier?.priceChild || 0;
+          // Use adult/child count from session if available, otherwise use current state
+          const adults = session.adultCount || adultCount;
+          const children = session.childCount || childCount;
+          const totalAmount = (priceAdult * adults) + (priceChild * children);
+          setSessionPrice(totalAmount);
+          // Update the count to match the session
+          setAdultCount(adults);
+          setChildCount(children);
+        } catch (error) {
+          console.error("Failed to fetch session price:", error);
+        }
+      };
+      fetchSessionPrice();
+    }
+  }, [selectedSession]);
+
+  const fetchPaymentSettings = async () => {
+    try {
+      const res = await api.get("/settings/payment");
+      if (res.data.data.promptPayNumber) {
+        setSavedPromptPayNumber(res.data.data.promptPayNumber);
+        setPromptPayNumber(res.data.data.promptPayNumber);
+      }
+    } catch (error) {
+      console.log("Using default PromptPay number");
+    }
+  };
+
+  const handleSavePromptPay = async () => {
+    try {
+      await api.post("/settings/payment", { promptPayNumber });
+      setSavedPromptPayNumber(promptPayNumber);
+      toast.success("บันทึกเบอร์ PromptPay สำเร็จ");
+      setIsSettingsOpen(false);
+    } catch (error: any) {
+      console.error("Failed to save PromptPay:", error);
+      toast.error(error.response?.data?.message || "ไม่สามารถบันทึกได้");
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -96,29 +157,23 @@ export default function InvoicesPage() {
       return;
     }
 
-    try {
-      // Fetch session details with tier info
-      const sessionRes = await api.get(`/sessions/${selectedSession}`);
-      const session = sessionRes.data.data;
-      
-      console.log("Session data:", session);
-      
-      // Get tier prices
-      const priceAdult = session.tier?.priceAdult || 0;
-      const priceChild = session.tier?.priceChild || 0;
-      
-      console.log("Tier prices:", { priceAdult, priceChild });
-      
-      // For simplicity, use adult price as base (you can customize this logic)
-      // In real scenario, you might want to track adult/child count separately
-      const totalAmount = priceAdult;
+    if (adultCount === 0 && childCount === 0) {
+      toast.error("กรุณาระบุจำนวนลูกค้า");
+      return;
+    }
 
-      const payload = {
+    try {
+      const payload: any = {
         sessionId: selectedSession,
-        totalAmount,
+        totalAmount: sessionPrice,
         discount,
         paymentMethod,
       };
+
+      // Add PromptPay number if payment method is QR_CODE
+      if (paymentMethod === "QR_CODE" && promptPayNumber) {
+        payload.promptPayNumber = promptPayNumber;
+      }
 
       console.log("Creating invoice with payload:", payload);
 
@@ -127,6 +182,9 @@ export default function InvoicesPage() {
       setIsCreateOpen(false);
       setSelectedSession("");
       setDiscount(0);
+      setSessionPrice(0);
+      setAdultCount(1);
+      setChildCount(0);
       fetchData();
     } catch (error: any) {
       console.error("Failed to create invoice:", error);
@@ -188,14 +246,60 @@ export default function InvoicesPage() {
           <h1 className="text-2xl font-bold">ใบเสร็จ</h1>
           <p className="text-gray-500">ประวัติการชำระเงินและรายได้</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <FileText className="h-4 w-4 mr-2" />
-              สร้างใบเสร็จ
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
+        <div className="flex gap-2">
+          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Settings className="h-4 w-4 mr-2" />
+                ตั้งค่า PromptPay
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>ตั้งค่าเบอร์โทรศัพท์ PromptPay</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label>เบอร์โทรศัพท์ PromptPay</Label>
+                  <Input
+                    value={promptPayNumber}
+                    onChange={(e) => setPromptPayNumber(e.target.value)}
+                    placeholder="0839987275"
+                  />
+                  <p className="text-sm text-gray-500 mt-2">
+                    เบอร์นี้จะแสดงใน QR Code สำหรับชำระเงิน
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" onClick={() => setIsSettingsOpen(false)}>
+                    ยกเลิก
+                  </Button>
+                  <Button className="flex-1" onClick={handleSavePromptPay}>
+                    <Save className="h-4 w-4 mr-2" />
+                    บันทึก
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={isCreateOpen} onOpenChange={(open) => {
+            setIsCreateOpen(open);
+            if (!open) {
+              setSelectedSession("");
+              setAdultCount(1);
+              setChildCount(0);
+              setDiscount(0);
+              setSessionPrice(0);
+            }
+          }}>
+            <DialogTrigger asChild>
+              <Button>
+                <FileText className="h-4 w-4 mr-2" />
+                สร้างใบเสร็จ
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
             <DialogHeader>
               <DialogTitle>สร้างใบเสร็จใหม่</DialogTitle>
             </DialogHeader>
@@ -209,12 +313,40 @@ export default function InvoicesPage() {
                   <SelectContent>
                     {activeSessions.map((session) => (
                       <SelectItem key={session.id} value={session.id}>
-                        โต๊ะ {session.table.number} - {session.tier.name}
+                        โต๊ะ {session.table.number} - {session.tier.name} ({session.adultCount} ผู้ใหญ่, {session.childCount} เด็ก)
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+              {selectedSession && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      จำนวนผู้ใหญ่ (คน)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={adultCount}
+                      onChange={(e) => setAdultCount(Number(e.target.value))}
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <Label className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      จำนวนเด็ก (คน)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={childCount}
+                      onChange={(e) => setChildCount(Number(e.target.value))}
+                      min="0"
+                    />
+                  </div>
+                </div>
+              )}
               <div>
                 <Label>วิธีการชำระเงิน</Label>
                 <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as any)}>
@@ -225,11 +357,39 @@ export default function InvoicesPage() {
                     <SelectItem value="CASH">เงินสด</SelectItem>
                     <SelectItem value="CREDIT_CARD">บัตรเครดิต</SelectItem>
                     <SelectItem value="DEBIT_CARD">บัตรเดบิต</SelectItem>
-                    <SelectItem value="QR_CODE">QR Code</SelectItem>
+                    <SelectItem value="QR_CODE">QR Code (PromptPay)</SelectItem>
                     <SelectItem value="BANK_TRANSFER">โอนเงิน</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              {paymentMethod === "QR_CODE" && promptPayNumber && sessionPrice > 0 && (
+                <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
+                  <div>
+                    <Label>เบอร์โทรศัพท์ PromptPay</Label>
+                    <Input
+                      value={promptPayNumber}
+                      onChange={(e) => setPromptPayNumber(e.target.value)}
+                      placeholder="0839987275"
+                    />
+                  </div>
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="bg-white p-4 rounded-lg shadow">
+                      <QRCodeSVG
+                        value={promptPayNumber}
+                        size={180}
+                        level="H"
+                        includeMargin={true}
+                      />
+                    </div>
+                    <p className="text-sm text-gray-600 font-medium">
+                      สแกนเพื่อชำระเงิน: {promptPayNumber}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      ยอดเงิน: ฿{sessionPrice.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
               <div>
                 <Label>ส่วนลด (฿)</Label>
                 <Input
@@ -239,6 +399,22 @@ export default function InvoicesPage() {
                   placeholder="0"
                 />
               </div>
+              {selectedSession && (
+                <div className="border-t pt-4">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>ยอดรวม</span>
+                    <span>฿{sessionPrice.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-green-600">
+                    <span>ส่วนลด</span>
+                    <span>-฿{discount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-xl font-bold border-t pt-2">
+                    <span>ยอดสุทธิ</span>
+                    <span>฿{(sessionPrice - discount).toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1" onClick={() => setIsCreateOpen(false)}>
                   ยกเลิก
@@ -250,6 +426,7 @@ export default function InvoicesPage() {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Stats */}
@@ -394,6 +571,15 @@ export default function InvoicesPage() {
                   <p className="text-sm text-gray-500">เวลา</p>
                   <p>{new Date(selectedInvoice.createdAt).toLocaleString("th-TH")}</p>
                 </div>
+                {selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber && (
+                  <div className="col-span-2">
+                    <p className="text-sm text-gray-500">PromptPay Number</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Smartphone className="h-4 w-4" />
+                      <span className="font-medium">{selectedInvoice.promptPayNumber}</span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="border-t pt-4">
@@ -412,6 +598,20 @@ export default function InvoicesPage() {
                   </div>
                 </div>
               </div>
+
+              {selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber && (
+                <div className="flex flex-col items-center space-y-2 border-t pt-4">
+                  <QRCodeSVG 
+                    value={selectedInvoice.promptPayNumber}
+                    size={150}
+                    level="H"
+                    includeMargin={true}
+                  />
+                  <p className="text-sm text-gray-600 font-medium">
+                    {selectedInvoice.promptPayNumber}
+                  </p>
+                </div>
+              )}
 
               <Button className="w-full" variant="outline">
                 <Printer className="h-4 w-4 mr-2" />

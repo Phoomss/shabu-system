@@ -133,6 +133,8 @@ model Session {
   tierId    Int
   tier      Tier          @relation(fields: [tierId], references: [id])
   qrToken   String        @unique
+  adultCount Int          @default(1) // จำนวนผู้ใหญ่
+  childCount Int          @default(0) // จำนวนเด็ก
   startTime DateTime      @default(now())
   endTime   DateTime // [Socket] ส่ง event แจ้งเตือนลูกค้า/พนักงาน เมื่อเหลือ 15 นาที หรือหมดเวลา
   status    SessionStatus @default(ACTIVE) // [Socket] แจ้งเตือนเมื่อมีการปิดโต๊ะหรือเรียกเช็คบิล
@@ -190,16 +192,17 @@ model Recipe {
 
 /// ข้อมูลใบชำระเงินและสรุปยอดหลังจากลูกค้าทานเสร็จ
 model Invoice {
-  id            String   @id @default(uuid())
-  sessionId     String
-  session       Session  @relation(fields: [sessionId], references: [id])
-  totalAmount   Decimal
-  discount      Decimal  @default(0)
-  netAmount     Decimal // [Socket] แจ้งยอดเงินเข้าที่หน้า Dashboard ของ Owner ทันที
-  paymentMethod String
-  createdBy     String
-  user          User     @relation(fields: [createdBy], references: [id])
-  createdAt     DateTime @default(now())
+  id              String   @id @default(uuid())
+  sessionId       String
+  session         Session  @relation(fields: [sessionId], references: [id])
+  totalAmount     Decimal
+  discount        Decimal  @default(0)
+  netAmount       Decimal // [Socket] แจ้งยอดเงินเข้าที่หน้า Dashboard ของ Owner ทันที
+  paymentMethod   String
+  promptPayNumber String?  // เบอร์โทรศัพท์ PromptPay (สำหรับ QR_CODE)
+  createdBy       String
+  user            User     @relation(fields: [createdBy], references: [id])
+  createdAt       DateTime @default(now())
 }
 
 /// บันทึกเหตุผลการยกเลิกอาหาร เพื่อใช้ตรวจสอบย้อนหลังป้องกันการทุจริต

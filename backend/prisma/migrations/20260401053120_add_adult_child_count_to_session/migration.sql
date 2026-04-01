@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Session" ADD COLUMN     "adultCount" INTEGER NOT NULL DEFAULT 1,
+ADD COLUMN     "childCount" INTEGER NOT NULL DEFAULT 0;
