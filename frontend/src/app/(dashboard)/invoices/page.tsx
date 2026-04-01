@@ -104,6 +104,152 @@ export default function InvoicesPage() {
     }
   };
 
+  const handlePrintInvoice = () => {
+    if (!selectedInvoice) return;
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>ใบเสร็จเลขที่ #${selectedInvoice.id.toString().padStart(6, "0")}</title>
+        <style>
+          @media print {
+            @page { margin: 20px; size: A5; }
+            body { font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif; }
+            .no-print { display: none; }
+          }
+          body { 
+            font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .header { text-align: center; margin-bottom: 20px; }
+          .header h1 { margin: 0; font-size: 24px; }
+          .header p { margin: 5px 0; color: #666; }
+          .invoice-info { margin-bottom: 20px; }
+          .invoice-info table { width: 100%; border-collapse: collapse; }
+          .invoice-info td { padding: 5px 0; }
+          .invoice-info td:first-child { font-weight: bold; }
+          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+          .items-table th, .items-table td { 
+            border: 1px solid #ddd; 
+            padding: 8px; 
+            text-align: left; 
+          }
+          .items-table th { background-color: #f5f5f5; }
+          .totals { margin-left: auto; width: 250px; }
+          .totals table { width: 100%; }
+          .totals td { padding: 5px; }
+          .totals .total-label { text-align: right; }
+          .totals .total-amount { text-align: right; font-weight: bold; }
+          .totals .net-amount { 
+            text-align: right; 
+            font-size: 18px; 
+            font-weight: bold; 
+            border-top: 2px solid #333;
+          }
+          .footer { 
+            text-align: center; 
+            margin-top: 30px; 
+            padding-top: 20px; 
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+          }
+          .qr-section { 
+            text-align: center; 
+            margin: 20px 0; 
+            padding: 15px; 
+            background: #f9f9f9;
+            border-radius: 8px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>ใบเสร็จรับเงิน</h1>
+          <p>Shabu Je Chan</p>
+        </div>
+        
+        <div class="invoice-info">
+          <table>
+            <tr>
+              <td>เลขที่ใบเสร็จ:</td>
+              <td>#${selectedInvoice.id.toString().padStart(6, "0")}</td>
+            </tr>
+            <tr>
+              <td>โต๊ะ:</td>
+              <td>${selectedInvoice.session?.table.number || "-"}</td>
+            </tr>
+            <tr>
+              <td>วิธีการชำระเงิน:</td>
+              <td>${getPaymentMethodLabel(selectedInvoice.paymentMethod)}</td>
+            </tr>
+            <tr>
+              <td>วันที่:</td>
+              <td>${new Date(selectedInvoice.createdAt).toLocaleString("th-TH")}</td>
+            </tr>
+            ${selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber ? `
+            <tr>
+              <td>PromptPay:</td>
+              <td>${selectedInvoice.promptPayNumber}</td>
+            </tr>
+            ` : ''}
+          </table>
+        </div>
+
+        ${selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber ? `
+        <div class="qr-section">
+          <div id="qrcode"></div>
+          <p style="margin-top: 10px; font-size: 14px;">${selectedInvoice.promptPayNumber}</p>
+        </div>
+        ` : ''}
+
+        <div class="totals">
+          <table>
+            <tr>
+              <td class="total-label">ยอดรวม</td>
+              <td class="total-amount">฿${selectedInvoice.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+            <tr>
+              <td class="total-label">ส่วนลด</td>
+              <td class="total-amount" style="color: #22c55e;">-฿${selectedInvoice.discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+            <tr>
+              <td class="total-label">ยอดสุทธิ</td>
+              <td class="net-amount">฿${selectedInvoice.netAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="footer">
+          <p>ขอบคุณที่ใช้บริการ</p>
+          <p>พิมพ์เมื่อ ${new Date().toLocaleString("th-TH")}</p>
+        </div>
+
+        <button class="no-print" onclick="window.print()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">
+          🖨️ พิมพ์
+        </button>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Wait for content to load and print
+      printWindow.onload = () => {
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
+      };
+    }
+  };
+
   // Recalculate price when adult/child count or session changes
   useEffect(() => {
     if (selectedSession) {
@@ -630,7 +776,7 @@ export default function InvoicesPage() {
                 </div>
               )}
 
-              <Button className="w-full" variant="outline">
+              <Button className="w-full" variant="outline" onClick={handlePrintInvoice}>
                 <Printer className="h-4 w-4 mr-2" />
                 พิมพ์ใบเสร็จ
               </Button>
