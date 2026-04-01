@@ -91,4 +91,15 @@ export class InvoicesService {
 
     return invoice;
   }
+
+  async getTotalRevenue() {
+    const result = await this.prisma.invoice.aggregate({
+      _sum: {
+        netAmount: true,
+      },
+    });
+    return {
+      totalRevenue: result._sum.netAmount || 0,
+    };
+  }
 }

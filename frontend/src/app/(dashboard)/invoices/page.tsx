@@ -69,10 +69,12 @@ export default function InvoicesPage() {
   const [sessionPrice, setSessionPrice] = useState(0);
   const [adultCount, setAdultCount] = useState(1);
   const [childCount, setChildCount] = useState(0);
+  const [totalRevenue, setTotalRevenue] = useState(0);
 
   useEffect(() => {
     fetchData();
     fetchPaymentSettings();
+    fetchTotalRevenue();
 
     const s = getSocket();
     setSocket(s);
@@ -80,6 +82,7 @@ export default function InvoicesPage() {
     s.on("invoice:new", (data) => {
       console.log("New invoice:", data);
       fetchData();
+      fetchTotalRevenue();
       toast.success("สร้างใบเสร็จสำเร็จ");
     });
 
@@ -87,6 +90,19 @@ export default function InvoicesPage() {
       s.off("invoice:new");
     };
   }, []);
+
+  const fetchTotalRevenue = async () => {
+    try {
+      const res = await api.get("/invoices/stats/total-revenue");
+      console.log("API Response:", res.data);
+      // API returns { status, message, data: { totalRevenue } }
+      const totalRevenue = res.data.data?.totalRevenue ?? res.data.totalRevenue ?? 0;
+      setTotalRevenue(totalRevenue);
+      console.log("Total Revenue:", totalRevenue);
+    } catch (error) {
+      console.error("Failed to fetch total revenue:", error);
+    }
+  };
 
   // Recalculate price when adult/child count or session changes
   useEffect(() => {
@@ -236,8 +252,6 @@ export default function InvoicesPage() {
     );
   });
 
-  const totalRevenue = invoices.reduce((sum, inv) => sum + inv.netAmount, 0);
-
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col gap-4">
       {/* Header */}
@@ -385,7 +399,7 @@ export default function InvoicesPage() {
                       สแกนเพื่อชำระเงิน: {promptPayNumber}
                     </p>
                     <p className="text-xs text-gray-500">
-                      ยอดเงิน: ฿{sessionPrice.toLocaleString()}
+                      ยอดเงิน: ฿{sessionPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
@@ -403,15 +417,15 @@ export default function InvoicesPage() {
                 <div className="border-t pt-4">
                   <div className="flex justify-between text-lg font-bold">
                     <span>ยอดรวม</span>
-                    <span>฿{sessionPrice.toLocaleString()}</span>
+                    <span>฿{sessionPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between text-green-600">
                     <span>ส่วนลด</span>
-                    <span>-฿{discount.toLocaleString()}</span>
+                    <span>-฿{discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between text-xl font-bold border-t pt-2">
                     <span>ยอดสุทธิ</span>
-                    <span>฿{(sessionPrice - discount).toLocaleString()}</span>
+                    <span>฿{(sessionPrice - discount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               )}
@@ -446,7 +460,10 @@ export default function InvoicesPage() {
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">฿{totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold">฿{totalRevenue.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <p className="text-xs text-gray-500 mt-1">
+              จาก {invoices.length} ใบเสร็จ
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -507,12 +524,12 @@ export default function InvoicesPage() {
                     <TableCell className="font-medium">
                       {invoice.session?.table.number || "-"}
                     </TableCell>
-                    <TableCell>฿{invoice.totalAmount.toLocaleString()}</TableCell>
+                    <TableCell>฿{invoice.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
                     <TableCell className="text-green-600">
-                      -฿{invoice.discount.toLocaleString()}
+                      -฿{invoice.discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell className="font-bold">
-                      ฿{invoice.netAmount.toLocaleString()}
+                      ฿{invoice.netAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -586,15 +603,15 @@ export default function InvoicesPage() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span>ยอดรวม</span>
-                    <span className="font-medium">฿{selectedInvoice.totalAmount.toLocaleString()}</span>
+                    <span className="font-medium">฿{selectedInvoice.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between text-green-600">
                     <span>ส่วนลด</span>
-                    <span>-฿{selectedInvoice.discount.toLocaleString()}</span>
+                    <span>-฿{selectedInvoice.discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                   <div className="flex justify-between text-lg font-bold border-t pt-2">
                     <span>ยอดสุทธิ</span>
-                    <span>฿{selectedInvoice.netAmount.toLocaleString()}</span>
+                    <span>฿{selectedInvoice.netAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>

@@ -30,4 +30,10 @@ export class InvoicesController {
   findOne(@Param('id') id: string) {
     return this.invoicesService.findOne(id);
   }
+
+  @Get('stats/total-revenue')
+  @ApiOperation({ summary: 'Get total revenue (SUM of netAmount)' })
+  getTotalRevenue() {
+    return this.invoicesService.getTotalRevenue();
+  }
 }
