@@ -8,7 +8,7 @@ import { EventsGateway } from 'src/events/events.gateway';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionStatusDto } from './dto/update-session-status.dto';
 import { SessionStatus, TableStatus } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { IdTransformer, IdPrefix } from 'src/common/utils/id-transformer.util';
 
@@ -33,7 +33,7 @@ export class SessionsService {
 
   async findOne(id: string) {
     // Decode the prefixed ID to raw UUID
-    const rawId = this.idTransformer.decode(id);
+    const rawId = this.idTransformer.decode(id, IdPrefix.SESSION);
     
     const session = await this.prisma.session.findUnique({
       where: { id: rawId },
@@ -92,7 +92,7 @@ export class SessionsService {
           tierId: dto.tierId,
           adultCount: dto.adultCount,
           childCount: dto.childCount,
-          qrToken: uuidv4(),
+          qrToken: randomUUID(),
           startTime,
           endTime,
         },
@@ -111,30 +111,26 @@ export class SessionsService {
   }
 
   async updateStatus(id: string, dto: UpdateSessionStatusDto) {
-    // Decode the prefixed ID to raw UUID
-    const rawId = this.idTransformer.decode(id);
-    
-    const session = await this.findOne(id);
-
-    const updated = await this.prisma.session.update({
-      where: { id: rawId },
-      data: { status: dto.status },
-      include: { table: true, tier: true },
-    });
-
-    // [Socket] แจ้ง session เมื่อสถานะเปลี่ยน (ปิดโต๊ะ/เรียกเช็คบิล)
-    this.events.emitSessionStatus(rawId, dto.status);
-
-    // ถ้าปิด session → อัปเดตโต๊ะเป็น CLEANING
-    if (dto.status === SessionStatus.CLOSED || dto.status === SessionStatus.EXPIRED) {
-      await this.prisma.table.update({
-        where: { id: session.tableId },
-        data: { status: TableStatus.CLEANING },
+    const rawId = this.idTransformer.decode(id, IdPrefix.SESSION);
+    const closesTable = dto.status === SessionStatus.CLOSED || dto.status === SessionStatus.EXPIRED;
+    // Keep records raw until commit; never use a response DTO for DB queries.
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const session = await tx.session.findUnique({ where: { id: rawId } });
+      if (!session) throw new NotFoundException(`Session #${id} not found`);
+      if (closesTable) {
+        await tx.table.update({
+          where: { id: session.tableId },
+          data: { status: TableStatus.CLEANING },
+        });
+      }
+      return tx.session.update({
+        where: { id: rawId },
+        data: { status: dto.status },
+        include: { table: true, tier: true },
       });
-
-      // [Socket] แจ้งอัปเดต table status
-      this.events.emitTableStatus(session.tableId, TableStatus.CLEANING);
-    }
+    });
+    this.events.emitSessionStatus(rawId, dto.status);
+    if (closesTable) this.events.emitTableStatus(updated.tableId, TableStatus.CLEANING);
 
     return this.transformResponse(updated);
   }
@@ -153,7 +149,6 @@ export class SessionsService {
       // หมดเวลาแล้ว
       if (session.endTime <= now) {
         await this.updateStatus(session.id, { status: SessionStatus.EXPIRED });
-        this.events.emitSessionStatus(session.id, SessionStatus.EXPIRED);
       }
       // เหลือ 15 นาที
       else if (session.endTime <= warningTime) {

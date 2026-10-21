@@ -1,4 +1,5 @@
 import { io, Socket } from 'socket.io-client';
+import { normalizeIds } from './id-contract';
 
 let socket: Socket | null = null;
 let isConnected = false;
@@ -15,6 +16,15 @@ export const getSocket = (): Socket => {
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
+    });
+
+    // Socket.IO invokes catch-all listeners before the event-specific listeners.
+    socket.onAny((_event, ...payloads: unknown[]) => {
+      for (const payload of payloads) {
+        if (payload && typeof payload === 'object') {
+          Object.assign(payload, normalizeIds(payload));
+        }
+      }
     });
 
     socket.on('connect', () => {

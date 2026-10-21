@@ -125,7 +125,7 @@ export interface Recipe {
 }
 
 export interface Invoice {
-  id: number;
+  id: string;
   invoiceNumber: number;
   sessionId: string;
   session?: Session;
@@ -203,7 +203,7 @@ export interface SocketEvents {
   'session:status_changed': { sessionId: string; status: SessionStatus };
   'session:time_warning': { sessionId: string; minutesLeft: number };
   'ingredient:low_stock': { ingredientId: number; name: string; currentStock: number; unit: string; isEmpty: boolean };
-  'invoice:new': { invoiceId: number; netAmount: number; paymentMethod: PaymentMethod; tableNumber: string };
+  'invoice:new': { invoiceId: string; netAmount: number; paymentMethod: PaymentMethod; tableNumber: string };
 }
 
 // Form DTOs

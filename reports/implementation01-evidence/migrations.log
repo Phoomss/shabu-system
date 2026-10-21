@@ -1,0 +1,111 @@
+
+> backend@0.0.1 test:migrations
+> node test/verify-migrations.cjs
+
+Datasource "db": PostgreSQL database "shabu_f04_empty_1792563699706", schema "public" at "127.0.0.1:55432"
+
+5 migrations found in prisma/migrations
+
+Applying migration `20260307164341_init`
+Applying migration `20260309080936_add_refresh_token`
+Applying migration `20260401050919_add_promptpay_to_invoice`
+Applying migration `20260401053120_add_adult_child_count_to_session`
+Applying migration `20261021070000_add_display_numbers`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260307164341_init/
+    └─ migration.sql
+  └─ 20260309080936_add_refresh_token/
+    └─ migration.sql
+  └─ 20260401050919_add_promptpay_to_invoice/
+    └─ migration.sql
+  └─ 20260401053120_add_adult_child_count_to_session/
+    └─ migration.sql
+  └─ 20261021070000_add_display_numbers/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+COMMAND migrate deploy EXIT 0
+Datasource "db": PostgreSQL database "shabu_f04_populated_1792563699706", schema "public" at "127.0.0.1:55432"
+
+4 migrations found in prisma/migrations
+
+Applying migration `20260307164341_init`
+Applying migration `20260309080936_add_refresh_token`
+Applying migration `20260401050919_add_promptpay_to_invoice`
+Applying migration `20260401053120_add_adult_child_count_to_session`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260307164341_init/
+    └─ migration.sql
+  └─ 20260309080936_add_refresh_token/
+    └─ migration.sql
+  └─ 20260401050919_add_promptpay_to_invoice/
+    └─ migration.sql
+  └─ 20260401053120_add_adult_child_count_to_session/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+Loaded Prisma config from ../../../../../../var/folders/ss/vccctpfj2mv5w57zd463j8yw0000gn/T/shabu-legacy-migrations-YwQTEH/legacy.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+COMMAND migrate deploy --config /var/folders/ss/vccctpfj2mv5w57zd463j8yw0000gn/T/shabu-legacy-migrations-YwQTEH/legacy.config.ts EXIT 0
+Datasource "db": PostgreSQL database "shabu_f04_populated_1792563699706", schema "public" at "127.0.0.1:55432"
+
+5 migrations found in prisma/migrations
+
+Applying migration `20261021070000_add_display_numbers`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20261021070000_add_display_numbers/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+COMMAND migrate deploy EXIT 0
+PASS preserved rows/PK/FK, backfill, NOT NULL, unique index, sequence: User
+PASS preserved rows/PK/FK, backfill, NOT NULL, unique index, sequence: Session
+PASS preserved rows/PK/FK, backfill, NOT NULL, unique index, sequence: Order
+PASS preserved rows/PK/FK, backfill, NOT NULL, unique index, sequence: Invoice
+No difference detected.
+
+Loaded Prisma config from prisma.config.ts.
+
+COMMAND migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code EXIT 0
+Datasource "db": PostgreSQL database "shabu_f04_empty_1792563699706", schema "public" at "127.0.0.1:55432"
+
+5 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+COMMAND migrate deploy EXIT 0
+No difference detected.
+
+Loaded Prisma config from prisma.config.ts.
+
+COMMAND migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code EXIT 0
+Datasource "db": PostgreSQL database "shabu_f04_populated_1792563699706", schema "public" at "127.0.0.1:55432"
+
+5 migrations found in prisma/migrations
+
+
+No pending migrations to apply.
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+COMMAND migrate deploy EXIT 0
+PASS migration on empty and populated databases; databases retained for inspection.

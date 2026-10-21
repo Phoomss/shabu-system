@@ -1,0 +1,137 @@
+
+> backend@0.0.1 test:ids:e2e
+> jest --runInBand --config test/jest-id-e2e.json
+
+  console.log
+    [Socket] Emitting new order to kitchen 2: [
+      {
+        id: 'c35dccc2-bcf3-4bc9-8c10-e67dbe4f470d',
+        quantity: 1,
+        status: 'PENDING',
+        menuItem: {
+          id: 'f6982034-fda8-4951-b3c1-559f105cad22',
+          name: '2322f409-be8d-480c-95da-46c6c8022c85',
+          imageUrl: null
+        },
+        kitchen: { id: 2, name: '2322f409-be8d-480c-95da-46c6c8022c85' }
+      }
+    ]
+
+      at src/orders/orders.service.ts:118:15
+          at Map.forEach (<anonymous>)
+
+  console.log
+    📡 [Socket] Emitting new order to room: kitchen:2
+
+      at EventsGateway.emitNewOrderItem (src/events/events.gateway.ts:74:13)
+          at Map.forEach (<anonymous>)
+
+  console.log
+    📦 [Socket] Order data: {
+      orderId: '4abf73e0-1a4b-4fcb-ae54-dd5889b1dc8b',
+      sessionId: '29ef83f1-24b2-49a1-9826-37d13c2f9ff1',
+      items: [
+        {
+          id: 'c35dccc2-bcf3-4bc9-8c10-e67dbe4f470d',
+          quantity: 1,
+          status: 'PENDING',
+          menuItem: [Object],
+          kitchen: [Object]
+        }
+      ]
+    }
+
+      at EventsGateway.emitNewOrderItem (src/events/events.gateway.ts:75:13)
+          at Map.forEach (<anonymous>)
+
+  console.log
+    [Socket] Emitting new order to kitchen 2: [
+      {
+        id: 'ce4ef60a-1213-49be-a827-601080ea08b7',
+        quantity: 1,
+        status: 'PENDING',
+        menuItem: {
+          id: 'f6982034-fda8-4951-b3c1-559f105cad22',
+          name: '2322f409-be8d-480c-95da-46c6c8022c85',
+          imageUrl: null
+        },
+        kitchen: { id: 2, name: '2322f409-be8d-480c-95da-46c6c8022c85' }
+      }
+    ]
+
+      at src/orders/orders.service.ts:118:15
+          at Map.forEach (<anonymous>)
+
+  console.log
+    📡 [Socket] Emitting new order to room: kitchen:2
+
+      at EventsGateway.emitNewOrderItem (src/events/events.gateway.ts:74:13)
+          at Map.forEach (<anonymous>)
+
+  console.log
+    📦 [Socket] Order data: {
+      orderId: '36da683a-3f2f-47e1-b8f1-5a8241a2f2b0',
+      sessionId: '29ef83f1-24b2-49a1-9826-37d13c2f9ff1',
+      items: [
+        {
+          id: 'ce4ef60a-1213-49be-a827-601080ea08b7',
+          quantity: 1,
+          status: 'PENDING',
+          menuItem: [Object],
+          kitchen: [Object]
+        }
+      ]
+    }
+
+      at EventsGateway.emitNewOrderItem (src/events/events.gateway.ts:75:13)
+          at Map.forEach (<anonymous>)
+
+  console.log
+    Client connected: N3yBpBGf5tVQES2kAAAB
+
+      at EventsGateway.handleConnection (src/events/events.gateway.ts:23:13)
+
+  console.log
+    Client N3yBpBGf5tVQES2kAAAB joined room: session:8479bc8e-8661-4042-9c89-844371371054
+
+      at EventsGateway.handleSessionJoin (src/events/events.gateway.ts:56:13)
+
+  console.log
+    Client disconnected: N3yBpBGf5tVQES2kAAAB
+
+      at EventsGateway.handleDisconnect (src/events/events.gateway.ts:27:13)
+
+  console.log
+    Client connected: 3YWD1GBZF1WuRXPMAAAD
+
+      at EventsGateway.handleConnection (src/events/events.gateway.ts:23:13)
+
+  console.log
+    Client 3YWD1GBZF1WuRXPMAAAD joined room: session:8479bc8e-8661-4042-9c89-844371371054
+
+      at EventsGateway.handleSessionJoin (src/events/events.gateway.ts:56:13)
+
+  console.log
+    Client disconnected: 3YWD1GBZF1WuRXPMAAAD
+
+      at EventsGateway.handleDisconnect (src/events/events.gateway.ts:27:13)
+          at Map.forEach (<anonymous>)
+          at Array.map (<anonymous>)
+          at Promise.all (<anonymous>)
+
+(node:55295) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/id-contract.e2e-spec.ts
+  ID contract against migrated PostgreSQL + HTTP + Socket
+    ✓ opens table -> resolves QR -> orders/lists using the exact HTTP session ID and raw alias (134 ms)
+    ✓ returns 400 for malformed/wrong-entity IDs and 404 for well-formed nonexistent PKs (39 ms)
+    ✓ closes session and sets its real integer table PK to CLEANING together (25 ms)
+    ✓ rolls back the table update and emits no success if the session write fails (76 ms)
+    ✓ cron expires session/table consistently with only one session event (32 ms)
+    ✓ raw and REST-prefixed Socket join receive the same service events (34 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        1.626 s, estimated 2 s
+Ran all test suites.

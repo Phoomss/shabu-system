@@ -7,7 +7,7 @@ import { SessionStatus, TableStatus } from '@prisma/client';
 
 export class TableInfo {
   @ApiProperty({ example: 'tbl_000001', description: 'Table ID (prefixed)' })
-  id: number;
+  id: string;
 
   @ApiProperty({ example: 'A1' })
   number: string;
@@ -21,7 +21,7 @@ export class TableInfo {
 
 export class TierInfo {
   @ApiProperty({ example: 'tier_1', description: 'Tier ID (prefixed)' })
-  id: number;
+  id: string;
 
   @ApiProperty({ example: 'Silver' })
   name: string;
@@ -69,10 +69,10 @@ export class SessionResponse {
   sessionNumber: number;
 
   @ApiProperty({ example: 'tbl_000001', description: 'Table ID (prefixed)' })
-  tableId: number;
+  tableId: string;
 
   @ApiProperty({ example: 'tier_1', description: 'Tier ID (prefixed)' })
-  tierId: number;
+  tierId: string;
 
   @ApiProperty({ example: 'qr-token-uuid' })
   qrToken: string;

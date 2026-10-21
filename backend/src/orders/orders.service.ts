@@ -9,6 +9,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdateItemStatusDto } from './dto/update-item-status.dto';
 import { VoidItemDto } from './dto/void-item.dto';
+import { IdTransformer, IdPrefix } from 'src/common/utils/id-transformer.util';
 import { SessionStatus, ItemStatus, OrderStatus } from '@prisma/client';
 
 const orderItemSelect = {
@@ -24,19 +25,26 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private events: EventsGateway,
+    private idTransformer: IdTransformer,
   ) {}
 
   // ─── Order ───────────────────────────────────────────────
 
   async findAll(sessionId?: string) {
+    if (sessionId !== undefined) {
+      sessionId = this.idTransformer.decode(sessionId, IdPrefix.SESSION);
+      const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+      if (!session) throw new NotFoundException('Session not found');
+    }
     return this.prisma.order.findMany({
-      where: sessionId ? { sessionId } : undefined,
+      where: sessionId !== undefined ? { sessionId } : undefined,
       include: { items: { select: orderItemSelect } },
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async findOne(id: string) {
+    id = this.idTransformer.decode(id, IdPrefix.ORDER);
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: { items: { select: orderItemSelect } },
@@ -46,6 +54,13 @@ export class OrdersService {
   }
 
   async create(dto: CreateOrderDto) {
+    dto = {
+      ...dto,
+      sessionId: this.idTransformer.decode(dto.sessionId, IdPrefix.SESSION),
+      items: dto.items.map((item) => ({
+        ...item, menuItemId: this.idTransformer.decode(item.menuItemId, IdPrefix.MENU_ITEM),
+      })),
+    };
     // เช็ค session
     const session = await this.prisma.session.findUnique({
       where: { id: dto.sessionId },
@@ -115,6 +130,7 @@ export class OrdersService {
   }
 
   async updateStatus(id: string, dto: UpdateOrderStatusDto) {
+    id = this.idTransformer.decode(id, IdPrefix.ORDER);
     const order = await this.findOne(id);
 
     const updated = await this.prisma.order.update({
@@ -156,6 +172,7 @@ export class OrdersService {
   // ─── OrderItem ────────────────────────────────────────────
 
   async findItemsByKitchen(kitchenId: number) {
+    kitchenId = this.idTransformer.decodeInt(kitchenId, IdPrefix.KITCHEN);
     return this.prisma.orderItem.findMany({
       where: {
         kitchenId,
@@ -187,6 +204,7 @@ export class OrdersService {
   }
 
   async updateItemStatus(itemId: string, dto: UpdateItemStatusDto) {
+    itemId = this.idTransformer.decode(itemId, IdPrefix.ORDER_ITEM);
     const item = await this.prisma.orderItem.findUnique({
       where: { id: itemId },
       include: {
@@ -240,6 +258,7 @@ export class OrdersService {
   }
 
   async voidItem(itemId: string, dto: VoidItemDto, managerId: string) {
+    itemId = this.idTransformer.decode(itemId, IdPrefix.ORDER_ITEM);
     const item = await this.prisma.orderItem.findUnique({
       where: { id: itemId },
       include: { order: true, kitchen: true },

@@ -12,10 +12,10 @@ export class SessionInfo {
   sessionNumber: number;
 
   @ApiProperty({ example: 'tbl_000001', description: 'Table ID (prefixed)' })
-  tableId: number;
+  tableId: string;
 
   @ApiProperty({ example: 'tier_1', description: 'Tier ID (prefixed)' })
-  tierId: number;
+  tierId: string;
 
   @ApiProperty({ example: 'A1' })
   tableNumber: string;

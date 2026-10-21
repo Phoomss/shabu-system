@@ -6,13 +6,16 @@ import {
   ConnectedSocket,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { IdTransformer, IdPrefix } from '../common/utils/id-transformer.util';
 
 @WebSocketGateway({
   cors: { origin: '*' },
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  constructor(private readonly ids: IdTransformer) {}
   @WebSocketServer()
   server: Server;
 
@@ -42,10 +45,16 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() data: { sessionId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const room = `session:${data.sessionId}`;
+    let sessionId: string;
+    try {
+      sessionId = this.ids.decode(data?.sessionId, IdPrefix.SESSION);
+    } catch {
+      throw new WsException({ statusCode: 400, message: 'Invalid session ID' });
+    }
+    const room = `session:${sessionId}`;
     client.join(room);
     console.log(`Client ${client.id} joined room: ${room}`);
-    return { event: 'session:joined', room };
+    return { event: 'session:joined', data: { room }, room };
   }
 
   // --- Emit methods (เรียกจาก service อื่น) ---

@@ -1,0 +1,16 @@
+OBSERVED F01/F02: role routes and public order handlers have no guard metadata
+OBSERVED F02: order listing without sessionId queries without a where constraint
+OBSERVED F03: total=100 discount=150 reaches invoice.create with netAmount=-50
+OBSERVED F04: closing a session sends string tbl_000001 into table.update where.id
+OBSERVED F04: prefixed sessionId is passed unchanged to order session lookup
+OBSERVED F06: past-endTime ACTIVE session and menu outside its tier are accepted by service
+OBSERVED F06/F13: DTO accepts empty items and enum VOIDED
+✅ [Socket] Kitchen client synthetic-no-auth-client joined room: kitchen:1
+Client synthetic-no-auth-client joined room: session:00000000-0000-4000-8000-000000000001
+OBSERVED F07: join handlers accept a client without credentials
+OBSERVED F09: actual initialized Nest/Express router matches /orders/:id before /orders/void-logs
+OBSERVED F11: EXPIRED invoice is rejected before any write
+OBSERVED F12: payment settings disappear in a new service instance
+OBSERVED F13: updateItemStatus VOIDED bypasses voidLog creation
+OBSERVED F15: custom storage serialization failure NOT reproduced in setAuth/rehydrate roundtrip
+Completed 13 diagnostic probes; no database/network server used.

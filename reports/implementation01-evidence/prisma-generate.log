@@ -1,0 +1,13 @@
+
+> backend@0.0.1 prisma:generate
+> prisma generate
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+
+✔ Generated Prisma Client (v7.4.2) to ./node_modules/@prisma/client in 116ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+

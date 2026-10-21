@@ -1,19 +1,4 @@
-import { Injectable } from '@nestjs/common';
-
-/**
- * ID Transformer Utility
- * 
- * Converts raw database IDs to prefixed, encoded IDs for API responses
- * and decodes them back for database queries.
- * 
- * Format: {prefix}_{encoded_uuid}
- * Examples:
- * - inv_abc123... for Invoice
- * - ses_abc123... for Session
- * - ord_abc123... for Order
- * - tbl_123... for Table (int ID)
- * - usr_abc123... for User
- */
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 export enum IdPrefix {
   INVOICE = 'inv',
@@ -29,140 +14,77 @@ export enum IdPrefix {
   ORDER_ITEM = 'oi',
 }
 
+/** Serialization only: prefixes/display numbers never grant access. */
 @Injectable()
 export class IdTransformer {
-  /**
-   * Encode a UUID to a prefixed ID
-   */
   encode(uuid: string, prefix: IdPrefix): string {
-    if (!uuid || typeof uuid !== 'string') {
-      throw new Error('Invalid UUID provided for encoding');
-    }
-    
-    // Remove any existing prefix if present
-    const rawId = this.decodeToRaw(uuid);
-    
-    // Simple encoding: replace dashes with a different character
-    // This makes the ID shorter and less recognizable as a UUID
-    const encoded = rawId.replace(/-/g, '');
-    
-    return `${prefix}_${encoded}`;
+    return `${prefix}_${this.decode(uuid, prefix).replace(/-/g, '')}`;
   }
 
-  /**
-   * Encode an integer ID to a prefixed ID
-   */
   encodeInt(id: number, prefix: IdPrefix): string {
-    if (typeof id !== 'number' || isNaN(id)) {
-      throw new Error('Invalid ID provided for encoding');
-    }
-    
-    // Pad the number to make it less predictable
-    const padded = id.toString().padStart(6, '0');
-    
-    return `${prefix}_${padded}`;
+    return `${prefix}_${this.decodeInt(id, prefix).toString().padStart(6, '0')}`;
   }
 
-  /**
-   * Decode a prefixed ID back to raw UUID
-   */
-  decode(prefixedId: string): string {
-    if (!prefixedId || typeof prefixedId !== 'string') {
-      throw new Error('Invalid prefixed ID provided for decoding');
-    }
-
-    const parts = prefixedId.split('_');
-    if (parts.length < 2) {
-      // Not a prefixed ID, might be a raw UUID
-      return this.validateUuid(prefixedId);
-    }
-
-    // Remove the prefix and reconstruct the UUID
-    const encoded = parts.slice(1).join('_');
-    
-    // Try to decode back to UUID format
-    const rawId = this.decodeToRaw(prefixedId);
-    
-    return this.validateUuid(rawId);
-  }
-
-  /**
-   * Decode a prefixed integer ID
-   */
-  decodeInt(prefixedId: string): number {
-    if (!prefixedId || typeof prefixedId !== 'string') {
-      throw new Error('Invalid prefixed ID provided for decoding');
-    }
-
-    const parts = prefixedId.split('_');
-    if (parts.length < 2) {
-      // Not a prefixed ID, try parsing as number
-      const num = parseInt(prefixedId, 10);
-      if (isNaN(num)) {
-        throw new Error('Invalid integer ID');
+  /** Accept the legacy raw UUID or an explicitly typed prefixed UUID. */
+  decode(value: string, expectedPrefix?: IdPrefix): string {
+    if (typeof value !== 'string')
+      throw new BadRequestException('Invalid UUID ID');
+    let raw = value;
+    if (value.includes('_')) {
+      const match = /^([a-z]+)_([0-9a-f]{32})$/i.exec(value);
+      if (
+        !match ||
+        !Object.values(IdPrefix).includes(match[1] as IdPrefix) ||
+        (expectedPrefix && (match[1] as IdPrefix) !== expectedPrefix)
+      ) {
+        throw new BadRequestException('Invalid ID prefix or UUID');
       }
-      return num;
+      const hex = match[2];
+      raw = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
     }
-
-    const encoded = parts.slice(1).join('_');
-    const num = parseInt(encoded, 10);
-    
-    if (isNaN(num)) {
-      throw new Error('Invalid integer ID format');
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        raw,
+      )
+    ) {
+      throw new BadRequestException('Invalid UUID ID');
     }
-    
-    return num;
+    return raw.toLowerCase();
   }
 
-  /**
-   * Check if a string is a prefixed ID with a specific prefix
-   */
+  decodeInt(value: string | number, expectedPrefix?: IdPrefix): number {
+    let raw: string | number = value;
+    if (typeof value === 'string' && value.includes('_')) {
+      const match = /^([a-z]+)_([0-9]+)$/.exec(value);
+      if (
+        !match ||
+        !Object.values(IdPrefix).includes(match[1] as IdPrefix) ||
+        (expectedPrefix && (match[1] as IdPrefix) !== expectedPrefix)
+      ) {
+        throw new BadRequestException('Invalid integer ID prefix');
+      }
+      raw = match[2];
+    }
+    if (
+      typeof raw !== 'number' &&
+      (typeof raw !== 'string' || !/^[0-9]+$/.test(raw))
+    ) {
+      throw new BadRequestException('Invalid integer ID');
+    }
+    const id = Number(raw);
+    if (!Number.isSafeInteger(id) || id < 1 || id > 2147483647) {
+      throw new BadRequestException('Invalid integer ID');
+    }
+    return id;
+  }
+
   isPrefixedId(value: string, prefix: IdPrefix): boolean {
-    if (!value || typeof value !== 'string') {
-      return false;
-    }
-    return value.startsWith(`${prefix}_`);
+    return typeof value === 'string' && value.startsWith(`${prefix}_`);
   }
 
-  /**
-   * Get the prefix from a prefixed ID
-   */
   getPrefix(value: string): string | null {
-    if (!value || typeof value !== 'string') {
-      return null;
-    }
-    const parts = value.split('_');
-    return parts.length > 0 ? parts[0] : null;
-  }
-
-  /**
-   * Decode to raw ID without validation
-   */
-  private decodeToRaw(prefixedId: string): string {
-    const parts = prefixedId.split('_');
-    if (parts.length < 2) {
-      return prefixedId;
-    }
-    
-    const encoded = parts.slice(1).join('_');
-    
-    // Try to reconstruct UUID with dashes (36 characters = UUID with dashes)
-    if (encoded.length === 32) {
-      // Insert dashes back to form a standard UUID
-      return `${encoded.slice(0, 8)}-${encoded.slice(8, 12)}-${encoded.slice(12, 16)}-${encoded.slice(16, 20)}-${encoded.slice(20)}`;
-    }
-    
-    return encoded;
-  }
-
-  /**
-   * Validate UUID format
-   */
-  private validateUuid(value: string): string {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(value)) {
-      throw new Error(`Invalid UUID format: ${value}`);
-    }
-    return value;
+    return typeof value === 'string' && value.includes('_')
+      ? value.split('_')[0]
+      : null;
   }
 }

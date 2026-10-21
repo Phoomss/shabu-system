@@ -137,7 +137,7 @@ export default function CustomerOrderPage() {
 
       setSession(sessionRes.data.data);
       setMenuItems(menuRes.data.data || []);
-      await fetchOrders();
+      await fetchOrders(sessionRes.data.data.id);
     } catch (error) {
       console.error("Failed to fetch data:", error);
       toast.error("ไม่สามารถโหลดข้อมูลได้");
@@ -146,10 +146,10 @@ export default function CustomerOrderPage() {
     }
   };
 
-  const fetchOrders = async () => {
-    if (!session) return;
+  const fetchOrders = async (sessionId = session?.id) => {
+    if (!sessionId) return;
     try {
-      const res = await publicApi.get(`/orders?sessionId=${session.id}`).catch(() => ({ data: { data: [] } }));
+      const res = await publicApi.get(`/orders?sessionId=${sessionId}`).catch(() => ({ data: { data: [] } }));
       setOrders(res.data.data || []);
     } catch (error) {
       console.error("Failed to fetch orders:", error);

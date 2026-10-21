@@ -1,0 +1,7 @@
+{
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testMatch": ["<rootDir>/test/id-contract.e2e-spec.ts"],
+  "moduleNameMapper": { "^src/(.*)$": "<rootDir>/src/$1" },
+  "transform": { "^.+\\.ts$": "ts-jest" }
+}

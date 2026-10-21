@@ -25,7 +25,7 @@ export class InvoicesService {
 
   async findOne(id: string) {
     // Decode the prefixed ID to raw UUID
-    const rawId = this.idTransformer.decode(id);
+    const rawId = this.idTransformer.decode(id, IdPrefix.INVOICE);
     
     const invoice = await this.prisma.invoice.findUnique({
       where: { id: rawId },
@@ -40,7 +40,7 @@ export class InvoicesService {
 
   async create(dto: CreateInvoiceDto, staffId: string) {
     // Decode session ID if it's prefixed
-    const rawSessionId = this.idTransformer.decode(dto.sessionId);
+    const rawSessionId = this.idTransformer.decode(dto.sessionId, IdPrefix.SESSION);
     
     // เช็ค session
     const session = await this.prisma.session.findUnique({

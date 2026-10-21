@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { normalizeIds } from './id-contract';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -14,7 +15,10 @@ api.interceptors.request.use((config) => {
 
 // Response interceptor — refresh token อัตโนมัติ
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    res.data = normalizeIds(res.data);
+    return res;
+  },
   async (error) => {
     const original = error.config;
 
@@ -44,4 +48,8 @@ export default api;
 export const publicApi = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   withCredentials: true,
+});
+publicApi.interceptors.response.use((res) => {
+  res.data = normalizeIds(res.data);
+  return res;
 });
