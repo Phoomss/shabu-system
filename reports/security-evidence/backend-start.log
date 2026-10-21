@@ -1,0 +1,120 @@
+
+> backend@0.0.1 start:prod
+> node -r ./register-paths.cjs dist/main.js
+
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [NestFactory] Starting Nest application...
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] AppModule dependencies initialized +12ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] PrismaModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] IdTransformerModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] PassportModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] ConfigHostModule dependencies initialized +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] JwtModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] JwtModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] DiscoveryModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] ConfigModule dependencies initialized +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] ScheduleModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] RoleModule dependencies initialized +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] EventsModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] SecurityModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] CustomerModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] UsersModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] KitchensModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] CategoriesModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] TiersModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] SettingsModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] AuthModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] OrdersModule dependencies initialized +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] MenuItemModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] TablesModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] IngredientsModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] InvoicesModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [InstanceLoader] SessionsModule dependencies initialized +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [WebSocketsController] EventsGateway subscribed to the "kitchen:join" message +20ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [WebSocketsController] EventsGateway subscribed to the "session:join" message +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] RoleController {/role}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/role, POST} route +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/role, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/role/:id, GET} route +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/role/:id, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/role/:id, DELETE} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] UsersController {/users}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/users, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/users, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/users/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/users/:id, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/users/:id, DELETE} route +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] AuthController {/auth}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/auth/login, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/auth/logout, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/auth/refresh, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/auth/me, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] CustomerController {/customer}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/customer/orders, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/customer/orders, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/customer/menu-items, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] OrdersController {/orders}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/orders, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/orders, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/orders/void-logs, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/orders/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/orders/:id/status, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/orders/kitchen/:kitchenId, GET} route +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/orders/items/:itemId/status, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/orders/items/:itemId/void, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] KitchensController {/kitchens}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/kitchens, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/kitchens, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/kitchens/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/kitchens/:id, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/kitchens/:id, DELETE} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] CategoriesController {/categories}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/categories, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/categories, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/categories/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/categories/:id, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/categories/:id, DELETE} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] TiersController {/tiers}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tiers, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tiers, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tiers/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tiers/:id, PATCH} route +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tiers/:id, DELETE} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] MenuItemController {/menu-items}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/menu-items, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/menu-items, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/menu-items/by-tier/:tierId, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/menu-items/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/menu-items/:id/availability, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/menu-items/:id, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/menu-items/:id, DELETE} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] TablesController {/tables}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tables, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tables, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tables/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tables/:id/status, PATCH} route +2ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tables/:id, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/tables/:id, DELETE} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] SessionsController {/sessions}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/sessions, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/sessions, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/sessions/qr/:token, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/sessions/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/sessions/:id/status, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] IngredientsController {/ingredients}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/ingredients, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/ingredients, GET} route +1ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/ingredients/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/ingredients/:id, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/ingredients/:id/stock, PATCH} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/ingredients/:id, DELETE} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] InvoicesController {/invoices}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/invoices, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/invoices, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/invoices/:id, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/invoices/stats/total-revenue, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RoutesResolver] SettingsController {/settings}: +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/settings/payment, GET} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [RouterExplorer] Mapped {/settings/payment, POST} route +0ms
+[Nest] 64110  - 10/21/2026, 2:15:28 PM     LOG [NestApplication] Nest application successfully started +55ms
+Application is running on: http://localhost:3000
+Swagger docs: http://localhost:3000/api-docs

@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { EmployeeResource } from '../security/access.decorators';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { MenuItemService } from './menu-item.service';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
@@ -6,6 +17,7 @@ import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 
 @ApiTags('menu-items')
+@EmployeeResource('menu')
 @Controller('menu-items')
 export class MenuItemController {
   constructor(private readonly menuItemService: MenuItemService) {}
@@ -19,7 +31,7 @@ export class MenuItemController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all menu items (public)' })
+  @ApiOperation({ summary: 'Get all menu items (staff)' })
   findAll() {
     return this.menuItemService.findAll();
   }

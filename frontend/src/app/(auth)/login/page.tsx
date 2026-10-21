@@ -32,11 +32,12 @@ export default function LoginPage() {
   // ตรวจสอบว่ามี user แล้วให้ redirect (กรณี refresh)
   useEffect(() => {
     if (user) {
-      const path = user.role === "OWNER"
-        ? "/dashboard"
-        : user.role === "KITCHEN"
-        ? "/kds"
-        : "/pos";
+      const path =
+        user.role === "OWNER"
+          ? "/dashboard"
+          : user.role === "KITCHEN"
+            ? "/kds"
+            : "/pos";
       window.location.href = path; // ใช้ window.location แทน router.push
     }
   }, [user]);
@@ -54,29 +55,30 @@ export default function LoginPage() {
       const res = await api.post("/auth/login", data);
       const { accessToken, user } = res.data.data;
 
-      console.log('=== LOGIN SUCCESS ===');
-      console.log('User:', user);
-      console.log('User Role:', user.role);
-      
+      console.log("=== LOGIN SUCCESS ===");
+      console.log("User:", user);
+      console.log("User Role:", user.role);
+
       setAuth(user, accessToken);
       toast.success(`ยินดีต้อนรับ ${user.fullName}`);
 
       // redirect ตาม role - ใช้ window.location.replace
-      const redirectPath = user.role === "OWNER"
-        ? "/dashboard"
-        : user.role === "KITCHEN"
-        ? "/kds"
-        : "/pos";
+      const redirectPath =
+        user.role === "OWNER"
+          ? "/dashboard"
+          : user.role === "KITCHEN"
+            ? "/kds"
+            : "/pos";
 
-      console.log('=== REDIRECTING ===');
-      console.log('To:', redirectPath);
-      
+      console.log("=== REDIRECTING ===");
+      console.log("To:", redirectPath);
+
       // ใช้ setTimeout ให้ Zustand ทัน persist token
       setTimeout(() => {
         window.location.replace(redirectPath);
       }, 500);
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error("Login request failed");
       toast.error(error.response?.data?.message ?? "เข้าสู่ระบบไม่สำเร็จ");
     }
   };

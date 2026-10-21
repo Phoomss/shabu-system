@@ -5,13 +5,14 @@ const path = require('node:path');
 const net = require('node:net');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '../..');
-const artifacts = path.join(root, 'reports/implementation01-evidence');
+const artifacts = path.join(root, 'reports/security-evidence');
+fs.mkdirSync(artifacts, { recursive: true });
 const url = new URL(process.env.DATABASE_URL || 'postgresql://invalid/invalid');
 if (
   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
   url.hostname !== '127.0.0.1' ||
   url.port !== '55432' ||
-  !/^\/shabu_f04_empty_\d+$/.test(url.pathname)
+  !/^\/shabu_(?:f04_empty|security)_\d+$/.test(url.pathname)
 ) {
   throw new Error('Refusing to start against a non-isolated database');
 }
@@ -62,16 +63,22 @@ async function main() {
       JWT_SECRET: 'isolated-local-smoke-only',
       JWT_REFRESH_SECRET: 'isolated-local-smoke-refresh-only',
     });
-    const menu = await ready(backend, 'http://127.0.0.1:3000/menu-items');
-    const payload = await menu.json();
-    assert.equal(payload.status, true);
-    assert.ok(Array.isArray(payload.data));
-    console.log(
-      'PASS backend npm run start:prod: HTTP /menu-items 200 + database query',
-    );
-    const swagger = await fetch('http://127.0.0.1:3000/api-docs');
+    const swagger = await ready(backend, 'http://127.0.0.1:3000/api-docs');
     assert.equal(swagger.status, 200);
-    console.log('PASS backend /api-docs 200');
+    const denied = await fetch('http://127.0.0.1:3000/menu-items');
+    assert.equal(denied.status, 401);
+    const loginAttempt = await fetch('http://127.0.0.1:3000/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: `smoke-missing-${Date.now()}`,
+        password: 'local-smoke-only',
+      }),
+    });
+    assert.equal(loginAttempt.status, 401); // exercises DB lookup without granting staff data access
+    console.log(
+      'PASS backend start: Swagger 200, anonymous staff data 401, DB-backed invalid login 401',
+    );
     const frontend = start(
       'frontend',
       ['run', 'start', '--', '--hostname', '127.0.0.1'],

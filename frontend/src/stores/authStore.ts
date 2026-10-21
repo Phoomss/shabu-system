@@ -1,3 +1,4 @@
+import { disconnectSocket } from '@/lib/socket';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
@@ -41,10 +42,12 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       accessToken: null,
       setAuth: (user, accessToken) => {
+        disconnectSocket();
         localStorage.setItem('accessToken', accessToken);
         set({ user, accessToken });
       },
       clearAuth: () => {
+        disconnectSocket();
         localStorage.removeItem('accessToken');
         set({ user: null, accessToken: null });
       },

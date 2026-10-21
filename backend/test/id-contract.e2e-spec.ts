@@ -1,3 +1,5 @@
+import { ConfigService } from '@nestjs/config';
+import { PERMISSIONS } from '../src/security/policy';
 import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
@@ -59,7 +61,18 @@ describe('ID contract against migrated PostgreSQL + HTTP + Socket', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ConfigService)
+      .useValue(
+        new ConfigService({
+          ...process.env,
+          STAFF_PERMISSION_GRANTS: JSON.stringify({
+            [`TEST-${marker}`]: [...PERMISSIONS],
+          }),
+          KITCHEN_USER_ASSIGNMENTS: '{}',
+        }),
+      )
+      .compile();
     app = moduleRef.createNestApplication<INestApplication<Server>>();
     app.useGlobalPipes(
       new ValidationPipe({
@@ -129,13 +142,18 @@ describe('ID contract against migrated PostgreSQL + HTTP + Socket', () => {
       .get(`/sessions/qr/${wire.qrToken}`)
       .expect(200);
     expect(data<WireSession>(qr).id).toBe(wire.id);
+    const customerToken = data<{ customerAccessToken: string }>(
+      qr,
+    ).customerAccessToken;
     for (const sessionId of [wire.id, raw]) {
       const made = await request(app.getHttpServer())
-        .post('/orders')
+        .post('/customer/orders')
+        .auth(customerToken, { type: 'bearer' })
         .send({ sessionId, items: [{ menuItemId: menuId, quantity: 1 }] })
         .expect(201);
       const history = await request(app.getHttpServer())
-        .get('/orders')
+        .get('/customer/orders')
+        .auth(customerToken, { type: 'bearer' })
         .query({ sessionId })
         .expect(200);
       expect(
@@ -164,6 +182,7 @@ describe('ID contract against migrated PostgreSQL + HTTP + Socket', () => {
         .expect(400);
       await request(app.getHttpServer())
         .get('/orders')
+        .auth(token, { type: 'bearer' })
         .query({ sessionId: id })
         .expect(400);
     }
@@ -177,6 +196,7 @@ describe('ID contract against migrated PostgreSQL + HTTP + Socket', () => {
       .expect(404);
     await request(app.getHttpServer())
       .get('/orders')
+      .auth(token, { type: 'bearer' })
       .query({ sessionId: missing })
       .expect(404);
     await request(app.getHttpServer())
@@ -258,6 +278,7 @@ describe('ID contract against migrated PostgreSQL + HTTP + Socket', () => {
     const { wire, raw } = await openTable();
     for (const sessionId of [raw, wire.id]) {
       const client = io(origin, {
+        auth: { accessToken: token },
         transports: ['websocket'],
         forceNew: true,
         reconnection: false,

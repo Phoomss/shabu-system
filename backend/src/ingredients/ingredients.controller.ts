@@ -1,3 +1,4 @@
+import { EmployeeResource } from '../security/access.decorators';
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { IngredientsService } from './ingredients.service';
@@ -9,6 +10,7 @@ import { JwtGuard } from 'src/auth/guards/jwt.guard';
 @ApiTags('ingredients')
 @ApiBearerAuth('JWT')
 @UseGuards(JwtGuard)
+@EmployeeResource('ingredients')
 @Controller('ingredients')
 export class IngredientsController {
   constructor(private readonly ingredientsService: IngredientsService) {}

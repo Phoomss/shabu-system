@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { EmployeeResource } from '../security/access.decorators';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ParseIntPipe } from '@nestjs/common';
 import { CategoriesService } from './categories.service';
@@ -9,6 +19,7 @@ import { JwtGuard } from 'src/auth/guards/jwt.guard';
 @ApiTags('categories')
 @ApiBearerAuth('JWT')
 @UseGuards(JwtGuard)
+@EmployeeResource('categories')
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
@@ -33,7 +44,10 @@ export class CategoriesController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update category' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCategoryDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateCategoryDto,
+  ) {
     return this.categoriesService.update(id, dto);
   }
 

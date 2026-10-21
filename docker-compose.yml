@@ -23,6 +23,10 @@ services:
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:-your_secret_key}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your_refresh_secret_key}
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:3001,http://127.0.0.1:3001}"
+      STAFF_PERMISSION_GRANTS: "${STAFF_PERMISSION_GRANTS:-}"
+      KITCHEN_USER_ASSIGNMENTS: "${KITCHEN_USER_ASSIGNMENTS:-}"
+      CUSTOMER_JWT_SECRET: "${CUSTOMER_JWT_SECRET:-}"
     ports:
       - "3000:3000"
     depends_on:

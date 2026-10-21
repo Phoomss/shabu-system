@@ -1,3 +1,4 @@
+import { EmployeeResource } from '../security/access.decorators';
 import {
   Controller,
   Get,
@@ -22,6 +23,7 @@ import { UsersService } from './user.service';
 @ApiTags('users')
 @ApiBearerAuth('JWT')
 @UseGuards(JwtGuard)
+@EmployeeResource('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

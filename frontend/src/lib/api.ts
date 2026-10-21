@@ -44,12 +44,26 @@ api.interceptors.response.use(
 
 export default api;
 
-// Public API client — ไม่ใช้ authentication (สำหรับ QR ordering)
+// Legacy QR exchange only; scoped customer calls use createCustomerApi().
 export const publicApi = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
-  withCredentials: true,
+  withCredentials: false,
 });
 publicApi.interceptors.response.use((res) => {
   res.data = normalizeIds(res.data);
   return res;
 });
+
+// Customer credentials are per-page/in-memory; never share the staff refresh flow.
+export function createCustomerApi(customerToken: string) {
+  const client = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    withCredentials: false,
+    headers: { Authorization: `Bearer ${customerToken}` },
+  });
+  client.interceptors.response.use((response) => {
+    response.data = normalizeIds(response.data);
+    return response;
+  });
+  return client;
+}

@@ -1,4 +1,15 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { EmployeeResource } from '../security/access.decorators';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { TiersService } from './tiers.service';
 import { CreateTierDto } from './dto/create-tier.dto';
@@ -8,6 +19,7 @@ import { JwtGuard } from 'src/auth/guards/jwt.guard';
 @ApiTags('tiers')
 @ApiBearerAuth('JWT')
 @UseGuards(JwtGuard)
+@EmployeeResource('tiers')
 @Controller('tiers')
 export class TiersController {
   constructor(private readonly tiersService: TiersService) {}

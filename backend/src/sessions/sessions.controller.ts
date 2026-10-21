@@ -1,14 +1,38 @@
-import { Controller, Get, Post, Body, Patch, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
+import { CustomerSessionResponse } from '../customer/customer-session.dto';
+import {
+  EmployeeResource,
+  PublicEndpoint,
+} from '../security/access.decorators';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBearerAuth,
+  ApiResponse,
+} from '@nestjs/swagger';
+import { CustomerAuthService } from '../customer/customer-auth.service';
+import { Header } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { CreateSessionDto, SessionResponse } from './dto/session-response.dto';
 import { UpdateSessionStatusDto } from './dto/update-session-status.dto';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 
 @ApiTags('sessions')
+@EmployeeResource('sessions')
 @Controller('sessions')
 export class SessionsController {
-  constructor(private readonly sessionsService: SessionsService) {}
+  constructor(
+    private readonly sessionsService: SessionsService,
+    private readonly customerAuth: CustomerAuthService,
+  ) {}
 
   @Post()
   @UseGuards(JwtGuard)
@@ -28,11 +52,16 @@ export class SessionsController {
     return this.sessionsService.findAll();
   }
 
+  @PublicEndpoint()
+  @Header('Cache-Control', 'no-store')
   @Get('qr/:token')
-  @ApiOperation({ summary: 'Get session by QR token (ลูกค้าสแกน QR)' })
-  @ApiResponse({ type: SessionResponse })
+  @ApiOperation({
+    summary:
+      'Exchange legacy QR for scoped customer credential + minimal session',
+  })
+  @ApiResponse({ type: CustomerSessionResponse })
   findByQrToken(@Param('token') token: string) {
-    return this.sessionsService.findByQrToken(token);
+    return this.customerAuth.exchange(token);
   }
 
   @Get(':id')

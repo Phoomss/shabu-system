@@ -1,0 +1,56 @@
+
+> backend@0.0.1 test:ids:e2e
+> jest --runInBand --config test/jest-id-e2e.json
+
+  console.log
+    [Socket] Emitting new order to kitchen 3: [
+      {
+        id: '10f06e4c-6eb5-456d-b1e7-a8698f284684',
+        quantity: 1,
+        status: 'PENDING',
+        menuItem: {
+          id: 'abae31bf-e95c-4e8c-9553-f31860c63d3a',
+          name: '9d8e614c-ce77-4bae-b6c6-b68cd2b6bc20',
+          imageUrl: null
+        },
+        kitchen: { id: 3, name: '9d8e614c-ce77-4bae-b6c6-b68cd2b6bc20' }
+      }
+    ]
+
+      at src/orders/orders.service.ts:125:15
+          at Map.forEach (<anonymous>)
+
+  console.log
+    [Socket] Emitting new order to kitchen 3: [
+      {
+        id: '1f1ef630-ef1c-4f1a-b0ff-705b3c01d705',
+        quantity: 1,
+        status: 'PENDING',
+        menuItem: {
+          id: 'abae31bf-e95c-4e8c-9553-f31860c63d3a',
+          name: '9d8e614c-ce77-4bae-b6c6-b68cd2b6bc20',
+          imageUrl: null
+        },
+        kitchen: { id: 3, name: '9d8e614c-ce77-4bae-b6c6-b68cd2b6bc20' }
+      }
+    ]
+
+      at src/orders/orders.service.ts:125:15
+          at Map.forEach (<anonymous>)
+
+(node:61657) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/id-contract.e2e-spec.ts
+  ID contract against migrated PostgreSQL + HTTP + Socket
+    ✓ opens table -> resolves QR -> orders/lists using the exact HTTP session ID and raw alias (160 ms)
+    ✓ returns 400 for malformed/wrong-entity IDs and 404 for well-formed nonexistent PKs (54 ms)
+    ✓ closes session and sets its real integer table PK to CLEANING together (30 ms)
+    ✓ rolls back the table update and emits no success if the session write fails (123 ms)
+    ✓ cron expires session/table consistently with only one session event (38 ms)
+    ✓ raw and REST-prefixed Socket join receive the same service events (37 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        1.663 s, estimated 2 s
+Ran all test suites.

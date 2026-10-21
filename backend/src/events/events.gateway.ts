@@ -1,119 +1,285 @@
+import { IncomingMessage } from 'node:http';
 import {
+  OnGatewayInit,
   WebSocketGateway,
   WebSocketServer,
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { HttpException } from '@nestjs/common';
 import { IdTransformer, IdPrefix } from '../common/utils/id-transformer.util';
+import {
+  SocketIdentity,
+  SocketIdentityService,
+} from '../security/socket-identity.service';
+import { PermissionPolicy } from '../security/policy';
+import { allowedOrigin, corsOptions } from '../security/cors';
+import { customerOrder } from '../customer/customer-projection';
+
+type SocketData = { identity?: SocketIdentity };
 
 @WebSocketGateway({
-  cors: { origin: '*' },
+  cors: corsOptions,
+  allowRequest: (
+    request: IncomingMessage,
+    callback: (error: string | null, success: boolean) => void,
+  ) => callback(null, allowedOrigin(request.headers.origin)),
 })
-export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  constructor(private readonly ids: IdTransformer) {}
-  @WebSocketServer()
-  server: Server;
-
-  handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+export class EventsGateway implements OnGatewayInit {
+  constructor(
+    private readonly ids: IdTransformer,
+    private readonly identities: SocketIdentityService,
+    private readonly policy: PermissionPolicy,
+  ) {}
+  @WebSocketServer() server: Server;
+  afterInit(server: Server) {
+    server.use((client, next) => {
+      void this.initialize(client, next);
+    });
   }
-
-  handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+  private async initialize(
+    client: Socket,
+    next: (error?: Error) => void,
+  ): Promise<void> {
+    try {
+      const identity = await this.identities.authenticate(
+        client.handshake.auth,
+      );
+      (client.data as SocketData).identity = identity;
+      if (identity.kind === 'staff') {
+        if (this.policy.allows(identity, 'invoices.read'))
+          await client.join('staff:invoices');
+        if (this.policy.allows(identity, 'ingredients.read'))
+          await client.join('staff:stock');
+        if (this.policy.allows(identity, 'tables.read'))
+          await client.join('staff:tables');
+      }
+      const timer = setTimeout(
+        () => client.disconnect(true),
+        Math.max(0, identity.expiresAt - Date.now()),
+      );
+      timer.unref();
+      client.once('disconnect', () => clearTimeout(timer));
+      next();
+    } catch (error) {
+      const denied = new Error('Socket authentication failed') as Error & {
+        data: { status: number };
+      };
+      denied.data = {
+        status: error instanceof HttpException ? error.getStatus() : 401,
+      };
+      next(denied);
+    }
   }
-
-  // ครัวเข้า join room ของตัวเอง
+  private async current(client: Socket): Promise<SocketIdentity> {
+    if (!(client.data as SocketData).identity)
+      throw new WsException({
+        statusCode: 401,
+        message: 'Socket authentication required',
+      });
+    try {
+      const identity = await this.identities.revalidate(
+        (client.data as SocketData).identity as SocketIdentity,
+      );
+      (client.data as SocketData).identity = identity;
+      return identity;
+    } catch {
+      client.disconnect(true);
+      throw new WsException({
+        statusCode: 401,
+        message: 'Socket credential no longer valid',
+      });
+    }
+  }
   @SubscribeMessage('kitchen:join')
-  handleKitchenJoin(
+  async handleKitchenJoin(
     @MessageBody() data: { kitchenId: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const room = `kitchen:${data.kitchenId}`;
-    client.join(room);
-    console.log(`✅ [Socket] Kitchen client ${client.id} joined room: ${room}`);
-    return { event: 'kitchen:joined', room };
+    const identity = await this.current(client);
+    try {
+      const kitchenId = this.ids.decodeInt(data?.kitchenId, IdPrefix.KITCHEN);
+      if (identity.kind !== 'staff')
+        throw new WsException({
+          statusCode: 403,
+          message: 'Kitchen access denied',
+        });
+      this.policy.assertKitchen(identity, kitchenId, 'kitchen.orders.read');
+      const room = `kitchen:${kitchenId}`;
+      await client.join(room);
+      return { event: 'kitchen:joined', data: { room }, room };
+    } catch (error) {
+      this.fail(error);
+    }
   }
-
-  // โต๊ะ/ลูกค้า join room ของ session
   @SubscribeMessage('session:join')
-  handleSessionJoin(
+  async handleSessionJoin(
     @MessageBody() data: { sessionId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    let sessionId: string;
+    const identity = await this.current(client);
     try {
-      sessionId = this.ids.decode(data?.sessionId, IdPrefix.SESSION);
-    } catch {
-      throw new WsException({ statusCode: 400, message: 'Invalid session ID' });
+      const sessionId = this.ids.decode(data?.sessionId, IdPrefix.SESSION);
+      if (identity.kind === 'customer') {
+        if (identity.id !== sessionId)
+          throw new WsException({
+            statusCode: 403,
+            message: 'Session access denied',
+          });
+      } else this.policy.assert(identity, 'sessions.read');
+      const room = `session:${sessionId}`;
+      await client.join(room);
+      return { event: 'session:joined', data: { room }, room };
+    } catch (error) {
+      this.fail(error);
     }
-    const room = `session:${sessionId}`;
-    client.join(room);
-    console.log(`Client ${client.id} joined room: ${room}`);
-    return { event: 'session:joined', data: { room }, room };
   }
-
-  // --- Emit methods (เรียกจาก service อื่น) ---
-
-  // [MenuItem] แจ้งทุก client เมื่อเมนูหมด/มีของ
-  emitMenuAvailability(menuItemId: string, isAvailable: boolean, name: string) {
-    this.server.emit('menu:availability_changed', {
-      menuItemId,
-      isAvailable,
-      name,
+  private fail(error: unknown): never {
+    if (error instanceof WsException) throw error;
+    throw new WsException({
+      statusCode: error instanceof HttpException ? error.getStatus() : 403,
+      message: 'Room access denied',
     });
   }
-
-  // [Order] แจ้งครัวเมื่อมี order item ใหม่
-  emitNewOrderItem(kitchenId: number, orderItem: any) {
-    const room = `kitchen:${kitchenId}`;
-    console.log(`📡 [Socket] Emitting new order to room: ${room}`);
-    console.log(`📦 [Socket] Order data:`, orderItem);
-    this.server.to(room).emit('kitchen:new_order', orderItem);
+  /** Revalidate recipients before delivery so role changes/closure also revoke existing rooms. */
+  private async deliver(
+    room: string | undefined,
+    event: string,
+    payload: unknown,
+    authorize: (identity: SocketIdentity) => boolean,
+    customerPayload: unknown = payload,
+  ) {
+    try {
+      const recipients = room
+        ? await this.server.in(room).fetchSockets()
+        : await this.server.fetchSockets();
+      await Promise.all(
+        recipients.map(async (client) => {
+          try {
+            const identity = await this.identities.revalidate(
+              (client.data as SocketData).identity as SocketIdentity,
+            );
+            if (authorize(identity))
+              client.emit(
+                event,
+                identity.kind === 'customer' ? customerPayload : payload,
+              );
+          } catch {
+            client.disconnect(true);
+          }
+        }),
+      );
+    } catch {
+      /* Server may be shutting down; never send unfiltered fallback broadcasts. */
+    }
   }
-
-  // [Order] แจ้งครัวเมื่อ order item ถูก void
-  emitVoidOrderItem(kitchenId: number, orderItem: any) {
-    this.server
-      .to(`kitchen:${kitchenId}`)
-      .emit('kitchen:void_order', orderItem);
+  emitMenuAvailability(menuItemId: string, isAvailable: boolean, name: string) {
+    return this.deliver(
+      undefined,
+      'menu:availability_changed',
+      { menuItemId, isAvailable, name },
+      (id) => id.kind === 'customer' || this.policy.allows(id, 'menu.read'),
+    );
   }
-
-  // [Order] แจ้ง session เมื่อ order status เปลี่ยน
-  emitOrderStatus(sessionId: string, order: any) {
-    this.server.to(`session:${sessionId}`).emit('order:status_changed', order);
+  emitNewOrderItem(kitchenId: number, orderItem: unknown) {
+    return this.deliver(
+      `kitchen:${kitchenId}`,
+      'kitchen:new_order',
+      orderItem,
+      (id) =>
+        id.kind === 'staff' &&
+        this.policy.kitchenIds(id).includes(kitchenId) &&
+        this.policy.allows(id, 'kitchen.orders.read'),
+    );
   }
-
-  // [OrderItem] แจ้ง session เมื่อ item status เปลี่ยน
-  emitItemStatus(sessionId: string, orderItem: any) {
-    this.server
-      .to(`session:${sessionId}`)
-      .emit('order:item_status_changed', orderItem);
+  emitVoidOrderItem(kitchenId: number, orderItem: unknown) {
+    return this.deliver(
+      `kitchen:${kitchenId}`,
+      'kitchen:void_order',
+      orderItem,
+      (id) =>
+        id.kind === 'staff' &&
+        this.policy.kitchenIds(id).includes(kitchenId) &&
+        this.policy.allows(id, 'kitchen.orders.read'),
+    );
   }
-
-  // [Table] แจ้งทุก client เมื่อ table status เปลี่ยน
+  emitOrderStatus(
+    sessionId: string,
+    order: Parameters<typeof customerOrder>[0],
+  ) {
+    return this.deliver(
+      `session:${sessionId}`,
+      'order:status_changed',
+      order,
+      (id) =>
+        id.kind === 'customer'
+          ? id.id === sessionId
+          : this.policy.allows(id, 'sessions.read'),
+      customerOrder(order),
+    );
+  }
+  emitItemStatus(
+    sessionId: string,
+    item: {
+      orderItemId: string;
+      orderId: string;
+      status: string;
+      menuItem?: { id: string; name: string };
+      [key: string]: unknown;
+    },
+  ) {
+    const safe = {
+      orderItemId: item.orderItemId,
+      orderId: item.orderId,
+      status: item.status,
+      ...(item.menuItem
+        ? { menuItem: { id: item.menuItem.id, name: item.menuItem.name } }
+        : {}),
+    };
+    return this.deliver(
+      `session:${sessionId}`,
+      'order:item_status_changed',
+      item,
+      (id) =>
+        id.kind === 'customer'
+          ? id.id === sessionId
+          : this.policy.allows(id, 'sessions.read'),
+      safe,
+    );
+  }
   emitTableStatus(tableId: number, status: string) {
-    this.server.emit('table:status_changed', { tableId, status });
+    return this.deliver(
+      'staff:tables',
+      'table:status_changed',
+      { tableId, status },
+      (id) => id.kind === 'staff' && this.policy.allows(id, 'tables.read'),
+    );
   }
-
-  // เพิ่มใน events.gateway.ts
   emitSessionStatus(sessionId: string, status: string) {
-    this.server
-      .to(`session:${sessionId}`)
-      .emit('session:status_changed', { sessionId, status });
+    return this.deliver(
+      `session:${sessionId}`,
+      'session:status_changed',
+      { sessionId, status },
+      (id) =>
+        id.kind === 'customer'
+          ? id.id === sessionId
+          : this.policy.allows(id, 'sessions.read'),
+    );
   }
-
   emitSessionWarning(sessionId: string, minutesLeft: number) {
-    this.server
-      .to(`session:${sessionId}`)
-      .emit('session:time_warning', { sessionId, minutesLeft });
+    return this.deliver(
+      `session:${sessionId}`,
+      'session:time_warning',
+      { sessionId, minutesLeft },
+      (id) =>
+        id.kind === 'customer'
+          ? id.id === sessionId
+          : this.policy.allows(id, 'sessions.read'),
+    );
   }
-
-  // [Ingredient] แจ้งเตือน stock ต่ำ
   emitLowStock(data: {
     ingredientId: number;
     name: string;
@@ -121,10 +287,13 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     unit: string;
     isEmpty: boolean;
   }) {
-    this.server.emit('ingredient:low_stock', data);
+    return this.deliver(
+      'staff:stock',
+      'ingredient:low_stock',
+      data,
+      (id) => id.kind === 'staff' && this.policy.allows(id, 'ingredients.read'),
+    );
   }
-
-  // [Invoice] แจ้ง dashboard owner เมื่อมียอดใหม่
   emitNewInvoice(data: {
     invoiceId: string;
     netAmount: number;
@@ -132,6 +301,11 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     tableNumber: string;
     createdAt: Date;
   }) {
-    this.server.emit('invoice:new', data);
+    return this.deliver(
+      'staff:invoices',
+      'invoice:new',
+      data,
+      (id) => id.kind === 'staff' && this.policy.allows(id, 'invoices.read'),
+    );
   }
 }

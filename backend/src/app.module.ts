@@ -1,3 +1,5 @@
+import { SecurityModule } from './security/security.module';
+import { CustomerModule } from './customer/customer.module';
 import { Module } from '@nestjs/common';
 import { PrismaModule } from './prisma/prisma.module';
 import { RoleModule } from './role/role.module';
@@ -18,7 +20,6 @@ import { InvoicesModule } from './invoices/invoices.module';
 import { SettingsModule } from './settings/settings.module';
 import { IdTransformerModule } from './common/id-transformer.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -29,6 +30,8 @@ import { IdTransformerModule } from './common/id-transformer.module';
     RoleModule,
     UsersModule,
     AuthModule,
+    SecurityModule,
+    CustomerModule,
     KitchensModule,
     CategoriesModule,
     TiersModule,
@@ -38,7 +41,7 @@ import { IdTransformerModule } from './common/id-transformer.module';
     OrdersModule,
     IngredientsModule,
     InvoicesModule,
-    SettingsModule
+    SettingsModule,
   ],
 })
-export class AppModule { }
+export class AppModule {}

@@ -1,3 +1,4 @@
+import { EmployeeResource, Permission } from '../security/access.decorators';
 import {
   Controller,
   Get,
@@ -25,6 +26,7 @@ import { VoidItemDto } from './dto/void-item.dto';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 
 @ApiTags('orders')
+@EmployeeResource('orders')
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
@@ -32,16 +34,27 @@ export class OrdersController {
   // ─── Order ───────────────────────────────────────────────
 
   @Post()
-  @ApiOperation({ summary: 'Create order (ลูกค้าสั่งอาหาร) [Socket]' })
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Create order (staff only) [Socket]' })
   create(@Body() dto: CreateOrderDto) {
     return this.ordersService.create(dto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all orders (public when sessionId provided)' })
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Staff order list; customer clients must use /customer/orders' })
   @ApiQuery({ name: 'sessionId', required: false })
   findAll(@Query('sessionId') sessionId?: string) {
     return this.ordersService.findAll(sessionId);
+  }
+
+  @Permission('void-logs.read')
+  @Get('void-logs')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Get all void logs' })
+  findVoidLogs() {
+    return this.ordersService.findVoidLogs();
   }
 
   @Get(':id')
@@ -62,6 +75,7 @@ export class OrdersController {
 
   // ─── OrderItem ────────────────────────────────────────────
 
+  @Permission('kitchen.orders.read')
   @Get('kitchen/:kitchenId')
   @UseGuards(JwtGuard)
   @ApiBearerAuth('JWT')
@@ -70,6 +84,7 @@ export class OrdersController {
     return this.ordersService.findItemsByKitchen(kitchenId);
   }
 
+  @Permission('kitchen.orders.write')
   @Patch('items/:itemId/status')
   @UseGuards(JwtGuard)
   @ApiBearerAuth('JWT')
@@ -81,6 +96,7 @@ export class OrdersController {
     return this.ordersService.updateItemStatus(itemId, dto);
   }
 
+  @Permission('orders.void')
   @Post('items/:itemId/void')
   @UseGuards(JwtGuard)
   @ApiBearerAuth('JWT')
@@ -94,11 +110,5 @@ export class OrdersController {
     return this.ordersService.voidItem(itemId, dto, user.id);
   }
 
-  @Get('void-logs')
-  @UseGuards(JwtGuard)
-  @ApiBearerAuth('JWT')
-  @ApiOperation({ summary: 'Get all void logs' })
-  findVoidLogs() {
-    return this.ordersService.findVoidLogs();
-  }
+
 }

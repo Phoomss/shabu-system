@@ -214,6 +214,8 @@ export class OrdersService {
   }
 
   async updateItemStatus(itemId: string, dto: UpdateItemStatusDto) {
+    if (dto.status === ItemStatus.VOIDED)
+      throw new BadRequestException('Use the authorized void endpoint');
     itemId = this.idTransformer.decode(itemId, IdPrefix.ORDER_ITEM);
     const item = await this.prisma.orderItem.findUnique({
       where: { id: itemId },

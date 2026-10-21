@@ -2,7 +2,11 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useAuthStore } from "@/stores/authStore";
-import { getSocket, addConnectListener, removeConnectListener } from "@/lib/socket";
+import {
+  getSocket,
+  addConnectListener,
+  removeConnectListener,
+} from "@/lib/socket";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -42,9 +46,12 @@ export default function KDSPage() {
   const [orders, setOrders] = useState<OrderItemWithSession[]>([]);
   const [kitchenSections, setKitchenSections] = useState<KitchenSection[]>([]);
   const [selectedSection, setSelectedSection] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<"all" | "PENDING" | "PREPARING" | "SERVED">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "PENDING" | "PREPARING" | "SERVED"
+  >("all");
   const [isVoidDialogOpen, setIsVoidDialogOpen] = useState(false);
-  const [selectedVoidItem, setSelectedVoidItem] = useState<OrderItemWithSession | null>(null);
+  const [selectedVoidItem, setSelectedVoidItem] =
+    useState<OrderItemWithSession | null>(null);
   const [socketConnected, setSocketConnected] = useState(false);
   const kitchenSectionsRef = useRef<KitchenSection[]>([]);
   const socketRef = useRef<Socket | null>(null);
@@ -92,7 +99,7 @@ export default function KDSPage() {
       // If already connected, call immediately
       if (s.connected) {
         console.log("[KDS] Socket already connected, joining rooms now");
-        handleConnect(s.id || 'unknown');
+        handleConnect(s.id || "unknown");
       }
 
       // Listen for new orders
@@ -175,18 +182,26 @@ export default function KDSPage() {
           const res = await api.get(url);
           console.log(`✅ [KDS] Kitchen ${kitchen.id} response:`, res.data);
 
-          const items = Array.isArray(res.data) ? res.data : (res.data.data || []);
-          console.log(`📦 [KDS] Kitchen ${kitchen.id} items count: ${items.length}`);
+          const items = Array.isArray(res.data)
+            ? res.data
+            : res.data.data || [];
+          console.log(
+            `📦 [KDS] Kitchen ${kitchen.id} items count: ${items.length}`,
+          );
 
           // Map to include tableNumber from order.session.table.number
           const mappedItems = items.map((item: any) => ({
             ...item,
-            tableNumber: item.order?.session?.table?.number || 'N/A',
+            tableNumber: item.order?.session?.table?.number || "N/A",
             tableId: item.order?.session?.table?.id || 0,
           }));
           allOrders.push(...mappedItems);
         } catch (error: any) {
-          console.log(`❌ [KDS] Kitchen ${kitchen.id} error:`, error.response?.status, error.response?.data);
+          console.log(
+            `❌ [KDS] Kitchen ${kitchen.id} error:`,
+            error.response?.status,
+            error.response?.data,
+          );
           // Skip if kitchen has no orders
         }
       }
@@ -199,10 +214,16 @@ export default function KDSPage() {
 
   const fetchKitchenSections = async () => {
     try {
-      const res = await api.get("/kitchens");
+      const [res, me] = await Promise.all([
+        api.get("/kitchens"),
+        api.get("/auth/me"),
+      ]);
+      res.data.data = res.data.data.filter((kitchen: { id: number }) =>
+        (me.data.data.kitchenIds as number[]).includes(kitchen.id),
+      );
       console.log("Kitchen sections:", res.data);
       // Service returns array directly, not wrapped in { data: ... }
-      const sections = Array.isArray(res.data) ? res.data : (res.data.data || []);
+      const sections = Array.isArray(res.data) ? res.data : res.data.data || [];
       console.log("Parsed kitchen sections:", sections);
       setKitchenSections(sections);
       kitchenSectionsRef.current = sections; // Update ref
@@ -213,7 +234,7 @@ export default function KDSPage() {
 
   const updateOrderStatus = async (
     orderItemId: string,
-    status: "PREPARING" | "SERVED"
+    status: "PREPARING" | "SERVED",
   ) => {
     try {
       await api.patch(`/orders/items/${orderItemId}/status`, { status });
@@ -280,7 +301,10 @@ export default function KDSPage() {
   // Filter orders by section and status
   const filteredOrders = orders.filter((order) => {
     // Filter by kitchen section
-    if (selectedSection !== "all" && order.kitchen?.id?.toString() !== selectedSection) {
+    if (
+      selectedSection !== "all" &&
+      order.kitchen?.id?.toString() !== selectedSection
+    ) {
       return false;
     }
     // Filter by status
@@ -290,37 +314,36 @@ export default function KDSPage() {
     return true;
   });
 
-  const groupedOrders = filteredOrders
-    .reduce(
-      (acc, order) => {
-        const key = order.orderId;
-        if (!acc[key]) {
-          acc[key] = {
-            orderId: order.orderId,
-            tableNumber: order.tableNumber,
-            tableId: order.tableId,
-            createdAt: order.createdAt,
-            items: [],
-          };
-        }
-        acc[key].items.push(order);
-        return acc;
-      },
-      {} as Record<
-        string,
-        {
-          orderId: string;
-          tableNumber: string;
-          tableId: number;
-          createdAt: string;
-          items: OrderItemWithSession[];
-        }
-      >
-    );
+  const groupedOrders = filteredOrders.reduce(
+    (acc, order) => {
+      const key = order.orderId;
+      if (!acc[key]) {
+        acc[key] = {
+          orderId: order.orderId,
+          tableNumber: order.tableNumber,
+          tableId: order.tableId,
+          createdAt: order.createdAt,
+          items: [],
+        };
+      }
+      acc[key].items.push(order);
+      return acc;
+    },
+    {} as Record<
+      string,
+      {
+        orderId: string;
+        tableNumber: string;
+        tableId: number;
+        createdAt: string;
+        items: OrderItemWithSession[];
+      }
+    >,
+  );
 
   // Sort by time (oldest first)
   const sortedGroups = Object.values(groupedOrders).sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
   );
 
   const pendingCount = orders.filter((o) => o.status === "PENDING").length;
@@ -337,7 +360,9 @@ export default function KDSPage() {
               <ChefHat className="h-6 w-6 text-red-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Kitchen Display System</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Kitchen Display System
+              </h1>
               <p className="text-sm text-gray-500">ระบบจัดการออเดอร์ห้องครัว</p>
             </div>
           </div>
@@ -348,22 +373,30 @@ export default function KDSPage() {
             <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 rounded-lg border border-amber-200">
               <Clock className="h-5 w-5 text-amber-600" />
               <div>
-                <p className="text-xs text-amber-600 font-medium">รอดำเนินการ</p>
-                <p className="text-xl font-bold text-amber-700">{pendingCount}</p>
+                <p className="text-xs text-amber-600 font-medium">
+                  รอดำเนินการ
+                </p>
+                <p className="text-xl font-bold text-amber-700">
+                  {pendingCount}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200">
               <ChefHat className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="text-xs text-blue-600 font-medium">กำลังทำ</p>
-                <p className="text-xl font-bold text-blue-700">{preparingCount}</p>
+                <p className="text-xl font-bold text-blue-700">
+                  {preparingCount}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg border border-green-200">
               <CheckCircle className="h-5 w-5 text-green-600" />
               <div>
                 <p className="text-xs text-green-600 font-medium">เสิร์ฟแล้ว</p>
-                <p className="text-xl font-bold text-green-700">{servedCount}</p>
+                <p className="text-xl font-bold text-green-700">
+                  {servedCount}
+                </p>
               </div>
             </div>
           </div>
@@ -376,22 +409,29 @@ export default function KDSPage() {
 
       {/* Kitchen Section Filter */}
       <div className="flex gap-4 items-center">
-        <Tabs value={selectedSection} onValueChange={setSelectedSection} className="flex-1">
+        <Tabs
+          value={selectedSection}
+          onValueChange={setSelectedSection}
+          className="flex-1"
+        >
           <TabsList className="bg-white border shadow-sm">
-            <TabsTrigger value="all" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600">
+            <TabsTrigger
+              value="all"
+              className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600"
+            >
               ทั้งหมด ({sortedGroups.length})
             </TabsTrigger>
             {kitchenSections.map((section) => {
               const count = sortedGroups.filter((group) =>
-                group.items.some((item) => item.kitchen.id === section.id)
+                group.items.some((item) => item.kitchen.id === section.id),
               ).length;
               return (
-                <TabsTrigger 
-                  key={section.id} 
+                <TabsTrigger
+                  key={section.id}
                   value={section.id.toString()}
                   className="data-[state=active]:bg-red-50 data-[state=active]:text-red-600"
                 >
-                  {section.name.replace('_', ' ')} ({count})
+                  {section.name.replace("_", " ")} ({count})
                 </TabsTrigger>
               );
             })}
@@ -404,7 +444,9 @@ export default function KDSPage() {
             variant={statusFilter === "all" ? "default" : "outline"}
             size="sm"
             onClick={() => setStatusFilter("all")}
-            className={statusFilter === "all" ? "bg-red-600 hover:bg-red-700" : ""}
+            className={
+              statusFilter === "all" ? "bg-red-600 hover:bg-red-700" : ""
+            }
           >
             ทั้งหมด
           </Button>
@@ -412,7 +454,11 @@ export default function KDSPage() {
             variant={statusFilter === "PENDING" ? "default" : "outline"}
             size="sm"
             onClick={() => setStatusFilter("PENDING")}
-            className={statusFilter === "PENDING" ? "bg-amber-500 hover:bg-amber-600" : ""}
+            className={
+              statusFilter === "PENDING"
+                ? "bg-amber-500 hover:bg-amber-600"
+                : ""
+            }
           >
             <Clock className="h-4 w-4 mr-1" />
             รอทำ ({pendingCount})
@@ -421,7 +467,11 @@ export default function KDSPage() {
             variant={statusFilter === "PREPARING" ? "default" : "outline"}
             size="sm"
             onClick={() => setStatusFilter("PREPARING")}
-            className={statusFilter === "PREPARING" ? "bg-blue-500 hover:bg-blue-600" : ""}
+            className={
+              statusFilter === "PREPARING"
+                ? "bg-blue-500 hover:bg-blue-600"
+                : ""
+            }
           >
             <ChefHat className="h-4 w-4 mr-1" />
             กำลังทำ ({preparingCount})
@@ -430,7 +480,9 @@ export default function KDSPage() {
             variant={statusFilter === "SERVED" ? "default" : "outline"}
             size="sm"
             onClick={() => setStatusFilter("SERVED")}
-            className={statusFilter === "SERVED" ? "bg-green-500 hover:bg-green-600" : ""}
+            className={
+              statusFilter === "SERVED" ? "bg-green-500 hover:bg-green-600" : ""
+            }
           >
             <CheckCircle className="h-4 w-4 mr-1" />
             เสิร์ฟแล้ว ({servedCount})
@@ -446,17 +498,27 @@ export default function KDSPage() {
               <div className="bg-gray-50 rounded-full p-8 inline-block mb-4">
                 <ChefHat className="h-24 w-24 text-gray-300" />
               </div>
-              <p className="text-xl font-medium text-gray-600">ไม่มีออเดอร์ในห้องครัว</p>
-              <p className="text-sm text-gray-400 mt-2">ออเดอร์ใหม่จะปรากฏที่นี่ทันที</p>
+              <p className="text-xl font-medium text-gray-600">
+                ไม่มีออเดอร์ในห้องครัว
+              </p>
+              <p className="text-sm text-gray-400 mt-2">
+                ออเดอร์ใหม่จะปรากฏที่นี่ทันที
+              </p>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedGroups.map((orderGroup) => {
-              const hasPending = orderGroup.items.some((item) => item.status === "PENDING");
-              const hasPreparing = orderGroup.items.some((item) => item.status === "PREPARING");
-              const allServed = orderGroup.items.every((item) => item.status === "SERVED" || item.status === "VOIDED");
-              
+              const hasPending = orderGroup.items.some(
+                (item) => item.status === "PENDING",
+              );
+              const hasPreparing = orderGroup.items.some(
+                (item) => item.status === "PREPARING",
+              );
+              const allServed = orderGroup.items.every(
+                (item) => item.status === "SERVED" || item.status === "VOIDED",
+              );
+
               return (
                 <Card
                   key={orderGroup.orderId}
@@ -464,19 +526,31 @@ export default function KDSPage() {
                     hasPending
                       ? "border-red-300 bg-red-50"
                       : hasPreparing
-                      ? "border-blue-300 bg-blue-50"
-                      : "border-green-300 bg-green-50"
+                        ? "border-blue-300 bg-blue-50"
+                        : "border-green-300 bg-green-50"
                   }`}
                 >
                   <CardHeader className="pb-3 border-b">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-lg ${
-                          hasPending ? "bg-red-100" : hasPreparing ? "bg-blue-100" : "bg-green-100"
-                        }`}>
-                          <ChefHat className={`h-5 w-5 ${
-                            hasPending ? "text-red-600" : hasPreparing ? "text-blue-600" : "text-green-600"
-                          }`} />
+                        <div
+                          className={`p-2 rounded-lg ${
+                            hasPending
+                              ? "bg-red-100"
+                              : hasPreparing
+                                ? "bg-blue-100"
+                                : "bg-green-100"
+                          }`}
+                        >
+                          <ChefHat
+                            className={`h-5 w-5 ${
+                              hasPending
+                                ? "text-red-600"
+                                : hasPreparing
+                                  ? "text-blue-600"
+                                  : "text-green-600"
+                            }`}
+                          />
                         </div>
                         <div>
                           <CardTitle className="text-lg font-bold">
@@ -487,8 +561,14 @@ export default function KDSPage() {
                           </p>
                         </div>
                       </div>
-                      <Badge 
-                        variant={hasPending ? "warning" : hasPreparing ? "default" : "success"}
+                      <Badge
+                        variant={
+                          hasPending
+                            ? "warning"
+                            : hasPreparing
+                              ? "default"
+                              : "success"
+                        }
                         className="gap-1 px-3 py-1"
                       >
                         <Timer className="h-3 w-3" />
@@ -504,64 +584,77 @@ export default function KDSPage() {
                           item.status === "VOIDED"
                             ? "bg-red-50 border-red-200 opacity-60"
                             : item.status === "SERVED"
-                            ? "bg-green-50 border-green-200"
-                            : item.status === "PREPARING"
-                            ? "bg-blue-50 border-blue-200"
-                            : "bg-white border-gray-200"
+                              ? "bg-green-50 border-green-200"
+                              : item.status === "PREPARING"
+                                ? "bg-blue-50 border-blue-200"
+                                : "bg-white border-gray-200"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <div className="flex items-start gap-3 flex-1">
-                            <div className={`flex items-center justify-center w-10 h-10 rounded-lg font-bold text-lg ${
-                              item.status === "VOIDED"
-                                ? "bg-red-200 text-red-700"
-                                : item.status === "SERVED"
-                                ? "bg-green-200 text-green-700"
-                                : item.status === "PREPARING"
-                                ? "bg-blue-200 text-blue-700"
-                                : "bg-amber-200 text-amber-700"
-                            }`}>
+                            <div
+                              className={`flex items-center justify-center w-10 h-10 rounded-lg font-bold text-lg ${
+                                item.status === "VOIDED"
+                                  ? "bg-red-200 text-red-700"
+                                  : item.status === "SERVED"
+                                    ? "bg-green-200 text-green-700"
+                                    : item.status === "PREPARING"
+                                      ? "bg-blue-200 text-blue-700"
+                                      : "bg-amber-200 text-amber-700"
+                              }`}
+                            >
                               {item.quantity}x
                             </div>
                             <div className="flex-1">
-                              <p className="font-semibold text-gray-900">{item.menuItem.name}</p>
-                              <p className="text-xs text-gray-500 mt-1">{item.kitchen.name.replace('_', ' ')}</p>
+                              <p className="font-semibold text-gray-900">
+                                {item.menuItem.name}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {item.kitchen.name.replace("_", " ")}
+                              </p>
                             </div>
                           </div>
                           <div className="flex-shrink-0">
                             {getStatusBadge(item.status)}
                           </div>
                         </div>
-                        {item.status !== "VOIDED" && item.status !== "SERVED" && (
-                          <div className="flex gap-2 mt-2">
-                            {item.status === "PENDING" && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 bg-white hover:bg-amber-50 border-amber-300 text-amber-700"
-                                onClick={() => updateOrderStatus(item.id, "PREPARING")}
-                              >
-                                <ChefHat className="h-4 w-4 mr-1" />
-                                เริ่มทำ
-                              </Button>
-                            )}
-                            {item.status === "PREPARING" && (
-                              <Button
-                                size="sm"
-                                variant="default"
-                                className="flex-1 bg-green-600 hover:bg-green-700"
-                                onClick={() => updateOrderStatus(item.id, "SERVED")}
-                              >
-                                <CheckCircle className="h-4 w-4 mr-1" />
-                                เสิร์ฟ
-                              </Button>
-                            )}
-                          </div>
-                        )}
+                        {item.status !== "VOIDED" &&
+                          item.status !== "SERVED" && (
+                            <div className="flex gap-2 mt-2">
+                              {item.status === "PENDING" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex-1 bg-white hover:bg-amber-50 border-amber-300 text-amber-700"
+                                  onClick={() =>
+                                    updateOrderStatus(item.id, "PREPARING")
+                                  }
+                                >
+                                  <ChefHat className="h-4 w-4 mr-1" />
+                                  เริ่มทำ
+                                </Button>
+                              )}
+                              {item.status === "PREPARING" && (
+                                <Button
+                                  size="sm"
+                                  variant="default"
+                                  className="flex-1 bg-green-600 hover:bg-green-700"
+                                  onClick={() =>
+                                    updateOrderStatus(item.id, "SERVED")
+                                  }
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  เสิร์ฟ
+                                </Button>
+                              )}
+                            </div>
+                          )}
                         {item.status === "VOIDED" && (
                           <div className="flex items-center gap-2 mt-2 text-red-600">
                             <AlertCircle className="h-4 w-4" />
-                            <p className="text-xs font-medium">ยกเลิกโดยผู้จัดการ</p>
+                            <p className="text-xs font-medium">
+                              ยกเลิกโดยผู้จัดการ
+                            </p>
                           </div>
                         )}
                       </div>

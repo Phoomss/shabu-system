@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { getSocket } from "@/lib/socket";
-import { publicApi } from "@/lib/api";
+import { useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { createCustomerSocket } from "@/lib/socket";
+import { publicApi, createCustomerApi } from "@/lib/api";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,9 +21,8 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Utensils,
   ShoppingCart,
@@ -36,8 +35,8 @@ import {
   Timer,
 } from "lucide-react";
 import type { MenuItem, Session, Order } from "@/types";
-import { Socket } from "socket.io-client";
 import Image from "next/image";
+import { isAxiosError } from "axios";
 
 interface CartItem extends MenuItem {
   quantity: number;
@@ -45,66 +44,141 @@ interface CartItem extends MenuItem {
 
 export default function CustomerOrderPage() {
   const params = useParams();
-  const router = useRouter();
   const token = params.token as string;
 
   const [session, setSession] = useState<Session | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [credential, setCredential] = useState<{
+    token: string;
+    expiresAt: string;
+  } | null>(null);
+  const [accessError, setAccessError] = useState<string | null>(null);
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [timeLeft, setTimeLeft] = useState(0);
 
-  useEffect(() => {
-    if (!token) {
-      toast.error("Token ไม่ถูกต้อง");
-      router.push("/");
-      return;
+  const customerToken = credential?.token;
+  const credentialExpiresAt = credential?.expiresAt;
+  const sessionId = session?.id;
+
+  const fetchData = useCallback(async () => {
+    try {
+      const { data } = await publicApi.get(`/sessions/qr/${token}`);
+      const resolved = data.data;
+      const client = createCustomerApi(resolved.customerAccessToken);
+      const [menus, history] = await Promise.all([
+        client.get("/customer/menu-items"),
+        client.get("/customer/orders"),
+      ]);
+      setSession(resolved);
+      setMenuItems(menus.data.data);
+      setOrders(history.data.data);
+      setAccessError(null);
+      setCredential({
+        token: resolved.customerAccessToken,
+        expiresAt: resolved.credentialExpiresAt,
+      });
+    } catch {
+      setCredential(null);
+      setAccessError(
+        "ไม่สามารถใช้ QR นี้ได้ รอบการทานอาจปิดหรือหมดเวลาแล้ว กรุณาติดต่อพนักงาน",
+      );
+    } finally {
+      setLoading(false);
     }
+  }, [token]);
 
-    fetchData();
+  const fetchOrders = useCallback(
+    async (requestedSessionId?: string) => {
+      if (!requestedSessionId || !customerToken) return;
+      try {
+        const res = await createCustomerApi(customerToken).get(
+          "/customer/orders",
+          { params: { sessionId: requestedSessionId } },
+        );
+        setOrders(res.data.data);
+      } catch (error) {
+        if (
+          isAxiosError(error) &&
+          [401, 403].includes(error.response?.status || 0)
+        ) {
+          setCredential(null);
+          setAccessError(
+            "สิทธิ์สั่งอาหารหมดอายุหรือรอบการทานปิดแล้ว กรุณาติดต่อพนักงาน",
+          );
+        } else toast.error("ไม่สามารถโหลดประวัติออเดอร์ได้");
+      }
+    },
+    [customerToken],
+  );
 
-    const s = getSocket();
-    setSocket(s);
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
-    s.on("connect", () => {
-      console.log("Socket connected");
-    });
-
-    s.on("order:item_status_changed", (data) => {
-      console.log("Order item status changed:", data);
-      fetchOrders();
-    });
-
-    s.on("menu:availability_changed", (data) => {
-      console.log("Menu availability changed:", data);
+  useEffect(() => {
+    if (!customerToken || !sessionId || !credentialExpiresAt) return;
+    const currentSessionId = sessionId;
+    const s = createCustomerSocket(customerToken);
+    const onConnect = () => {
+      s.emit("session:join", { sessionId: currentSessionId });
+      void fetchOrders(currentSessionId);
+    };
+    const onItemStatus = () => {
+      void fetchOrders(currentSessionId);
+    };
+    const onMenu = (data: {
+      menuItemId: string;
+      isAvailable: boolean;
+      name: string;
+    }) => {
       setMenuItems((prev) =>
         prev.map((item) =>
-          item.id === data.menuItemId ? { ...item, isAvailable: data.isAvailable } : item
-        )
+          item.id === data.menuItemId
+            ? { ...item, isAvailable: data.isAvailable }
+            : item,
+        ),
       );
-      if (!data.isAvailable) {
-        toast.warning(`${data.name} หมดชั่วคราว`);
-      }
-    });
-
-    s.on("session:time_warning", (data) => {
-      if (data.sessionId === session?.id) {
-        toast.warning(`⏰ เวลาเหลือ ${data.minutesLeft} นาที`);
-      }
-    });
-
-    return () => {
-      s.off("connect");
-      s.off("order:item_status_changed");
-      s.off("menu:availability_changed");
-      s.off("session:time_warning");
     };
-  }, [token, router]);
+    const onWarning = (data: { sessionId: string; minutesLeft: number }) => {
+      if (data.sessionId === currentSessionId)
+        toast.warning(`⏰ เวลาเหลือ ${data.minutesLeft} นาที`);
+    };
+    const onAuthError = (error: Error & { data?: { status?: number } }) => {
+      if ([401, 403].includes(error.data?.status || 0)) void fetchData();
+    };
+    s.on("connect", onConnect);
+    s.on("order:item_status_changed", onItemStatus);
+    s.on("menu:availability_changed", onMenu);
+    s.on("session:time_warning", onWarning);
+    const onDisconnect = (reason: string) => {
+      if (reason === "io server disconnect") void fetchData();
+    };
+    s.on("disconnect", onDisconnect);
+    s.on("connect_error", onAuthError);
+    s.connect();
+    const remaining = new Date(credentialExpiresAt).getTime() - Date.now();
+    const renewal = setTimeout(
+      () => {
+        void fetchData();
+      },
+      remaining > 60000 ? remaining - 30000 : Math.max(1000, remaining + 100),
+    );
+    return () => {
+      clearTimeout(renewal);
+      s.off("connect", onConnect);
+      s.off("order:item_status_changed", onItemStatus);
+      s.off("menu:availability_changed", onMenu);
+      s.off("session:time_warning", onWarning);
+      s.off("disconnect", onDisconnect);
+      s.off("connect_error", onAuthError);
+      s.disconnect();
+    };
+  }, [customerToken, sessionId, credentialExpiresAt, fetchOrders, fetchData]);
 
   useEffect(() => {
     if (!session) return;
@@ -122,40 +196,6 @@ export default function CustomerOrderPage() {
     return () => clearInterval(interval);
   }, [session]);
 
-  const fetchData = async () => {
-    try {
-      const [sessionRes, menuRes] = await Promise.all([
-        publicApi.get(`/sessions/qr/${token}`).catch(() => ({ data: { data: null } })),
-        publicApi.get("/menu-items").catch(() => ({ data: { data: [] } })),
-      ]);
-
-      if (!sessionRes.data.data) {
-        toast.error("ไม่พบข้อมูล Session");
-        router.push("/");
-        return;
-      }
-
-      setSession(sessionRes.data.data);
-      setMenuItems(menuRes.data.data || []);
-      await fetchOrders(sessionRes.data.data.id);
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
-      toast.error("ไม่สามารถโหลดข้อมูลได้");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchOrders = async (sessionId = session?.id) => {
-    if (!sessionId) return;
-    try {
-      const res = await publicApi.get(`/orders?sessionId=${sessionId}`).catch(() => ({ data: { data: [] } }));
-      setOrders(res.data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch orders:", error);
-    }
-  };
-
   const addToCart = (item: MenuItem) => {
     if (!item.isAvailable) {
       toast.warning("เมนูนี้หมดชั่วคราว");
@@ -166,7 +206,7 @@ export default function CustomerOrderPage() {
       const existing = prev.find((i) => i.id === item.id);
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
         );
       }
       return [...prev, { ...item, quantity: 1 }];
@@ -181,14 +221,16 @@ export default function CustomerOrderPage() {
     setCart((prev) =>
       prev
         .map((i) =>
-          i.id === itemId ? { ...i, quantity: Math.max(0, i.quantity + delta) } : i
+          i.id === itemId
+            ? { ...i, quantity: Math.max(0, i.quantity + delta) }
+            : i,
         )
-        .filter((i) => i.quantity > 0)
+        .filter((i) => i.quantity > 0),
     );
   };
 
   const submitOrder = async () => {
-    if (!session || cart.length === 0) return;
+    if (!session || !credential || cart.length === 0) return;
 
     try {
       const orderItems = cart.map((item) => ({
@@ -196,22 +238,30 @@ export default function CustomerOrderPage() {
         quantity: item.quantity,
       }));
 
-      const response = await publicApi.post("/orders", {
+      await createCustomerApi(credential.token).post("/customer/orders", {
         sessionId: session.id,
         items: orderItems,
       });
 
       toast.success("ส่งออเดอร์สำเร็จ!");
       setCart([]);
-      fetchOrders();
-
-      socket?.emit("new-order", {
-        sessionId: session.id,
-        items: orderItems,
-      });
-    } catch (error: any) {
-      console.error("Failed to submit order:", error);
-      toast.error(error.response?.data?.message || "ส่งออเดอร์ไม่สำเร็จ");
+      void fetchOrders(session.id);
+    } catch (error: unknown) {
+      if (
+        isAxiosError(error) &&
+        [401, 403].includes(error.response?.status || 0)
+      ) {
+        setCredential(null);
+        setAccessError(
+          "สิทธิ์สั่งอาหารหมดอายุหรือรอบการทานปิดแล้ว กรุณาติดต่อพนักงาน",
+        );
+      }
+      console.error("Customer order request failed");
+      toast.error(
+        (isAxiosError<{ message?: string }>(error) &&
+          error.response?.data?.message) ||
+          "ส่งออเดอร์ไม่สำเร็จ",
+      );
     }
   };
 
@@ -277,13 +327,16 @@ export default function CustomerOrderPage() {
 
   const categories = Array.from(
     new Map(
-      menuItems.map((item) => [item.category.id, item.category])
-    ).values()
+      menuItems.map((item) => [item.category.id, item.category]),
+    ).values(),
   );
 
-  const filteredItems = selectedCategory === "all"
-    ? menuItems
-    : menuItems.filter((item) => item.category.id.toString() === selectedCategory);
+  const filteredItems =
+    selectedCategory === "all"
+      ? menuItems
+      : menuItems.filter(
+          (item) => item.category.id.toString() === selectedCategory,
+        );
 
   if (loading) {
     return (
@@ -293,8 +346,12 @@ export default function CustomerOrderPage() {
     );
   }
 
-  if (!session) {
-    return null;
+  if (accessError || !session) {
+    return (
+      <div className="p-8 text-center" role="alert">
+        {accessError || "ไม่พบข้อมูลรอบการทาน"}
+      </div>
+    );
   }
 
   return (
@@ -326,7 +383,9 @@ export default function CustomerOrderPage() {
             </div>
           </div>
           <div className="mt-3 flex items-center gap-4 text-sm">
-            <Badge variant={session.status === "ACTIVE" ? "success" : "secondary"}>
+            <Badge
+              variant={session.status === "ACTIVE" ? "success" : "secondary"}
+            >
               {session.status === "ACTIVE" ? "กำลังทาน" : "ปิดโต๊ะแล้ว"}
             </Badge>
             {timeLeft < 15 && (
@@ -342,7 +401,11 @@ export default function CustomerOrderPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
         {/* Category Tabs */}
-        <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="mb-6">
+        <Tabs
+          value={selectedCategory}
+          onValueChange={setSelectedCategory}
+          className="mb-6"
+        >
           <TabsList className="w-full justify-start overflow-x-auto">
             <TabsTrigger value="all">ทั้งหมด</TabsTrigger>
             {categories.map((cat) => (
@@ -449,7 +512,9 @@ export default function CustomerOrderPage() {
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-sm truncate">{item.name}</p>
+                            <p className="font-medium text-sm truncate">
+                              {item.name}
+                            </p>
                             <div className="flex items-center gap-2 mt-2">
                               <Button
                                 variant="outline"
@@ -459,7 +524,9 @@ export default function CustomerOrderPage() {
                               >
                                 <Minus className="h-3 w-3" />
                               </Button>
-                              <span className="font-bold w-8 text-center">{item.quantity}</span>
+                              <span className="font-bold w-8 text-center">
+                                {item.quantity}
+                              </span>
                               <Button
                                 variant="outline"
                                 size="icon"
@@ -540,7 +607,7 @@ export default function CustomerOrderPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-2">
-                        {order.items.map((item: any) => (
+                        {order.items.map((item) => (
                           <div
                             key={item.id}
                             className="flex items-center justify-between text-sm"
