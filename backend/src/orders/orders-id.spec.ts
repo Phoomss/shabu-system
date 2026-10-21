@@ -8,6 +8,8 @@ describe('Order/session ID compatibility', () => {
   const id = '00000000-0000-4000-8000-000000000001';
   const ids = new IdTransformer();
   const prisma = {
+    $queryRaw: jest.fn(),
+    $transaction: jest.fn(),
     session: { findUnique: jest.fn() },
     order: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
     menuItem: { findMany: jest.fn() },
@@ -21,7 +23,15 @@ describe('Order/session ID compatibility', () => {
       events as unknown as EventsGateway,
       ids,
     );
-    prisma.session.findUnique.mockResolvedValue({ id, status: 'ACTIVE' });
+    prisma.$transaction.mockImplementation((work: (tx: unknown) => unknown) =>
+      work(prisma),
+    );
+    prisma.session.findUnique.mockResolvedValue({
+      id,
+      status: 'ACTIVE',
+      tierId: 1,
+      endTime: new Date(Date.now() + 3600000),
+    });
     prisma.order.findMany.mockResolvedValue([]);
     prisma.menuItem.findMany.mockResolvedValue([
       { id, kitchenId: 1, isAvailable: true },

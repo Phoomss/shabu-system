@@ -16,6 +16,7 @@ import {
 import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
+  ArrayMaxSize,
   IsArray,
   IsOptional,
   IsString,
@@ -28,6 +29,7 @@ import { OrdersService } from '../orders/orders.service';
 import { CreateOrderItemDto } from '../orders/dto/create-order.dto';
 import { CustomerAuthService } from './customer-auth.service';
 import { customerOrder } from './customer-projection';
+import { MAX_ORDER_ITEMS } from '../orders/order-rules';
 
 class CustomerOrderDto {
   @ApiPropertyOptional({
@@ -37,9 +39,14 @@ class CustomerOrderDto {
   @IsOptional()
   @IsString()
   sessionId?: string;
-  @ApiProperty({ type: [CreateOrderItemDto] })
+  @ApiProperty({
+    type: [CreateOrderItemDto],
+    minItems: 1,
+    maxItems: MAX_ORDER_ITEMS,
+  })
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(MAX_ORDER_ITEMS)
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
   items: CreateOrderItemDto[];
@@ -86,7 +93,10 @@ export class CustomerController {
       select: { tierId: true },
     });
     return this.prisma.menuItem.findMany({
-      where: { tierItems: { some: { tierId: session.tierId } } },
+      where: {
+        isAvailable: true,
+        tierItems: { some: { tierId: session.tierId } },
+      },
       select: {
         id: true,
         name: true,

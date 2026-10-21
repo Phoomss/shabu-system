@@ -1,0 +1,86 @@
+[
+  {
+    "name": "create-workflow-db",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 SHABU_TEST_ADMIN_URL=<isolated-local-admin> npm run test:workflow:db",
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/create-db.log"
+  },
+  {
+    "name": "workflow-integration",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 DATABASE_URL=<workflow-test-db> JWT_SECRET=<test-key> JWT_REFRESH_SECRET=<test-key> npm run test:workflow:e2e",
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/workflow-e2e-final.log"
+  },
+  {
+    "name": "security-integration",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 DATABASE_URL=<security-test-db> JWT_SECRET=<test-key> JWT_REFRESH_SECRET=<test-key> npm run test:security:e2e",
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/security-regression-final.log"
+  },
+  {
+    "name": "id-integration",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 DATABASE_URL=<id-test-db> JWT_SECRET=<test-key> JWT_REFRESH_SECRET=<test-key> npm run test:ids:e2e",
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/id-e2e.log"
+  },
+  {
+    "name": "backend-build",
+    "cwd": "backend",
+    "command": "npm run build",
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/backend-build.log"
+  },
+  {
+    "name": "frontend-build-sandbox",
+    "cwd": "frontend",
+    "command": "NEXT_PUBLIC_API_URL=http://localhost:3000 NEXT_PUBLIC_SOCKET_URL=http://localhost:3000 npm run build",
+    "exitStatus": 1,
+    "log": "reports/workflow-evidence/frontend-build.log"
+  },
+  {
+    "name": "frontend-build-final",
+    "cwd": "frontend",
+    "command": "NEXT_PUBLIC_API_URL=http://localhost:3000 NEXT_PUBLIC_SOCKET_URL=http://localhost:3000 npm run build",
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/frontend-build-final.log"
+  },
+  {
+    "name": "backend-lint",
+    "cwd": "backend",
+    "command": "node node_modules/eslint/bin/eslint.js <workflow files; see report>",
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/backend-lint-final.log"
+  },
+  {
+    "name": "backend-full-tests",
+    "cwd": "backend",
+    "command": "npm test -- --runInBand",
+    "exitStatus": 1,
+    "log": "reports/workflow-evidence/backend-full-tests.log"
+  },
+  {
+    "name": "frontend-legacy-pages-lint",
+    "cwd": "frontend",
+    "command": "node node_modules/eslint/bin/eslint.js <menus/orders/pos/types; see comparison>",
+    "exitStatus": 1,
+    "log": "reports/workflow-evidence/frontend-legacy-pages-lint.log"
+  },
+  {
+    "name": "workflow-initial-test-fixture-error",
+    "cwd": "backend",
+    "command": "npm run test:workflow:e2e (initial test data format)",
+    "exitStatus": 1,
+    "log": "reports/workflow-evidence/workflow-e2e-initial.log"
+  },
+  {
+    "name": "local-start-final",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 SHABU_SMOKE_SUITE=workflow DATABASE_URL=<workflow-test-db> npm run test:local-start",
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/local-start-final.log"
+  }
+]

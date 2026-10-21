@@ -1,0 +1,22 @@
+
+> backend@0.0.1 test:security
+> jest --runInBand --testPathPatterns=security/.*\.spec\.ts$
+
+(node:68107) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/security/policy.spec.ts
+  Explicit permission policy
+    ✓ denies unapproved OWNER grants without inferring privileges (8 ms)
+    ✓ denies unapproved MANAGER grants without inferring privileges (1 ms)
+    ✓ denies unapproved STAFF grants without inferring privileges
+    ✓ denies unapproved KITCHEN grants without inferring privileges
+    ✓ denies unapproved CUSTOM grants without inferring privileges (1 ms)
+    ✓ allows only the configured action and the assigned kitchen
+    ✓ rejects misspelled/wildcard grants and unsafe assignments at startup (2 ms)
+    ✓ does not require a business grant to access the authenticated self profile
+
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        0.407 s, estimated 1 s
+Ran all test suites matching security/.*.spec.ts$.

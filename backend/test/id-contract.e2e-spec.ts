@@ -111,7 +111,12 @@ describe('ID contract against migrated PostgreSQL + HTTP + Socket', () => {
       data: { name: marker },
     });
     const menu = await prisma.menuItem.create({
-      data: { name: marker, kitchenId: kitchen.id, categoryId: category.id },
+      data: {
+        name: marker,
+        kitchenId: kitchen.id,
+        categoryId: category.id,
+        tierItems: { create: { tierId } },
+      },
     });
     menuId = menu.id;
   }, 30000);

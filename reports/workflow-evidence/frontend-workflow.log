@@ -1,0 +1,16 @@
+
+> frontend@0.1.0 test:workflow
+> node --test test/workflow-clients.test.mjs
+
+✔ kitchen client loads the canonical route and returns dropdown entries (42.641625ms)
+✔ QR joins on every connection; history sync waits for authorization; cleanup preserves other consumers (7.547125ms)
+✔ KDS already-connected mount rejoins; remount has one handler and uses kitchen status event (6.103792ms)
+✔ latest request rejects stale response and invalidates in-flight work at closure/unmount (4.214459ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 373.580125

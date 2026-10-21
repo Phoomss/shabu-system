@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import { createCustomerSocket } from "@/lib/socket";
 import { publicApi, createCustomerApi } from "@/lib/api";
+import {
+  bindRoomSync,
+  latestRequest,
+  MAX_ITEM_QUANTITY,
+  MAX_ORDER_ITEMS,
+} from "@/lib/workflow-client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,12 +66,28 @@ export default function CustomerOrderPage() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [timeLeft, setTimeLeft] = useState(0);
+  const dataRequests = useRef(latestRequest());
+  const historyRequests = useRef(latestRequest());
+  const liveToken = useRef<string | null>(null);
+  const submitting = useRef(false);
+
+  const endSession = useCallback(() => {
+    dataRequests.current.invalidate();
+    historyRequests.current.invalidate();
+    liveToken.current = null;
+    setCredential(null);
+    setCart([]);
+    setLoading(false);
+    setAccessError("รอบการทานปิดหรือหมดเวลาแล้ว กรุณาติดต่อพนักงาน");
+  }, []);
 
   const customerToken = credential?.token;
   const credentialExpiresAt = credential?.expiresAt;
   const sessionId = session?.id;
 
   const fetchData = useCallback(async () => {
+    const request = dataRequests.current.begin();
+    historyRequests.current.invalidate();
     try {
       const { data } = await publicApi.get(`/sessions/qr/${token}`);
       const resolved = data.data;
@@ -74,6 +96,9 @@ export default function CustomerOrderPage() {
         client.get("/customer/menu-items"),
         client.get("/customer/orders"),
       ]);
+      if (!dataRequests.current.isCurrent(request)) return;
+      historyRequests.current.invalidate();
+      liveToken.current = resolved.customerAccessToken;
       setSession(resolved);
       setMenuItems(menus.data.data);
       setOrders(history.data.data);
@@ -83,66 +108,99 @@ export default function CustomerOrderPage() {
         expiresAt: resolved.credentialExpiresAt,
       });
     } catch {
+      if (!dataRequests.current.isCurrent(request)) return;
+      liveToken.current = null;
       setCredential(null);
       setAccessError(
         "ไม่สามารถใช้ QR นี้ได้ รอบการทานอาจปิดหรือหมดเวลาแล้ว กรุณาติดต่อพนักงาน",
       );
     } finally {
-      setLoading(false);
+      if (dataRequests.current.isCurrent(request)) setLoading(false);
     }
   }, [token]);
 
   const fetchOrders = useCallback(
     async (requestedSessionId?: string) => {
-      if (!requestedSessionId || !customerToken) return;
+      if (
+        !requestedSessionId ||
+        !customerToken ||
+        liveToken.current !== customerToken
+      )
+        return;
+      const request = historyRequests.current.begin();
       try {
         const res = await createCustomerApi(customerToken).get(
           "/customer/orders",
           { params: { sessionId: requestedSessionId } },
         );
-        setOrders(res.data.data);
+        if (
+          liveToken.current === customerToken &&
+          historyRequests.current.isCurrent(request)
+        )
+          setOrders(res.data.data);
       } catch (error) {
+        if (
+          liveToken.current !== customerToken ||
+          !historyRequests.current.isCurrent(request)
+        )
+          return;
         if (
           isAxiosError(error) &&
           [401, 403].includes(error.response?.status || 0)
         ) {
-          setCredential(null);
-          setAccessError(
-            "สิทธิ์สั่งอาหารหมดอายุหรือรอบการทานปิดแล้ว กรุณาติดต่อพนักงาน",
-          );
+          void fetchData();
         } else toast.error("ไม่สามารถโหลดประวัติออเดอร์ได้");
       }
     },
-    [customerToken],
+    [customerToken, fetchData],
   );
 
   useEffect(() => {
+    const currentDataRequests = dataRequests.current;
+    const currentHistoryRequests = historyRequests.current;
+    setLoading(true);
+    setCart([]);
+    setSession(null);
+    setOrders([]);
+    setMenuItems([]);
+    liveToken.current = null;
+    setCredential(null);
     void fetchData();
+    return () => {
+      currentDataRequests.invalidate();
+      currentHistoryRequests.invalidate();
+      liveToken.current = null;
+    };
   }, [fetchData]);
 
   useEffect(() => {
     if (!customerToken || !sessionId || !credentialExpiresAt) return;
     const currentSessionId = sessionId;
     const s = createCustomerSocket(customerToken);
-    const onConnect = () => {
-      s.emit("session:join", { sessionId: currentSessionId });
+    const sync = () => {
       void fetchOrders(currentSessionId);
     };
-    const onItemStatus = () => {
-      void fetchOrders(currentSessionId);
-    };
+    const cleanupRooms = bindRoomSync(
+      s,
+      () => {
+        s.emit("session:join", { sessionId: currentSessionId });
+      },
+      "session:joined",
+      sync,
+      ["order:item_status_changed", "order:status_changed"],
+    );
     const onMenu = (data: {
       menuItemId: string;
       isAvailable: boolean;
       name: string;
     }) => {
-      setMenuItems((prev) =>
-        prev.map((item) =>
-          item.id === data.menuItemId
-            ? { ...item, isAvailable: data.isAvailable }
-            : item,
-        ),
-      );
+      // Re-read the server-scoped list, including newly available items; never add an event payload as a menu.
+      void data;
+      void fetchData();
+    };
+    const onSession = (data: { sessionId: string; status: string }) => {
+      if (data.sessionId === currentSessionId && data.status !== "ACTIVE")
+        endSession();
     };
     const onWarning = (data: { sessionId: string; minutesLeft: number }) => {
       if (data.sessionId === currentSessionId)
@@ -151,8 +209,7 @@ export default function CustomerOrderPage() {
     const onAuthError = (error: Error & { data?: { status?: number } }) => {
       if ([401, 403].includes(error.data?.status || 0)) void fetchData();
     };
-    s.on("connect", onConnect);
-    s.on("order:item_status_changed", onItemStatus);
+    s.on("session:status_changed", onSession);
     s.on("menu:availability_changed", onMenu);
     s.on("session:time_warning", onWarning);
     const onDisconnect = (reason: string) => {
@@ -170,15 +227,22 @@ export default function CustomerOrderPage() {
     );
     return () => {
       clearTimeout(renewal);
-      s.off("connect", onConnect);
-      s.off("order:item_status_changed", onItemStatus);
+      cleanupRooms();
+      s.off("session:status_changed", onSession);
       s.off("menu:availability_changed", onMenu);
       s.off("session:time_warning", onWarning);
       s.off("disconnect", onDisconnect);
       s.off("connect_error", onAuthError);
       s.disconnect();
     };
-  }, [customerToken, sessionId, credentialExpiresAt, fetchOrders, fetchData]);
+  }, [
+    customerToken,
+    sessionId,
+    credentialExpiresAt,
+    fetchOrders,
+    fetchData,
+    endSession,
+  ]);
 
   useEffect(() => {
     if (!session) return;
@@ -191,10 +255,16 @@ export default function CustomerOrderPage() {
     };
 
     updateTimer();
-    const interval = setInterval(updateTimer, 60000);
-
-    return () => clearInterval(interval);
-  }, [session]);
+    const interval = setInterval(updateTimer, 1000);
+    const deadline = setTimeout(
+      endSession,
+      Math.max(0, new Date(session.endTime).getTime() - Date.now()),
+    );
+    return () => {
+      clearInterval(interval);
+      clearTimeout(deadline);
+    };
+  }, [session, endSession]);
 
   const addToCart = (item: MenuItem) => {
     if (!item.isAvailable) {
@@ -206,9 +276,12 @@ export default function CustomerOrderPage() {
       const existing = prev.find((i) => i.id === item.id);
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
+          i.id === item.id
+            ? { ...i, quantity: Math.min(MAX_ITEM_QUANTITY, i.quantity + 1) }
+            : i,
         );
       }
+      if (prev.length >= MAX_ORDER_ITEMS) return prev;
       return [...prev, { ...item, quantity: 1 }];
     });
   };
@@ -222,7 +295,13 @@ export default function CustomerOrderPage() {
       prev
         .map((i) =>
           i.id === itemId
-            ? { ...i, quantity: Math.max(0, i.quantity + delta) }
+            ? {
+                ...i,
+                quantity: Math.min(
+                  MAX_ITEM_QUANTITY,
+                  Math.max(0, i.quantity + delta),
+                ),
+              }
             : i,
         )
         .filter((i) => i.quantity > 0),
@@ -230,7 +309,22 @@ export default function CustomerOrderPage() {
   };
 
   const submitOrder = async () => {
-    if (!session || !credential || cart.length === 0) return;
+    if (!session || !credential || cart.length === 0 || submitting.current)
+      return;
+    if (Date.now() >= new Date(session.endTime).getTime()) {
+      endSession();
+      return;
+    }
+    if (
+      cart.some(
+        (item) =>
+          !menuItems.some((menu) => menu.id === item.id && menu.isAvailable),
+      )
+    ) {
+      toast.error("มีเมนูที่ไม่พร้อมขาย กรุณานำออกจากตะกร้า");
+      return;
+    }
+    submitting.current = true;
 
     try {
       const orderItems = cart.map((item) => ({
@@ -243,18 +337,17 @@ export default function CustomerOrderPage() {
         items: orderItems,
       });
 
+      if (liveToken.current !== credential.token) return;
       toast.success("ส่งออเดอร์สำเร็จ!");
       setCart([]);
       void fetchOrders(session.id);
     } catch (error: unknown) {
+      if (liveToken.current !== credential.token) return;
       if (
         isAxiosError(error) &&
         [401, 403].includes(error.response?.status || 0)
       ) {
-        setCredential(null);
-        setAccessError(
-          "สิทธิ์สั่งอาหารหมดอายุหรือรอบการทานปิดแล้ว กรุณาติดต่อพนักงาน",
-        );
+        endSession();
       }
       console.error("Customer order request failed");
       toast.error(
@@ -262,6 +355,8 @@ export default function CustomerOrderPage() {
           error.response?.data?.message) ||
           "ส่งออเดอร์ไม่สำเร็จ",
       );
+    } finally {
+      submitting.current = false;
     }
   };
 

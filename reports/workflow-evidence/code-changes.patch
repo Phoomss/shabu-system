@@ -1,0 +1,2499 @@
+diff --git a/backend/package.json b/backend/package.json
+index b6906e5..f99c758 100644
+--- a/backend/package.json
++++ b/backend/package.json
+@@ -15,6 +15,9 @@
+     "prisma:generate": "prisma generate",
+     "migrate:deploy": "prisma migrate deploy",
+     "test:ids": "jest --runInBand --testPathPatterns='(id-transformer|sessions-id|orders-id|events-id)\\.spec\\.ts$'",
++    "test:workflow": "jest --runInBand --testPathPatterns=order-rules\\.spec\\.ts$",
++    "test:workflow:e2e": "jest --runInBand --config test/jest-workflow-e2e.json",
++    "test:workflow:db": "node test/create-workflow-db.cjs",
+     "test:security": "jest --runInBand --testPathPatterns=security/.*\\.spec\\.ts$",
+     "test:security:e2e": "jest --runInBand --config test/jest-security-e2e.json",
+     "test:security:db": "node test/create-security-db.cjs",
+diff --git a/backend/src/customer/customer.controller.ts b/backend/src/customer/customer.controller.ts
+index 9cadbf6..de66135 100644
+--- a/backend/src/customer/customer.controller.ts
++++ b/backend/src/customer/customer.controller.ts
+@@ -16,6 +16,7 @@ import {
+ import { Type } from 'class-transformer';
+ import {
+   ArrayMinSize,
++  ArrayMaxSize,
+   IsArray,
+   IsOptional,
+   IsString,
+@@ -28,6 +29,7 @@ import { OrdersService } from '../orders/orders.service';
+ import { CreateOrderItemDto } from '../orders/dto/create-order.dto';
+ import { CustomerAuthService } from './customer-auth.service';
+ import { customerOrder } from './customer-projection';
++import { MAX_ORDER_ITEMS } from '../orders/order-rules';
+ 
+ class CustomerOrderDto {
+   @ApiPropertyOptional({
+@@ -37,9 +39,14 @@ class CustomerOrderDto {
+   @IsOptional()
+   @IsString()
+   sessionId?: string;
+-  @ApiProperty({ type: [CreateOrderItemDto] })
++  @ApiProperty({
++    type: [CreateOrderItemDto],
++    minItems: 1,
++    maxItems: MAX_ORDER_ITEMS,
++  })
+   @IsArray()
+   @ArrayMinSize(1)
++  @ArrayMaxSize(MAX_ORDER_ITEMS)
+   @ValidateNested({ each: true })
+   @Type(() => CreateOrderItemDto)
+   items: CreateOrderItemDto[];
+@@ -86,7 +93,10 @@ export class CustomerController {
+       select: { tierId: true },
+     });
+     return this.prisma.menuItem.findMany({
+-      where: { tierItems: { some: { tierId: session.tierId } } },
++      where: {
++        isAvailable: true,
++        tierItems: { some: { tierId: session.tierId } },
++      },
+       select: {
+         id: true,
+         name: true,
+diff --git a/backend/src/events/events.gateway.ts b/backend/src/events/events.gateway.ts
+index fe13c50..ca34a21 100644
+--- a/backend/src/events/events.gateway.ts
++++ b/backend/src/events/events.gateway.ts
+@@ -228,6 +228,7 @@ export class EventsGateway implements OnGatewayInit {
+       orderId: string;
+       status: string;
+       menuItem?: { id: string; name: string };
++      kitchen?: { id: number; name: string };
+       [key: string]: unknown;
+     },
+   ) {
+@@ -239,7 +240,7 @@ export class EventsGateway implements OnGatewayInit {
+         ? { menuItem: { id: item.menuItem.id, name: item.menuItem.name } }
+         : {}),
+     };
+-    return this.deliver(
++    const sessionDelivery = this.deliver(
+       `session:${sessionId}`,
+       'order:item_status_changed',
+       item,
+@@ -249,6 +250,20 @@ export class EventsGateway implements OnGatewayInit {
+           : this.policy.allows(id, 'sessions.read'),
+       safe,
+     );
++    const kitchenId = item.kitchen?.id;
++    const kitchenDelivery =
++      kitchenId === undefined
++        ? Promise.resolve()
++        : this.deliver(
++            `kitchen:${kitchenId}`,
++            'kitchen:item_status_changed',
++            item,
++            (id) =>
++              id.kind === 'staff' &&
++              this.policy.kitchenIds(id).includes(kitchenId) &&
++              this.policy.allows(id, 'kitchen.orders.read'),
++          );
++    return Promise.all([sessionDelivery, kitchenDelivery]);
+   }
+   emitTableStatus(tableId: number, status: string) {
+     return this.deliver(
+diff --git a/backend/src/orders/dto/create-order.dto.ts b/backend/src/orders/dto/create-order.dto.ts
+index e0591ae..6e41334 100644
+--- a/backend/src/orders/dto/create-order.dto.ts
++++ b/backend/src/orders/dto/create-order.dto.ts
+@@ -1,15 +1,31 @@
+-import { ApiProperty } from "@nestjs/swagger";
+-import { IsString, IsArray, IsInt, ValidateNested, Min } from "class-validator";
+-import { Type } from "class-transformer";
++import { ApiProperty } from '@nestjs/swagger';
++import {
++  IsString,
++  IsArray,
++  IsInt,
++  ValidateNested,
++  Min,
++  Max,
++  ArrayMinSize,
++  ArrayMaxSize,
++} from 'class-validator';
++import { Type } from 'class-transformer';
++import { MAX_ITEM_QUANTITY, MAX_ORDER_ITEMS } from '../order-rules';
+ 
+ export class CreateOrderItemDto {
+   @ApiProperty({ example: 'menu-item-uuid', description: 'Menu Item ID' })
+   @IsString()
+   menuItemId: string;
+ 
+-  @ApiProperty({ example: 2, description: 'จำนวนที่สั่ง' })
++  @ApiProperty({
++    example: 2,
++    minimum: 1,
++    maximum: MAX_ITEM_QUANTITY,
++    description: 'จำนวนที่สั่ง',
++  })
+   @IsInt()
+   @Min(1)
++  @Max(MAX_ITEM_QUANTITY)
+   quantity: number;
+ }
+ 
+@@ -18,9 +34,15 @@ export class CreateOrderDto {
+   @IsString()
+   sessionId: string;
+ 
+-  @ApiProperty({ type: [CreateOrderItemDto] })
++  @ApiProperty({
++    type: [CreateOrderItemDto],
++    minItems: 1,
++    maxItems: MAX_ORDER_ITEMS,
++  })
+   @IsArray()
++  @ArrayMinSize(1)
++  @ArrayMaxSize(MAX_ORDER_ITEMS)
+   @ValidateNested({ each: true })
+   @Type(() => CreateOrderItemDto)
+   items: CreateOrderItemDto[];
+-}
+\ No newline at end of file
++}
+diff --git a/backend/src/orders/dto/update-item-status.dto.ts b/backend/src/orders/dto/update-item-status.dto.ts
+index 2cc4ae8..94c54e5 100644
+--- a/backend/src/orders/dto/update-item-status.dto.ts
++++ b/backend/src/orders/dto/update-item-status.dto.ts
+@@ -1,9 +1,14 @@
+-import { ApiProperty } from "@nestjs/swagger";
+-import { IsEnum } from "class-validator";
+-import { ItemStatus } from "@prisma/client";
++import { ApiProperty } from '@nestjs/swagger';
++import { IsIn } from 'class-validator';
++import { ItemStatus } from '@prisma/client';
+ 
+ export class UpdateItemStatusDto {
+-  @ApiProperty({ enum: ItemStatus, example: ItemStatus.PREPARING })
+-  @IsEnum(ItemStatus)
++  @ApiProperty({
++    enum: [ItemStatus.PREPARING, ItemStatus.SERVED],
++    example: ItemStatus.PREPARING,
++    description:
++      'Forward transitions only. VOIDED requires POST /orders/items/:itemId/void with actor/reason audit.',
++  })
++  @IsIn([ItemStatus.PREPARING, ItemStatus.SERVED])
+   status: ItemStatus;
+-}
+\ No newline at end of file
++}
+diff --git a/backend/src/orders/dto/update-order-status.dto.ts b/backend/src/orders/dto/update-order-status.dto.ts
+index 02a7d92..3b188d4 100644
+--- a/backend/src/orders/dto/update-order-status.dto.ts
++++ b/backend/src/orders/dto/update-order-status.dto.ts
+@@ -1,9 +1,14 @@
+-import { ApiProperty } from "@nestjs/swagger";
+-import { IsEnum } from "class-validator";
+-import { OrderStatus } from "@prisma/client";
++import { ApiProperty } from '@nestjs/swagger';
++import { IsEnum } from 'class-validator';
++import { OrderStatus } from '@prisma/client';
+ 
+ export class UpdateOrderStatusDto {
+-  @ApiProperty({ enum: OrderStatus, example: OrderStatus.CONFIRMED })
++  @ApiProperty({
++    enum: OrderStatus,
++    example: OrderStatus.CONFIRMED,
++    description:
++      'Only PENDING -> CONFIRMED is enabled; cancellation is denied pending business approval. No implicit void/refund.',
++  })
+   @IsEnum(OrderStatus)
+   status: OrderStatus;
+-}
+\ No newline at end of file
++}
+diff --git a/backend/src/orders/dto/void-item.dto.ts b/backend/src/orders/dto/void-item.dto.ts
+index 0c9b762..cc38111 100644
+--- a/backend/src/orders/dto/void-item.dto.ts
++++ b/backend/src/orders/dto/void-item.dto.ts
+@@ -1,9 +1,10 @@
+-import { ApiProperty } from "@nestjs/swagger";
+-import { IsString, MinLength } from "class-validator";
++import { ApiProperty } from '@nestjs/swagger';
++import { IsString, MinLength, MaxLength } from 'class-validator';
+ 
+ export class VoidItemDto {
+   @ApiProperty({ example: 'ลูกค้าเปลี่ยนใจ', description: 'เหตุผลการยกเลิก' })
+   @IsString()
+   @MinLength(3)
++  @MaxLength(1000)
+   reason: string;
+-}
+\ No newline at end of file
++}
+diff --git a/backend/src/orders/orders-id.spec.ts b/backend/src/orders/orders-id.spec.ts
+index 1c1a982..52b24ce 100644
+--- a/backend/src/orders/orders-id.spec.ts
++++ b/backend/src/orders/orders-id.spec.ts
+@@ -8,6 +8,8 @@ describe('Order/session ID compatibility', () => {
+   const id = '00000000-0000-4000-8000-000000000001';
+   const ids = new IdTransformer();
+   const prisma = {
++    $queryRaw: jest.fn(),
++    $transaction: jest.fn(),
+     session: { findUnique: jest.fn() },
+     order: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
+     menuItem: { findMany: jest.fn() },
+@@ -21,7 +23,15 @@ describe('Order/session ID compatibility', () => {
+       events as unknown as EventsGateway,
+       ids,
+     );
+-    prisma.session.findUnique.mockResolvedValue({ id, status: 'ACTIVE' });
++    prisma.$transaction.mockImplementation((work: (tx: unknown) => unknown) =>
++      work(prisma),
++    );
++    prisma.session.findUnique.mockResolvedValue({
++      id,
++      status: 'ACTIVE',
++      tierId: 1,
++      endTime: new Date(Date.now() + 3600000),
++    });
+     prisma.order.findMany.mockResolvedValue([]);
+     prisma.menuItem.findMany.mockResolvedValue([
+       { id, kitchenId: 1, isAvailable: true },
+diff --git a/backend/src/orders/orders.service.ts b/backend/src/orders/orders.service.ts
+index bc0de5f..11134f2 100644
+--- a/backend/src/orders/orders.service.ts
++++ b/backend/src/orders/orders.service.ts
+@@ -1,5 +1,6 @@
+ import {
+   BadRequestException,
++  ConflictException,
+   Injectable,
+   NotFoundException,
+ } from '@nestjs/common';
+@@ -10,7 +11,14 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+ import { UpdateItemStatusDto } from './dto/update-item-status.dto';
+ import { VoidItemDto } from './dto/void-item.dto';
+ import { IdTransformer, IdPrefix } from 'src/common/utils/id-transformer.util';
+-import { SessionStatus, ItemStatus, OrderStatus } from '@prisma/client';
++import { SessionStatus, ItemStatus, OrderStatus, Prisma } from '@prisma/client';
++
++import {
++  assertItemTransition,
++  assertOrderTransition,
++  MAX_ITEM_QUANTITY,
++  MAX_ORDER_ITEMS,
++} from './order-rules';
+ 
+ const orderItemSelect = {
+   id: true,
+@@ -55,128 +63,166 @@ export class OrdersService {
+     return order;
+   }
+ 
+-  async create(dto: CreateOrderDto) {
+-    dto = {
+-      ...dto,
+-      sessionId: this.idTransformer.decode(dto.sessionId, IdPrefix.SESSION),
+-      items: dto.items.map((item) => ({
+-        ...item,
+-        menuItemId: this.idTransformer.decode(
+-          item.menuItemId,
+-          IdPrefix.MENU_ITEM,
+-        ),
+-      })),
+-    };
+-    // เช็ค session
+-    const session = await this.prisma.session.findUnique({
+-      where: { id: dto.sessionId },
+-    });
+-    if (!session)
+-      throw new NotFoundException(`Session #${dto.sessionId} not found`);
+-    if (session.status !== SessionStatus.ACTIVE) {
+-      throw new BadRequestException('Session is no longer active');
+-    }
+-
+-    // เช็ค menu items
+-    const menuItemIds = dto.items.map((i) => i.menuItemId);
+-    const menuItems = await this.prisma.menuItem.findMany({
+-      where: { id: { in: menuItemIds } },
+-    });
+-
+-    if (menuItems.length !== menuItemIds.length) {
+-      throw new BadRequestException('Some menu items not found');
++  /** Serialize workflow mutations; a serialization conflict is a retryable 409, never a partial write. */
++  private async atomic<T>(
++    work: (tx: Prisma.TransactionClient) => Promise<T>,
++  ): Promise<T> {
++    try {
++      return await this.prisma.$transaction(work, {
++        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
++      });
++    } catch (error) {
++      if (
++        error instanceof Prisma.PrismaClientKnownRequestError &&
++        error.code === 'P2034'
++      )
++        throw new ConflictException(
++          'Order changed concurrently; reload before retrying',
++        );
++      throw error;
+     }
++  }
+ 
+-    const unavailable = menuItems.filter((m) => !m.isAvailable);
+-    if (unavailable.length > 0) {
++  async create(dto: CreateOrderDto) {
++    if (
++      !Array.isArray(dto.items) ||
++      dto.items.length < 1 ||
++      dto.items.length > MAX_ORDER_ITEMS
++    )
+       throw new BadRequestException(
+-        `Menu items unavailable: ${unavailable.map((m) => m.name).join(', ')}`,
++        `items must contain 1-${MAX_ORDER_ITEMS} entries`,
+       );
++    for (const item of dto.items) {
++      if (
++        !item ||
++        !Number.isInteger(item.quantity) ||
++        item.quantity < 1 ||
++        item.quantity > MAX_ITEM_QUANTITY
++      )
++        throw new BadRequestException(
++          `quantity must be an integer from 1-${MAX_ITEM_QUANTITY}`,
++        );
+     }
++    const sessionId = this.idTransformer.decode(
++      dto.sessionId,
++      IdPrefix.SESSION,
++    );
++    const items = dto.items.map((item) => ({
++      ...item,
++      menuItemId: this.idTransformer.decode(
++        item.menuItemId,
++        IdPrefix.MENU_ITEM,
++      ),
++    }));
++    const menuItemIds = items.map((item) => item.menuItemId);
++    if (new Set(menuItemIds).size !== menuItemIds.length)
++      throw new BadRequestException(
++        'Duplicate menu items; use one entry per menu',
++      );
+ 
+-    // สร้าง order
+-    const order = await this.prisma.order.create({
+-      data: {
+-        sessionId: dto.sessionId,
+-        items: {
+-          create: dto.items.map((item) => {
+-            const menuItem = menuItems.find((m) => m.id === item.menuItemId)!;
+-            return {
++    const order = await this.atomic(async (tx) => {
++      // Session close/expiry writes the same row. Check time after acquiring this lock.
++      await tx.$queryRaw`SELECT id FROM "Session" WHERE id = ${sessionId} FOR UPDATE`;
++      const session = await tx.session.findUnique({ where: { id: sessionId } });
++      if (!session) throw new NotFoundException('Session not found');
++      if (
++        session.status !== SessionStatus.ACTIVE ||
++        session.endTime.getTime() <= Date.now()
++      )
++        throw new BadRequestException('Session is closed or expired');
++      const menuItems = await tx.menuItem.findMany({
++        where: {
++          id: { in: menuItemIds },
++          isAvailable: true,
++          tierItems: { some: { tierId: session.tierId } },
++        },
++      });
++      if (menuItems.length !== menuItemIds.length)
++        throw new BadRequestException(
++          'Some menu items do not exist, are unavailable, or are outside the session tier',
++        );
++      return tx.order.create({
++        data: {
++          sessionId,
++          items: {
++            create: items.map((item) => ({
+               menuItemId: item.menuItemId,
+-              kitchenId: menuItem.kitchenId,
++              kitchenId: menuItems.find((menu) => menu.id === item.menuItemId)!
++                .kitchenId,
+               quantity: item.quantity,
+               status: ItemStatus.PENDING,
+-            };
+-          }),
++            })),
++          },
+         },
+-      },
+-      include: { items: { select: orderItemSelect } },
++        include: { items: { select: orderItemSelect } },
++      });
+     });
+-
+-    // [Socket] แจ้งแต่ละครัวที่เกี่ยวข้อง
+-    const kitchenGroups = new Map<number, any[]>();
+-    for (const item of order.items) {
+-      const kitchenId = item.kitchen.id;
+-      if (!kitchenGroups.has(kitchenId)) kitchenGroups.set(kitchenId, []);
+-      kitchenGroups.get(kitchenId)!.push(item);
+-    }
+-
+-    kitchenGroups.forEach((items, kitchenId) => {
+-      console.log(
+-        `[Socket] Emitting new order to kitchen ${kitchenId}:`,
+-        items,
+-      );
+-      this.events.emitNewOrderItem(kitchenId, {
++    const kitchenIds = new Set(order.items.map((item) => item.kitchen.id));
++    for (const kitchenId of kitchenIds) {
++      await this.events.emitNewOrderItem(kitchenId, {
+         orderId: order.id,
+-        sessionId: dto.sessionId,
+-        items,
++        sessionId,
++        items: order.items.filter((item) => item.kitchen.id === kitchenId),
+       });
+-    });
+-
+-    // [Socket] แจ้ง session
+-    this.events.emitOrderStatus(dto.sessionId, order);
+-
++    }
++    await this.events.emitOrderStatus(sessionId, order);
+     return order;
+   }
+ 
+-  async updateStatus(id: string, dto: UpdateOrderStatusDto) {
+-    id = this.idTransformer.decode(id, IdPrefix.ORDER);
+-    const order = await this.findOne(id);
+-
+-    const updated = await this.prisma.order.update({
++  private async lockOrder(tx: Prisma.TransactionClient, id: string) {
++    await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${id} FOR UPDATE`;
++    const order = await tx.order.findUnique({
+       where: { id },
+-      data: { status: dto.status },
+       include: { items: { select: orderItemSelect } },
+     });
++    if (!order) throw new NotFoundException('Order not found');
++    return order;
++  }
+ 
+-    // ถ้า staff ยืนยันออเดอร์ → เปลี่ยน item status เป็น PREPARING
+-    if (dto.status === OrderStatus.CONFIRMED) {
+-      await this.prisma.orderItem.updateMany({
+-        where: {
+-          orderId: id,
+-          status: ItemStatus.PENDING,
+-        },
+-        data: {
+-          status: ItemStatus.PREPARING,
+-        },
+-      });
+-
+-      // [Socket] แจ้งครัวว่า item ถูกเปลี่ยนเป็น PREPARING
+-      for (const item of updated.items) {
+-        this.events.emitItemStatus(order.sessionId, {
+-          orderItemId: item.id,
+-          orderId: id,
+-          menuItem: item.menuItem,
+-          kitchen: item.kitchen,
+-          status: ItemStatus.PREPARING,
+-        });
+-      }
+-    }
+-
+-    // [Socket] แจ้ง session
+-    this.events.emitOrderStatus(order.sessionId, updated);
++  private emitItem(
++    sessionId: string,
++    orderId: string,
++    item: {
++      id: string;
++      status: ItemStatus;
++      menuItem: { id: string; name: string };
++      kitchen: { id: number; name: string };
++    },
++  ) {
++    return this.events.emitItemStatus(sessionId, {
++      orderItemId: item.id,
++      orderId,
++      status: item.status,
++      menuItem: item.menuItem,
++      kitchen: item.kitchen,
++    });
++  }
+ 
+-    return updated;
++  async updateStatus(id: string, dto: UpdateOrderStatusDto) {
++    id = this.idTransformer.decode(id, IdPrefix.ORDER);
++    const result = await this.atomic(async (tx) => {
++      const before = await this.lockOrder(tx, id);
++      assertOrderTransition(before.status, dto.status);
++      const changedIds = before.items
++        .filter((item) => item.status === ItemStatus.PENDING)
++        .map((item) => item.id);
++      await tx.orderItem.updateMany({
++        where: { orderId: id, status: ItemStatus.PENDING },
++        data: { status: ItemStatus.PREPARING },
++      });
++      const order = await tx.order.update({
++        where: { id },
++        data: { status: dto.status },
++        include: { items: { select: orderItemSelect } },
++      });
++      return { order, changedIds };
++    });
++    for (const item of result.order.items.filter((item) =>
++      result.changedIds.includes(item.id),
++    ))
++      await this.emitItem(result.order.sessionId, id, item);
++    await this.events.emitOrderStatus(result.order.sessionId, result.order);
++    return result.order;
+   }
+ 
+   // ─── OrderItem ────────────────────────────────────────────
+@@ -214,106 +260,105 @@ export class OrdersService {
+   }
+ 
+   async updateItemStatus(itemId: string, dto: UpdateItemStatusDto) {
+-    if (dto.status === ItemStatus.VOIDED)
+-      throw new BadRequestException('Use the authorized void endpoint');
+     itemId = this.idTransformer.decode(itemId, IdPrefix.ORDER_ITEM);
+-    const item = await this.prisma.orderItem.findUnique({
+-      where: { id: itemId },
+-      include: {
+-        order: true,
+-        menuItem: { select: { id: true, name: true } },
+-        kitchen: { select: { id: true, name: true } },
+-      },
+-    });
+-    if (!item) throw new NotFoundException(`OrderItem #${itemId} not found`);
+-    if (item.status === ItemStatus.VOIDED) {
+-      throw new BadRequestException('Cannot update voided item');
+-    }
+-
+-    const updated = await this.prisma.orderItem.update({
+-      where: { id: itemId },
+-      data: { status: dto.status },
+-      include: {
+-        menuItem: { select: { id: true, name: true, imageUrl: true } },
+-        kitchen: { select: { id: true, name: true } },
+-      },
+-    });
+-
+-    // [Socket] แจ้ง session ทันที
+-    this.events.emitItemStatus(item.order.sessionId, {
+-      orderItemId: itemId,
+-      orderId: item.orderId,
+-      menuItem: updated.menuItem,
+-      kitchen: updated.kitchen,
+-      status: dto.status,
+-    });
+-
+-    // ถ้าทุก item เสิร์ฟหมดแล้ว → อัปเดต order เป็น CONFIRMED
+-    if (dto.status === ItemStatus.SERVED) {
+-      const pendingCount = await this.prisma.orderItem.count({
+-        where: {
+-          orderId: item.orderId,
+-          status: { notIn: [ItemStatus.SERVED, ItemStatus.VOIDED] },
++    const result = await this.atomic(async (tx) => {
++      const reference = await tx.orderItem.findUnique({
++        where: { id: itemId },
++        select: { orderId: true },
++      });
++      if (!reference) throw new NotFoundException('Order item not found');
++      const before = await this.lockOrder(tx, reference.orderId);
++      if (before.status === OrderStatus.CANCELLED)
++        throw new BadRequestException('Order is cancelled');
++      const item = before.items.find((row) => row.id === itemId)!;
++      assertItemTransition(item.status, dto.status);
++      const updated = await tx.orderItem.update({
++        where: { id: itemId },
++        data: { status: dto.status },
++        include: {
++          menuItem: { select: { id: true, name: true, imageUrl: true } },
++          kitchen: { select: { id: true, name: true } },
+         },
+       });
+-
+-      if (pendingCount === 0) {
+-        const confirmedOrder = await this.prisma.order.update({
+-          where: { id: item.orderId },
+-          data: { status: OrderStatus.CONFIRMED },
+-        });
+-        this.events.emitOrderStatus(item.order.sessionId, confirmedOrder);
+-      }
+-    }
+-
+-    return updated;
++      // Preserve the existing all-served confirmation rule, atomically, without reviving cancelled orders.
++      const complete = before.items.every((row) =>
++        row.id === itemId
++          ? dto.status === ItemStatus.SERVED
++          : [ItemStatus.SERVED, ItemStatus.VOIDED].includes(
++              row.status as 'SERVED' | 'VOIDED',
++            ),
++      );
++      const headerChanged = complete && before.status === OrderStatus.PENDING;
++      const order = headerChanged
++        ? await tx.order.update({
++            where: { id: before.id },
++            data: { status: OrderStatus.CONFIRMED },
++            include: { items: { select: orderItemSelect } },
++          })
++        : null;
++      return {
++        updated,
++        sessionId: before.sessionId,
++        orderId: before.id,
++        order,
++      };
++    });
++    await this.emitItem(result.sessionId, result.orderId, result.updated);
++    if (result.order)
++      await this.events.emitOrderStatus(result.sessionId, result.order);
++    return result.updated;
+   }
+ 
+   async voidItem(itemId: string, dto: VoidItemDto, managerId: string) {
+     itemId = this.idTransformer.decode(itemId, IdPrefix.ORDER_ITEM);
+-    const item = await this.prisma.orderItem.findUnique({
+-      where: { id: itemId },
+-      include: { order: true, kitchen: true },
+-    });
+-
+-    if (!item) throw new NotFoundException(`OrderItem #${itemId} not found`);
+-    if (item.status === ItemStatus.SERVED) {
+-      throw new BadRequestException('Cannot void already served item');
+-    }
+-    if (item.status === ItemStatus.VOIDED) {
+-      throw new BadRequestException('Item already voided');
+-    }
+-
+-    const [updatedItem] = await this.prisma.$transaction([
+-      this.prisma.orderItem.update({
++    managerId = this.idTransformer.decode(managerId, IdPrefix.USER);
++    const reason = dto.reason?.trim();
++    if (!reason || reason.length < 3 || reason.length > 1000)
++      throw new BadRequestException(
++        'Void reason must contain 3-1000 non-blank characters',
++      );
++    const result = await this.atomic(async (tx) => {
++      const reference = await tx.orderItem.findUnique({
++        where: { id: itemId },
++        select: { orderId: true },
++      });
++      if (!reference) throw new NotFoundException('Order item not found');
++      const order = await this.lockOrder(tx, reference.orderId);
++      const item = order.items.find((row) => row.id === itemId)!;
++      if (
++        order.status === OrderStatus.CANCELLED ||
++        ![ItemStatus.PENDING, ItemStatus.PREPARING].includes(
++          item.status as 'PENDING' | 'PREPARING',
++        )
++      )
++        throw new BadRequestException(
++          'Only pending/preparing items of a non-cancelled order can be voided',
++        );
++      const updated = await tx.orderItem.update({
+         where: { id: itemId },
+         data: { status: ItemStatus.VOIDED },
+-      }),
+-      this.prisma.voidLog.create({
+-        data: {
+-          orderItemId: itemId,
+-          reason: dto.reason,
+-          approvedBy: managerId,
++        include: {
++          menuItem: { select: { id: true, name: true, imageUrl: true } },
++          kitchen: { select: { id: true, name: true } },
+         },
+-      }),
+-    ]);
+-
+-    // [Socket] แจ้งครัวว่า item ถูก void
+-    this.events.emitVoidOrderItem(item.kitchenId, {
+-      orderItemId: itemId,
+-      orderId: item.orderId,
+-      reason: dto.reason,
++      });
++      await tx.voidLog.create({
++        data: { orderItemId: itemId, reason, approvedBy: managerId },
++      });
++      return { updated, order };
+     });
+-
+-    // [Socket] แจ้ง session ว่า item ถูก void
+-    this.events.emitItemStatus(item.order.sessionId, {
++    await this.events.emitVoidOrderItem(result.updated.kitchen.id, {
+       orderItemId: itemId,
+-      orderId: item.orderId,
+-      status: ItemStatus.VOIDED,
+-      reason: dto.reason,
++      orderId: result.order.id,
++      status: result.updated.status,
++      reason,
+     });
+-
+-    return updatedItem;
++    await this.emitItem(
++      result.order.sessionId,
++      result.order.id,
++      result.updated,
++    );
++    return result.updated;
+   }
+ 
+   async findVoidLogs() {
+diff --git a/backend/test/id-contract.e2e-spec.ts b/backend/test/id-contract.e2e-spec.ts
+index 15992d7..d094c26 100644
+--- a/backend/test/id-contract.e2e-spec.ts
++++ b/backend/test/id-contract.e2e-spec.ts
+@@ -111,7 +111,12 @@ describe('ID contract against migrated PostgreSQL + HTTP + Socket', () => {
+       data: { name: marker },
+     });
+     const menu = await prisma.menuItem.create({
+-      data: { name: marker, kitchenId: kitchen.id, categoryId: category.id },
++      data: {
++        name: marker,
++        kitchenId: kitchen.id,
++        categoryId: category.id,
++        tierItems: { create: { tierId } },
++      },
+     });
+     menuId = menu.id;
+   }, 30000);
+diff --git a/backend/test/local-start-smoke.cjs b/backend/test/local-start-smoke.cjs
+index 408f27e..31057d8 100644
+--- a/backend/test/local-start-smoke.cjs
++++ b/backend/test/local-start-smoke.cjs
+@@ -5,14 +5,17 @@ const path = require('node:path');
+ const net = require('node:net');
+ const assert = require('node:assert/strict');
+ const root = path.resolve(__dirname, '../..');
+-const artifacts = path.join(root, 'reports/security-evidence');
++const suite = process.env.SHABU_SMOKE_SUITE || 'security';
++if (!['security', 'workflow'].includes(suite))
++  throw new Error('Unknown smoke suite');
++const artifacts = path.join(root, `reports/${suite}-evidence`);
+ fs.mkdirSync(artifacts, { recursive: true });
+ const url = new URL(process.env.DATABASE_URL || 'postgresql://invalid/invalid');
+ if (
+   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
+   url.hostname !== '127.0.0.1' ||
+   url.port !== '55432' ||
+-  !/^\/shabu_(?:f04_empty|security)_\d+$/.test(url.pathname)
++  !/^\/shabu_(?:f04_empty|security|workflow)_\d+$/.test(url.pathname)
+ ) {
+   throw new Error('Refusing to start against a non-isolated database');
+ }
+diff --git a/frontend/package.json b/frontend/package.json
+index 0d5004b..efa25f0 100644
+--- a/frontend/package.json
++++ b/frontend/package.json
+@@ -6,6 +6,7 @@
+     "dev": "next dev -p 3001",
+     "build": "next build",
+     "start": "next start -p 3001",
++    "test:workflow": "node --test test/workflow-clients.test.mjs",
+     "test:security": "node --test test/security-clients.test.mjs",
+     "test:ids": "node --test test/id-contract.test.mjs",
+     "lint": "eslint"
+diff --git a/frontend/src/app/(dashboard)/kds/page.tsx b/frontend/src/app/(dashboard)/kds/page.tsx
+index bdf9bb2..444ec2b 100644
+--- a/frontend/src/app/(dashboard)/kds/page.tsx
++++ b/frontend/src/app/(dashboard)/kds/page.tsx
+@@ -1,38 +1,23 @@
+ "use client";
+ 
+-import { useEffect, useState, useRef } from "react";
++import { useCallback, useEffect, useState, useRef } from "react";
+ import { useAuthStore } from "@/stores/authStore";
++import { getSocket } from "@/lib/socket";
+ import {
+-  getSocket,
+-  addConnectListener,
+-  removeConnectListener,
+-} from "@/lib/socket";
++  bindRoomSync,
++  latestRequest,
++  listKitchens,
++} from "@/lib/workflow-client";
+ import api from "@/lib/api";
+ import { toast } from "sonner";
++import { isAxiosError } from "axios";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+ import { Badge } from "@/components/ui/badge";
+ import { ScrollArea } from "@/components/ui/scroll-area";
+-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+-import {
+-  Dialog,
+-  DialogContent,
+-  DialogHeader,
+-  DialogTitle,
+-} from "@/components/ui/dialog";
+-import { Input } from "@/components/ui/input";
+-import { Label } from "@/components/ui/label";
+-import {
+-  Clock,
+-  CheckCircle,
+-  AlertCircle,
+-  ChefHat,
+-  Timer,
+-  XCircle,
+-  Eye,
+-} from "lucide-react";
++import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
++import { Clock, CheckCircle, AlertCircle, ChefHat, Timer } from "lucide-react";
+ import type { OrderItem, KitchenSection } from "@/types";
+-import { Socket } from "socket.io-client";
+ 
+ interface OrderItemWithSession extends OrderItem {
+   orderId: string;
+@@ -49,188 +34,93 @@ export default function KDSPage() {
+   const [statusFilter, setStatusFilter] = useState<
+     "all" | "PENDING" | "PREPARING" | "SERVED"
+   >("all");
+-  const [isVoidDialogOpen, setIsVoidDialogOpen] = useState(false);
+-  const [selectedVoidItem, setSelectedVoidItem] =
+-    useState<OrderItemWithSession | null>(null);
+   const [socketConnected, setSocketConnected] = useState(false);
+   const kitchenSectionsRef = useRef<KitchenSection[]>([]);
+-  const socketRef = useRef<Socket | null>(null);
+-  const isSocketInitialized = useRef(false);
+-
+-  useEffect(() => {
+-    // Register connect callback BEFORE initializing socket
+-    const handleConnect = (socketId: string) => {
+-      console.log("✅ Socket connected:", socketId);
+-      setSocketConnected(true);
+-      if (socketRef.current) {
+-        joinKitchenRooms(socketRef.current);
+-      }
+-    };
+-
+-    addConnectListener(handleConnect);
+-
+-    // Store cleanup function
+-    socketRef.current = socketRef.current || ({} as any);
+-    (socketRef.current as any).cleanup = () => {
+-      removeConnectListener(handleConnect);
+-      if (socketRef.current) {
+-        socketRef.current.off("kitchen:new_order");
+-        socketRef.current.off("order:item_status_changed");
+-        socketRef.current.off("kitchen:void_order");
+-      }
+-    };
+-
+-    const initData = async () => {
+-      await fetchKitchenSections();
+-      // Fetch orders immediately after kitchen sections are loaded
+-      console.log("[KDS] Kitchen sections loaded, fetching orders...");
+-      await fetchOrders();
+-    };
+-    initData();
+-
+-    // Initialize socket only once
+-    if (!isSocketInitialized.current) {
+-      const s = getSocket();
+-      socketRef.current = s;
+-
+-      console.log("[KDS] Socket object created:", !!s);
+-      console.log("[KDS] Socket connected status:", s.connected);
+-
+-      // If already connected, call immediately
+-      if (s.connected) {
+-        console.log("[KDS] Socket already connected, joining rooms now");
+-        handleConnect(s.id || "unknown");
+-      }
++  const requests = useRef(latestRequest());
++  const mounted = useRef(false);
+ 
+-      // Listen for new orders
+-      s.on("kitchen:new_order", (data) => {
+-        console.log("🔔 [KDS] Received kitchen:new_order event:", data);
+-        fetchOrders();
+-        toast.success("📋 ออเดอร์ใหม่เข้ามา!");
+-      });
+-
+-      // Listen for order item status changes
+-      s.on("order:item_status_changed", (data) => {
+-        console.log("🔔 [KDS] Received order:item_status_changed event:", data);
+-        fetchOrders();
+-      });
+-
+-      // Listen for void orders
+-      s.on("kitchen:void_order", (data) => {
+-        console.log("🔔 [KDS] Received kitchen:void_order event:", data);
+-        fetchOrders();
+-        toast.warning(`⚠️ ยกเลิกออเดอร์: ${data.reason}`);
+-      });
+-
+-      isSocketInitialized.current = true;
+-    } else {
+-      console.log("[KDS] Socket already initialized, skipping");
+-      // If socket exists and is connected, join rooms and fetch orders
+-      if (socketRef.current?.connected) {
+-        console.log("[KDS] Re-joining kitchen rooms and fetching orders");
+-        joinKitchenRooms(socketRef.current);
+-        fetchOrders();
++  const fetchOrders = useCallback(async () => {
++    const request = requests.current.begin();
++    try {
++      const batches = await Promise.all(
++        kitchenSectionsRef.current.map(async (kitchen) => {
++          const response = await api.get(`/orders/kitchen/${kitchen.id}`);
++          return (response.data.data as OrderItem[]).map((item) => ({
++            ...item,
++            orderId: item.order!.id,
++            createdAt: item.order!.createdAt,
++            tableNumber: item.order!.session!.table.number,
++            tableId: item.order!.session!.table.id,
++          }));
++        }),
++      );
++      if (mounted.current && requests.current.isCurrent(request))
++        setOrders(batches.flat());
++    } catch {
++      if (mounted.current && requests.current.isCurrent(request)) {
++        setOrders([]);
++        toast.error(
++          "ไม่สามารถโหลดรายการครัวได้ กรุณาตรวจสิทธิ์และการเชื่อมต่อ",
++        );
+       }
+     }
+-
+-    return () => {
+-      // Cleanup listeners
+-      const s = socketRef.current;
+-      if (s && (s as any).cleanup) {
+-        (s as any).cleanup();
+-      }
+-    };
+   }, []);
+ 
+-  const joinKitchenRooms = (s: Socket) => {
+-    const sections = kitchenSectionsRef.current;
+-    console.log("[KDS] Joining kitchen rooms:", sections);
+-    if (sections.length > 0) {
+-      sections.forEach((kitchen) => {
+-        s.emit("kitchen:join", { kitchenId: kitchen.id });
+-        console.log(`🔗 Joined kitchen: ${kitchen.id}`);
++  useEffect(() => {
++    mounted.current = true;
++    let active = true;
++    const currentRequests = requests.current;
++    void Promise.all([listKitchens(), api.get("/auth/me")])
++      .then(([kitchens, me]) => {
++        if (!active) return;
++        const assignments: number[] = me.data.data.kitchenIds;
++        const sections = kitchens.filter((kitchen) =>
++          assignments.includes(kitchen.id),
++        );
++        kitchenSectionsRef.current = sections;
++        setKitchenSections(sections);
++        void fetchOrders();
++      })
++      .catch(() => {
++        if (active) toast.error("ไม่สามารถโหลดครัวที่ได้รับสิทธิ์ได้");
+       });
+-    } else {
+-      console.warn("[KDS] No kitchen sections to join!");
+-    }
+-  };
++    return () => {
++      active = false;
++      mounted.current = false;
++      currentRequests.invalidate();
++      kitchenSectionsRef.current = [];
++    };
++  }, [user?.id, fetchOrders]);
+ 
+-  // Re-join kitchen rooms when kitchenSections state changes
+   useEffect(() => {
+-    if (kitchenSections.length > 0 && socketRef.current && socketConnected) {
+-      console.log("[KDS] Kitchen sections updated, joining rooms...");
+-      joinKitchenRooms(socketRef.current);
+-    }
+-  }, [kitchenSections, socketConnected]);
+-
+-  const fetchOrders = async () => {
+-    try {
+-      const sections = kitchenSectionsRef.current;
+-      console.log("🔍 [KDS] Fetching orders for kitchens:", sections);
+-
+-      if (sections.length === 0) {
+-        console.log("⚠️ [KDS] No kitchen sections found, skipping fetch");
+-        return;
+-      }
+-
+-      // Fetch from all kitchens by trying each section
+-      const allOrders: OrderItemWithSession[] = [];
+-      for (const kitchen of sections) {
+-        try {
+-          const url = `/orders/kitchen/${kitchen.id}`;
+-          console.log(`📡 [KDS] Fetching: ${url}`);
+-          const res = await api.get(url);
+-          console.log(`✅ [KDS] Kitchen ${kitchen.id} response:`, res.data);
+-
+-          const items = Array.isArray(res.data)
+-            ? res.data
+-            : res.data.data || [];
+-          console.log(
+-            `📦 [KDS] Kitchen ${kitchen.id} items count: ${items.length}`,
+-          );
+-
+-          // Map to include tableNumber from order.session.table.number
+-          const mappedItems = items.map((item: any) => ({
+-            ...item,
+-            tableNumber: item.order?.session?.table?.number || "N/A",
+-            tableId: item.order?.session?.table?.id || 0,
+-          }));
+-          allOrders.push(...mappedItems);
+-        } catch (error: any) {
+-          console.log(
+-            `❌ [KDS] Kitchen ${kitchen.id} error:`,
+-            error.response?.status,
+-            error.response?.data,
+-          );
+-          // Skip if kitchen has no orders
+-        }
+-      }
+-      console.log("🎯 [KDS] All orders:", allOrders);
+-      setOrders(allOrders);
+-    } catch (error) {
+-      console.error("💥 [KDS] Failed to fetch orders:", error);
+-    }
+-  };
+-
+-  const fetchKitchenSections = async () => {
+-    try {
+-      const [res, me] = await Promise.all([
+-        api.get("/kitchens"),
+-        api.get("/auth/me"),
+-      ]);
+-      res.data.data = res.data.data.filter((kitchen: { id: number }) =>
+-        (me.data.data.kitchenIds as number[]).includes(kitchen.id),
+-      );
+-      console.log("Kitchen sections:", res.data);
+-      // Service returns array directly, not wrapped in { data: ... }
+-      const sections = Array.isArray(res.data) ? res.data : res.data.data || [];
+-      console.log("Parsed kitchen sections:", sections);
+-      setKitchenSections(sections);
+-      kitchenSectionsRef.current = sections; // Update ref
+-    } catch (error) {
+-      console.error("Failed to fetch kitchen sections:", error);
+-    }
+-  };
++    if (!kitchenSections.length) return;
++    const socket = getSocket();
++    const onDisconnect = () => setSocketConnected(false);
++    const join = () => {
++      setSocketConnected(true);
++      for (const kitchen of kitchenSections)
++        socket.emit("kitchen:join", { kitchenId: kitchen.id });
++    };
++    const cleanup = bindRoomSync(
++      socket,
++      join,
++      "kitchen:joined",
++      () => {
++        void fetchOrders();
++      },
++      [
++        "kitchen:new_order",
++        "kitchen:void_order",
++        "kitchen:item_status_changed",
++      ],
++    );
++    socket.on("disconnect", onDisconnect);
++    return () => {
++      cleanup();
++      socket.off("disconnect", onDisconnect);
++      // Shared staff socket belongs to the login session; remove only this page's handlers.
++    };
++  }, [kitchenSections, fetchOrders]);
+ 
+   const updateOrderStatus = async (
+     orderItemId: string,
+@@ -239,16 +129,13 @@ export default function KDSPage() {
+     try {
+       await api.patch(`/orders/items/${orderItemId}/status`, { status });
+       toast.success("อัปเดตสถานะสำเร็จ");
+-      fetchOrders();
+-
+-      // Emit socket event for real-time update
+-      socketRef.current?.emit("update-order-item", {
+-        orderItemId,
+-        status,
+-      });
+-    } catch (error: any) {
+-      console.error("Failed to update status:", error);
+-      toast.error(error.response?.data?.message || "ไม่สามารถอัปเดตได้");
++      void fetchOrders();
++    } catch (error: unknown) {
++      toast.error(
++        (isAxiosError<{ message?: string }>(error) &&
++          error.response?.data?.message) ||
++          "ไม่สามารถอัปเดตได้",
++      );
+     }
+   };
+ 
+@@ -363,7 +250,10 @@ export default function KDSPage() {
+               <h1 className="text-2xl font-bold text-gray-900">
+                 Kitchen Display System
+               </h1>
+-              <p className="text-sm text-gray-500">ระบบจัดการออเดอร์ห้องครัว</p>
++              <p className="text-sm text-gray-500">
++                ระบบจัดการออเดอร์ห้องครัว ·{" "}
++                {socketConnected ? "เชื่อมต่อแล้ว" : "กำลังเชื่อมต่อ"}
++              </p>
+             </div>
+           </div>
+         </div>
+@@ -515,9 +405,6 @@ export default function KDSPage() {
+               const hasPreparing = orderGroup.items.some(
+                 (item) => item.status === "PREPARING",
+               );
+-              const allServed = orderGroup.items.every(
+-                (item) => item.status === "SERVED" || item.status === "VOIDED",
+-              );
+ 
+               return (
+                 <Card
+diff --git a/frontend/src/app/(dashboard)/menus/page.tsx b/frontend/src/app/(dashboard)/menus/page.tsx
+index f88ad53..e493fc1 100644
+--- a/frontend/src/app/(dashboard)/menus/page.tsx
++++ b/frontend/src/app/(dashboard)/menus/page.tsx
+@@ -2,6 +2,7 @@
+ 
+ import { useEffect, useState } from "react";
+ import api from "@/lib/api";
++import { listKitchens } from "@/lib/workflow-client";
+ import { toast } from "sonner";
+ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+@@ -74,12 +75,12 @@ export default function MenusPage() {
+       const [menuRes, categoriesRes, kitchenRes] = await Promise.all([
+         api.get("/menu-items").catch(() => ({ data: { data: [] } })),
+         api.get("/categories").catch(() => ({ data: { data: [] } })),
+-        api.get("/kitchen-sections").catch(() => ({ data: { data: [] } })),
++        listKitchens(),
+       ]);
+ 
+       setMenuItems(menuRes.data.data || []);
+       setCategories(categoriesRes.data.data || []);
+-      setKitchenSections(kitchenRes.data.data || []);
++      setKitchenSections(kitchenRes);
+     } catch (error) {
+       console.error("Failed to fetch data:", error);
+       toast.error("ไม่สามารถโหลดข้อมูลได้");
+diff --git a/frontend/src/app/(dashboard)/orders/page.tsx b/frontend/src/app/(dashboard)/orders/page.tsx
+index 4baca96..3d6ebee 100644
+--- a/frontend/src/app/(dashboard)/orders/page.tsx
++++ b/frontend/src/app/(dashboard)/orders/page.tsx
+@@ -389,9 +389,8 @@ export default function OrdersPage() {
+                             <Button
+                               variant="destructive"
+                               size="sm"
+-                              onClick={() =>
+-                                handleUpdateOrderStatus(order.id, "CANCELLED")
+-                              }
++                              disabled
++                              title="การยกเลิกทั้งออเดอร์ยังไม่เปิดใช้งาน กรุณาใช้การยกเลิกรายการพร้อมเหตุผล"
+                             >
+                               <XCircle className="h-4 w-4" />
+                             </Button>
+diff --git a/frontend/src/app/(dashboard)/pos/page.tsx b/frontend/src/app/(dashboard)/pos/page.tsx
+index b9f1886..9890846 100644
+--- a/frontend/src/app/(dashboard)/pos/page.tsx
++++ b/frontend/src/app/(dashboard)/pos/page.tsx
+@@ -39,7 +39,6 @@ import {
+   CheckCircle,
+ } from "lucide-react";
+ import type { MenuItem, Table, Tier, Session } from "@/types";
+-import { Socket } from "socket.io-client";
+ import Image from "next/image";
+ 
+ export default function POSPage() {
+@@ -58,14 +57,12 @@ export default function POSPage() {
+   const [searchQuery, setSearchQuery] = useState("");
+   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+   const [loading, setLoading] = useState(true);
+-  const [socket, setSocket] = useState<Socket | null>(null);
+ 
+   useEffect(() => {
+     fetchData();
+ 
+     // Initialize socket
+     const s = getSocket();
+-    setSocket(s);
+ 
+     // Listen for real-time updates
+     s.on("menu:availability_changed", (data) => {
+@@ -169,7 +166,6 @@ export default function POSPage() {
+       // Create order
+       const orderItems = items.map((item) => ({
+         menuItemId: item.id,
+-        kitchenId: item.kitchen.id,
+         quantity: item.quantity,
+       }));
+ 
+@@ -185,11 +181,6 @@ export default function POSPage() {
+       setSelectedTier("");
+       fetchData();
+ 
+-      // Emit socket event for real-time update
+-      socket?.emit("new-order", {
+-        sessionId,
+-        items: orderItems,
+-      });
+     } catch (error: any) {
+       console.error("Checkout error:", error);
+       toast.error(error.response?.data?.message || "สร้างออเดอร์ไม่สำเร็จ");
+diff --git a/frontend/src/app/order/[token]/page.tsx b/frontend/src/app/order/[token]/page.tsx
+index 4af4c34..f2e4def 100644
+--- a/frontend/src/app/order/[token]/page.tsx
++++ b/frontend/src/app/order/[token]/page.tsx
+@@ -1,9 +1,15 @@
+ "use client";
+ 
+-import { useCallback, useEffect, useState } from "react";
++import { useCallback, useEffect, useState, useRef } from "react";
+ import { useParams } from "next/navigation";
+ import { createCustomerSocket } from "@/lib/socket";
+ import { publicApi, createCustomerApi } from "@/lib/api";
++import {
++  bindRoomSync,
++  latestRequest,
++  MAX_ITEM_QUANTITY,
++  MAX_ORDER_ITEMS,
++} from "@/lib/workflow-client";
+ import { toast } from "sonner";
+ import { Card, CardContent, CardHeader } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+@@ -60,12 +66,28 @@ export default function CustomerOrderPage() {
+   const [loading, setLoading] = useState(true);
+   const [selectedCategory, setSelectedCategory] = useState("all");
+   const [timeLeft, setTimeLeft] = useState(0);
++  const dataRequests = useRef(latestRequest());
++  const historyRequests = useRef(latestRequest());
++  const liveToken = useRef<string | null>(null);
++  const submitting = useRef(false);
++
++  const endSession = useCallback(() => {
++    dataRequests.current.invalidate();
++    historyRequests.current.invalidate();
++    liveToken.current = null;
++    setCredential(null);
++    setCart([]);
++    setLoading(false);
++    setAccessError("รอบการทานปิดหรือหมดเวลาแล้ว กรุณาติดต่อพนักงาน");
++  }, []);
+ 
+   const customerToken = credential?.token;
+   const credentialExpiresAt = credential?.expiresAt;
+   const sessionId = session?.id;
+ 
+   const fetchData = useCallback(async () => {
++    const request = dataRequests.current.begin();
++    historyRequests.current.invalidate();
+     try {
+       const { data } = await publicApi.get(`/sessions/qr/${token}`);
+       const resolved = data.data;
+@@ -74,6 +96,9 @@ export default function CustomerOrderPage() {
+         client.get("/customer/menu-items"),
+         client.get("/customer/orders"),
+       ]);
++      if (!dataRequests.current.isCurrent(request)) return;
++      historyRequests.current.invalidate();
++      liveToken.current = resolved.customerAccessToken;
+       setSession(resolved);
+       setMenuItems(menus.data.data);
+       setOrders(history.data.data);
+@@ -83,66 +108,99 @@ export default function CustomerOrderPage() {
+         expiresAt: resolved.credentialExpiresAt,
+       });
+     } catch {
++      if (!dataRequests.current.isCurrent(request)) return;
++      liveToken.current = null;
+       setCredential(null);
+       setAccessError(
+         "ไม่สามารถใช้ QR นี้ได้ รอบการทานอาจปิดหรือหมดเวลาแล้ว กรุณาติดต่อพนักงาน",
+       );
+     } finally {
+-      setLoading(false);
++      if (dataRequests.current.isCurrent(request)) setLoading(false);
+     }
+   }, [token]);
+ 
+   const fetchOrders = useCallback(
+     async (requestedSessionId?: string) => {
+-      if (!requestedSessionId || !customerToken) return;
++      if (
++        !requestedSessionId ||
++        !customerToken ||
++        liveToken.current !== customerToken
++      )
++        return;
++      const request = historyRequests.current.begin();
+       try {
+         const res = await createCustomerApi(customerToken).get(
+           "/customer/orders",
+           { params: { sessionId: requestedSessionId } },
+         );
+-        setOrders(res.data.data);
++        if (
++          liveToken.current === customerToken &&
++          historyRequests.current.isCurrent(request)
++        )
++          setOrders(res.data.data);
+       } catch (error) {
++        if (
++          liveToken.current !== customerToken ||
++          !historyRequests.current.isCurrent(request)
++        )
++          return;
+         if (
+           isAxiosError(error) &&
+           [401, 403].includes(error.response?.status || 0)
+         ) {
+-          setCredential(null);
+-          setAccessError(
+-            "สิทธิ์สั่งอาหารหมดอายุหรือรอบการทานปิดแล้ว กรุณาติดต่อพนักงาน",
+-          );
++          void fetchData();
+         } else toast.error("ไม่สามารถโหลดประวัติออเดอร์ได้");
+       }
+     },
+-    [customerToken],
++    [customerToken, fetchData],
+   );
+ 
+   useEffect(() => {
++    const currentDataRequests = dataRequests.current;
++    const currentHistoryRequests = historyRequests.current;
++    setLoading(true);
++    setCart([]);
++    setSession(null);
++    setOrders([]);
++    setMenuItems([]);
++    liveToken.current = null;
++    setCredential(null);
+     void fetchData();
++    return () => {
++      currentDataRequests.invalidate();
++      currentHistoryRequests.invalidate();
++      liveToken.current = null;
++    };
+   }, [fetchData]);
+ 
+   useEffect(() => {
+     if (!customerToken || !sessionId || !credentialExpiresAt) return;
+     const currentSessionId = sessionId;
+     const s = createCustomerSocket(customerToken);
+-    const onConnect = () => {
+-      s.emit("session:join", { sessionId: currentSessionId });
+-      void fetchOrders(currentSessionId);
+-    };
+-    const onItemStatus = () => {
++    const sync = () => {
+       void fetchOrders(currentSessionId);
+     };
++    const cleanupRooms = bindRoomSync(
++      s,
++      () => {
++        s.emit("session:join", { sessionId: currentSessionId });
++      },
++      "session:joined",
++      sync,
++      ["order:item_status_changed", "order:status_changed"],
++    );
+     const onMenu = (data: {
+       menuItemId: string;
+       isAvailable: boolean;
+       name: string;
+     }) => {
+-      setMenuItems((prev) =>
+-        prev.map((item) =>
+-          item.id === data.menuItemId
+-            ? { ...item, isAvailable: data.isAvailable }
+-            : item,
+-        ),
+-      );
++      // Re-read the server-scoped list, including newly available items; never add an event payload as a menu.
++      void data;
++      void fetchData();
++    };
++    const onSession = (data: { sessionId: string; status: string }) => {
++      if (data.sessionId === currentSessionId && data.status !== "ACTIVE")
++        endSession();
+     };
+     const onWarning = (data: { sessionId: string; minutesLeft: number }) => {
+       if (data.sessionId === currentSessionId)
+@@ -151,8 +209,7 @@ export default function CustomerOrderPage() {
+     const onAuthError = (error: Error & { data?: { status?: number } }) => {
+       if ([401, 403].includes(error.data?.status || 0)) void fetchData();
+     };
+-    s.on("connect", onConnect);
+-    s.on("order:item_status_changed", onItemStatus);
++    s.on("session:status_changed", onSession);
+     s.on("menu:availability_changed", onMenu);
+     s.on("session:time_warning", onWarning);
+     const onDisconnect = (reason: string) => {
+@@ -170,15 +227,22 @@ export default function CustomerOrderPage() {
+     );
+     return () => {
+       clearTimeout(renewal);
+-      s.off("connect", onConnect);
+-      s.off("order:item_status_changed", onItemStatus);
++      cleanupRooms();
++      s.off("session:status_changed", onSession);
+       s.off("menu:availability_changed", onMenu);
+       s.off("session:time_warning", onWarning);
+       s.off("disconnect", onDisconnect);
+       s.off("connect_error", onAuthError);
+       s.disconnect();
+     };
+-  }, [customerToken, sessionId, credentialExpiresAt, fetchOrders, fetchData]);
++  }, [
++    customerToken,
++    sessionId,
++    credentialExpiresAt,
++    fetchOrders,
++    fetchData,
++    endSession,
++  ]);
+ 
+   useEffect(() => {
+     if (!session) return;
+@@ -191,10 +255,16 @@ export default function CustomerOrderPage() {
+     };
+ 
+     updateTimer();
+-    const interval = setInterval(updateTimer, 60000);
+-
+-    return () => clearInterval(interval);
+-  }, [session]);
++    const interval = setInterval(updateTimer, 1000);
++    const deadline = setTimeout(
++      endSession,
++      Math.max(0, new Date(session.endTime).getTime() - Date.now()),
++    );
++    return () => {
++      clearInterval(interval);
++      clearTimeout(deadline);
++    };
++  }, [session, endSession]);
+ 
+   const addToCart = (item: MenuItem) => {
+     if (!item.isAvailable) {
+@@ -206,9 +276,12 @@ export default function CustomerOrderPage() {
+       const existing = prev.find((i) => i.id === item.id);
+       if (existing) {
+         return prev.map((i) =>
+-          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i,
++          i.id === item.id
++            ? { ...i, quantity: Math.min(MAX_ITEM_QUANTITY, i.quantity + 1) }
++            : i,
+         );
+       }
++      if (prev.length >= MAX_ORDER_ITEMS) return prev;
+       return [...prev, { ...item, quantity: 1 }];
+     });
+   };
+@@ -222,7 +295,13 @@ export default function CustomerOrderPage() {
+       prev
+         .map((i) =>
+           i.id === itemId
+-            ? { ...i, quantity: Math.max(0, i.quantity + delta) }
++            ? {
++                ...i,
++                quantity: Math.min(
++                  MAX_ITEM_QUANTITY,
++                  Math.max(0, i.quantity + delta),
++                ),
++              }
+             : i,
+         )
+         .filter((i) => i.quantity > 0),
+@@ -230,7 +309,22 @@ export default function CustomerOrderPage() {
+   };
+ 
+   const submitOrder = async () => {
+-    if (!session || !credential || cart.length === 0) return;
++    if (!session || !credential || cart.length === 0 || submitting.current)
++      return;
++    if (Date.now() >= new Date(session.endTime).getTime()) {
++      endSession();
++      return;
++    }
++    if (
++      cart.some(
++        (item) =>
++          !menuItems.some((menu) => menu.id === item.id && menu.isAvailable),
++      )
++    ) {
++      toast.error("มีเมนูที่ไม่พร้อมขาย กรุณานำออกจากตะกร้า");
++      return;
++    }
++    submitting.current = true;
+ 
+     try {
+       const orderItems = cart.map((item) => ({
+@@ -243,18 +337,17 @@ export default function CustomerOrderPage() {
+         items: orderItems,
+       });
+ 
++      if (liveToken.current !== credential.token) return;
+       toast.success("ส่งออเดอร์สำเร็จ!");
+       setCart([]);
+       void fetchOrders(session.id);
+     } catch (error: unknown) {
++      if (liveToken.current !== credential.token) return;
+       if (
+         isAxiosError(error) &&
+         [401, 403].includes(error.response?.status || 0)
+       ) {
+-        setCredential(null);
+-        setAccessError(
+-          "สิทธิ์สั่งอาหารหมดอายุหรือรอบการทานปิดแล้ว กรุณาติดต่อพนักงาน",
+-        );
++        endSession();
+       }
+       console.error("Customer order request failed");
+       toast.error(
+@@ -262,6 +355,8 @@ export default function CustomerOrderPage() {
+           error.response?.data?.message) ||
+           "ส่งออเดอร์ไม่สำเร็จ",
+       );
++    } finally {
++      submitting.current = false;
+     }
+   };
+ 
+diff --git a/frontend/src/types/index.ts b/frontend/src/types/index.ts
+index ba132f8..748df3f 100644
+--- a/frontend/src/types/index.ts
++++ b/frontend/src/types/index.ts
+@@ -190,15 +190,14 @@ export interface SocketEvents {
+   // Client -> Server
+   'kitchen:join': { kitchenId: number };
+   'session:join': { sessionId: string };
+-  'update-order-item': { orderItemId: string; status: OrderItemStatus };
+-  'new-order': { sessionId: string; items: { menuItemId: string; kitchenId: number; quantity: number }[] };
+   
+   // Server -> Client
+   'menu:availability_changed': { menuItemId: string; isAvailable: boolean; name: string };
+   'kitchen:new_order': { orderId: string; sessionId: string; items: OrderItem[] };
+   'kitchen:void_order': { orderItemId: string; orderId: string; reason: string };
++  'kitchen:item_status_changed': { orderItemId: string; orderId: string; menuItem: Pick<MenuItem, 'id' | 'name'>; kitchen: KitchenSection; status: OrderItemStatus };
+   'order:status_changed': Order;
+-  'order:item_status_changed': { orderItemId: string; orderId: string; menuItem: MenuItem; kitchen: KitchenSection; status: OrderItemStatus };
++  'order:item_status_changed': { orderItemId: string; orderId: string; menuItem?: Pick<MenuItem, 'id' | 'name'>; kitchen?: KitchenSection; status: OrderItemStatus };
+   'table:status_changed': { tableId: number; status: TableStatus };
+   'session:status_changed': { sessionId: string; status: SessionStatus };
+   'session:time_warning': { sessionId: string; minutesLeft: number };
+@@ -214,11 +213,11 @@ export interface LoginDto {
+ 
+ export interface CreateOrderDto {
+   sessionId: string;
+-  items: { menuItemId: string; kitchenId: number; quantity: number }[];
++  items: { menuItemId: string; quantity: number }[];
+ }
+ 
+ export interface UpdateOrderItemStatusDto {
+-  status: OrderItemStatus;
++  status: 'PREPARING' | 'SERVED';
+ }
+ 
+ export interface VoidOrderItemDto {
+diff --git a/backend/src/orders/order-rules.ts b/backend/src/orders/order-rules.ts
+new file mode 100644
+index 0000000..09156ff
+--- /dev/null
++++ b/backend/src/orders/order-rules.ts
+@@ -0,0 +1,27 @@
++import { BadRequestException } from '@nestjs/common';
++import { ItemStatus, OrderStatus } from '@prisma/client';
++
++// Technical request bounds, not a per-session dining quota.
++export const MAX_ORDER_ITEMS = 100;
++export const MAX_ITEM_QUANTITY = 99;
++
++export function assertItemTransition(from: ItemStatus, to: ItemStatus) {
++  const next: Record<ItemStatus, ItemStatus[]> = {
++    PENDING: [ItemStatus.PREPARING],
++    PREPARING: [ItemStatus.SERVED],
++    SERVED: [],
++    VOIDED: [],
++  };
++  if (!next[from].includes(to))
++    throw new BadRequestException(
++      `Invalid item transition: ${from} -> ${to}; VOIDED requires the audited void endpoint`,
++    );
++}
++
++export function assertOrderTransition(from: OrderStatus, to: OrderStatus) {
++  // Cancellation semantics have not been approved. Deny rather than cascade void/refund.
++  if (from !== OrderStatus.PENDING || to !== OrderStatus.CONFIRMED)
++    throw new BadRequestException(
++      `Invalid or unapproved order transition: ${from} -> ${to}`,
++    );
++}
+diff --git a/backend/src/orders/order-rules.spec.ts b/backend/src/orders/order-rules.spec.ts
+new file mode 100644
+index 0000000..1e26e59
+--- /dev/null
++++ b/backend/src/orders/order-rules.spec.ts
+@@ -0,0 +1,25 @@
++import { ItemStatus, OrderStatus } from '@prisma/client';
++import { assertItemTransition, assertOrderTransition } from './order-rules';
++
++describe('Explicit workflow transitions', () => {
++  it.each(
++    Object.values(ItemStatus).flatMap((from) =>
++      Object.values(ItemStatus).map((to) => [from, to]),
++    ),
++  )('%s -> %s', (from, to) => {
++    const allowed =
++      (from === 'PENDING' && to === 'PREPARING') ||
++      (from === 'PREPARING' && to === 'SERVED');
++    if (allowed) expect(() => assertItemTransition(from, to)).not.toThrow();
++    else expect(() => assertItemTransition(from, to)).toThrow();
++  });
++  it.each(
++    Object.values(OrderStatus).flatMap((from) =>
++      Object.values(OrderStatus).map((to) => [from, to]),
++    ),
++  )('order %s -> %s', (from, to) => {
++    if (from === 'PENDING' && to === 'CONFIRMED')
++      expect(() => assertOrderTransition(from, to)).not.toThrow();
++    else expect(() => assertOrderTransition(from, to)).toThrow();
++  });
++});
+diff --git a/backend/test/create-workflow-db.cjs b/backend/test/create-workflow-db.cjs
+new file mode 100644
+index 0000000..0686e6d
+--- /dev/null
++++ b/backend/test/create-workflow-db.cjs
+@@ -0,0 +1,44 @@
++const { Client } = require('pg');
++const { spawnSync } = require('node:child_process');
++const fs = require('node:fs');
++const path = require('node:path');
++if (process.env.ALLOW_SHABU_TEST_DB !== '1')
++  throw new Error('Explicit isolated DB opt-in required');
++const url = new URL(
++  process.env.SHABU_TEST_ADMIN_URL || 'postgresql://invalid/invalid',
++);
++if (
++  url.hostname !== '127.0.0.1' ||
++  url.port !== '55432' ||
++  url.pathname !== '/shabu_test' ||
++  url.username !== 'shabu_test'
++)
++  throw new Error('Refusing non-isolated DB');
++(async () => {
++  const client = new Client({ connectionString: url.toString() });
++  await client.connect();
++  const name = `shabu_workflow_${Date.now()}`;
++  try {
++    await client.query(`CREATE DATABASE "${name}"`);
++  } finally {
++    await client.end();
++  }
++  url.pathname = `/${name}`;
++  const result = spawnSync(
++    process.execPath,
++    ['node_modules/prisma/build/index.js', 'migrate', 'deploy'],
++    { env: { ...process.env, DATABASE_URL: url.toString() }, stdio: 'inherit' },
++  );
++  if (result.status !== 0) throw new Error('Test migration failed');
++  const out = path.resolve(
++    __dirname,
++    '../../reports/workflow-evidence/test-database.json',
++  );
++  fs.writeFileSync(out, JSON.stringify({ url: url.toString() }, null, 2));
++  console.log(
++    'Created isolated workflow test DB; no existing database was changed.',
++  );
++})().catch((error) => {
++  console.error(error.message);
++  process.exitCode = 1;
++});
+diff --git a/backend/test/jest-workflow-e2e.json b/backend/test/jest-workflow-e2e.json
+new file mode 100644
+index 0000000..da5be23
+--- /dev/null
++++ b/backend/test/jest-workflow-e2e.json
+@@ -0,0 +1,8 @@
++{
++  "rootDir": "..",
++  "testEnvironment": "node",
++  "testMatch": ["<rootDir>/test/workflow.e2e-spec.ts"],
++  "moduleNameMapper": { "^src/(.*)$": "<rootDir>/src/$1" },
++  "transform": { "^.+\\.ts$": "ts-jest" },
++  "testTimeout": 10000
++}
+diff --git a/backend/test/workflow.e2e-spec.ts b/backend/test/workflow.e2e-spec.ts
+new file mode 100644
+index 0000000..3914f80
+--- /dev/null
++++ b/backend/test/workflow.e2e-spec.ts
+@@ -0,0 +1,650 @@
++import { randomUUID } from 'node:crypto';
++import { Server } from 'node:http';
++import { INestApplication, ValidationPipe } from '@nestjs/common';
++import { Test } from '@nestjs/testing';
++import { ConfigService } from '@nestjs/config';
++import { JwtService } from '@nestjs/jwt';
++import request from 'supertest';
++import { io, Socket } from '../../frontend/node_modules/socket.io-client';
++import { AppModule } from '../src/app.module';
++import { PrismaService } from '../src/prisma/prisma.service';
++import { ResponseInterceptor } from '../src/common/response.interceptor';
++import { AllExceptionsFilter } from '../src/common/all-exceptions.filter';
++import { SessionsService } from '../src/sessions/sessions.service';
++import {
++  IdPrefix,
++  IdTransformer,
++} from '../src/common/utils/id-transformer.util';
++
++const target = new URL(
++  process.env.DATABASE_URL || 'postgresql://invalid/invalid',
++);
++if (
++  process.env.ALLOW_SHABU_TEST_DB !== '1' ||
++  target.hostname !== '127.0.0.1' ||
++  target.port !== '55432' ||
++  !/^\/shabu_workflow_\d+$/.test(target.pathname)
++)
++  throw new Error('Isolated workflow test DB opt-in required');
++const data = <T>(res: request.Response): T => (res.body as { data: T }).data;
++type Order = {
++  id: string;
++  sessionId: string;
++  status: string;
++  items: { id: string; status: string; menuItem: { id: string } }[];
++};
++type Session = {
++  id: string;
++  qrToken: string;
++  token: string;
++  wireId: string;
++  tableId: number;
++};
++
++describe('QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket)', () => {
++  let app: INestApplication<Server>, prisma: PrismaService, origin: string;
++  const sockets: Socket[] = [];
++  const marker = randomUUID(),
++    roleName = `WORKFLOW-${marker}`;
++  const ids = new IdTransformer();
++  let tierId: number,
++    kitchen: number,
++    otherKitchen: number,
++    menu: string,
++    menu2: string,
++    unavailable: string,
++    outside: string;
++  let actor: string, staff: string, noPermission: string;
++  let a: Session, b: Session;
++
++  async function session(): Promise<Session> {
++    const table = await prisma.table.create({
++      data: { number: randomUUID(), status: 'OCCUPIED' },
++    });
++    const row = await prisma.session.create({
++      data: {
++        tableId: table.id,
++        tierId,
++        qrToken: randomUUID(),
++        endTime: new Date(Date.now() + 3600000),
++      },
++    });
++    const exchange = data<{ id: string; customerAccessToken: string }>(
++      await request(app.getHttpServer())
++        .get(`/sessions/qr/${row.qrToken}`)
++        .expect(200),
++    );
++    return {
++      id: row.id,
++      qrToken: row.qrToken,
++      token: exchange.customerAccessToken,
++      wireId: exchange.id,
++      tableId: table.id,
++    };
++  }
++  const api = () => request(app.getHttpServer());
++  const create = (s = a, items = [{ menuItemId: menu, quantity: 1 }]) =>
++    api()
++      .post('/customer/orders')
++      .auth(s.token, { type: 'bearer' })
++      .send({ sessionId: s.wireId, items });
++  const patch = (item: string, status: string) =>
++    api()
++      .patch(`/orders/items/${item}/status`)
++      .auth(staff, { type: 'bearer' })
++      .send({ status });
++  const confirm = (id: string, status = 'CONFIRMED') =>
++    api()
++      .patch(`/orders/${id}/status`)
++      .auth(staff, { type: 'bearer' })
++      .send({ status });
++  const voidItem = (id: string, reason = 'workflow test approved') =>
++    api()
++      .post(`/orders/items/${id}/void`)
++      .auth(staff, { type: 'bearer' })
++      .send({ reason });
++  function event<T>(socket: Socket, name: string): Promise<T> {
++    return new Promise((resolve, reject) => {
++      const handler = (value: T) => {
++        clearTimeout(timer);
++        resolve(value);
++      };
++      const timer = setTimeout(() => {
++        socket.off(name, handler);
++        reject(new Error(`Missing ${name}`));
++      }, 3000);
++      socket.once(name, handler);
++    });
++  }
++  async function connect(auth: object) {
++    const socket = io(origin, {
++      auth,
++      forceNew: true,
++      reconnection: false,
++      transports: ['websocket'],
++      autoConnect: false,
++    });
++    sockets.push(socket);
++    const connected = event(socket, 'connect');
++    socket.connect();
++    await connected;
++    return socket;
++  }
++  async function join(
++    socket: Socket,
++    kind: 'session' | 'kitchen',
++    id: string | number,
++  ) {
++    const joined = event(socket, `${kind}:joined`);
++    socket.emit(
++      `${kind}:join`,
++      kind === 'session' ? { sessionId: id } : { kitchenId: id },
++    );
++    await joined;
++  }
++
++  beforeAll(async () => {
++    prisma = new PrismaService();
++    await prisma.$connect();
++    const role = await prisma.role.create({ data: { name: roleName } });
++    actor = (
++      await prisma.user.create({
++        data: {
++          username: marker,
++          fullName: 'Workflow fixture',
++          roleId: role.id,
++          passwordHash: 'unused-fixture',
++        },
++      })
++    ).id;
++    kitchen = (
++      await prisma.kitchenSection.create({
++        data: { name: `${marker}-kitchen` },
++      })
++    ).id;
++    otherKitchen = (
++      await prisma.kitchenSection.create({ data: { name: `${marker}-other` } })
++    ).id;
++    tierId = (
++      await prisma.tier.create({
++        data: { name: marker, priceAdult: 1, priceChild: 1 },
++      })
++    ).id;
++    const categoryId = (
++      await prisma.category.create({ data: { name: marker } })
++    ).id;
++    async function makeMenu(inTier: boolean, isAvailable = true) {
++      return (
++        await prisma.menuItem.create({
++          data: {
++            name: randomUUID(),
++            categoryId,
++            kitchenId: kitchen,
++            isAvailable,
++            ...(inTier ? { tierItems: { create: { tierId } } } : {}),
++          },
++        })
++      ).id;
++    }
++    menu = await makeMenu(true);
++    menu2 = await makeMenu(true);
++    unavailable = await makeMenu(true, false);
++    outside = await makeMenu(false);
++    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
++      .overrideProvider(ConfigService)
++      .useValue(
++        new ConfigService({
++          ...process.env,
++          STAFF_PERMISSION_GRANTS: JSON.stringify({
++            [roleName]: [
++              'orders.read',
++              'orders.write',
++              'orders.void',
++              'void-logs.read',
++              'kitchens.read',
++              'kitchen.orders.read',
++              'kitchen.orders.write',
++              'sessions.read',
++              'sessions.write',
++            ],
++          }),
++          KITCHEN_USER_ASSIGNMENTS: JSON.stringify({ [actor]: [kitchen] }),
++        }),
++      )
++      .compile();
++    app = moduleRef.createNestApplication<INestApplication<Server>>();
++    app.useGlobalPipes(
++      new ValidationPipe({
++        whitelist: true,
++        forbidNonWhitelisted: true,
++        transform: true,
++      }),
++    );
++    app.useGlobalInterceptors(new ResponseInterceptor());
++    app.useGlobalFilters(new AllExceptionsFilter());
++    await app.listen(0, '127.0.0.1');
++    origin = await app.getUrl();
++    const jwt = new JwtService();
++    staff = jwt.sign(
++      { sub: actor, username: marker, kind: 'access' },
++      { secret: process.env.JWT_SECRET, algorithm: 'HS256', expiresIn: '1h' },
++    );
++    const otherRole = await prisma.role.create({
++      data: { name: `UNGRANTED-${marker}` },
++    });
++    const other = await prisma.user.create({
++      data: {
++        username: randomUUID(),
++        fullName: 'Denied fixture',
++        roleId: otherRole.id,
++        passwordHash: 'unused-fixture',
++      },
++    });
++    noPermission = jwt.sign(
++      { sub: other.id, kind: 'access' },
++      { secret: process.env.JWT_SECRET, algorithm: 'HS256', expiresIn: '1h' },
++    );
++    a = await session();
++    b = await session();
++  }, 30000);
++  afterAll(async () => {
++    sockets.forEach((s) => s.disconnect());
++    if (app) await app.close();
++    if (prisma) await prisma.$disconnect();
++  });
++
++  it('auth and ownership remain enforced for both REST and rooms', async () => {
++    await api().get('/orders').expect(401);
++    await api()
++      .get('/orders')
++      .auth(noPermission, { type: 'bearer' })
++      .expect(403);
++    await api()
++      .post('/customer/orders')
++      .send({ sessionId: a.id, items: [{ menuItemId: menu, quantity: 1 }] })
++      .expect(401);
++    await api()
++      .post('/customer/orders')
++      .auth(a.token, { type: 'bearer' })
++      .send({ sessionId: b.id, items: [{ menuItemId: menu, quantity: 1 }] })
++      .expect(403);
++    const customer = await connect({ customerToken: a.token });
++    const denied = event<{ statusCode: number }>(customer, 'exception');
++    customer.emit('session:join', { sessionId: b.id });
++    expect((await denied).statusCode).toBe(403);
++    const cook = await connect({ accessToken: staff });
++    const deniedKitchen = event<{ statusCode: number }>(cook, 'exception');
++    cook.emit('kitchen:join', { kitchenId: otherKitchen });
++    expect((await deniedKitchen).statusCode).toBe(403);
++  });
++  it('menu is restricted to tier AND availability; uses the real /kitchens contract and static void logs route', async () => {
++    const res = await api()
++      .get('/customer/menu-items')
++      .auth(a.token, { type: 'bearer' })
++      .expect(200);
++    expect(
++      data<{ id: string }[]>(res)
++        .map((row) => row.id)
++        .sort(),
++    ).toEqual([menu, menu2].sort());
++    const kitchens = await api()
++      .get('/kitchens')
++      .auth(staff, { type: 'bearer' })
++      .expect(200);
++    expect(
++      data<{ id: number }[]>(kitchens).some((row) => row.id === kitchen),
++    ).toBe(true);
++    const logs = await api()
++      .get('/orders/void-logs')
++      .auth(staff, { type: 'bearer' })
++      .expect(200);
++    expect(Array.isArray(data(logs))).toBe(true);
++  });
++  it.each(
++    [
++      [],
++      [{ quantity: 1 }],
++      [{ menuItemId: 'invalid', quantity: 1 }],
++      [{ menuItemId: 'PLACEHOLDER', quantity: 0 }],
++      [{ menuItemId: 'PLACEHOLDER', quantity: -1 }],
++      [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }],
++      [{ menuItemId: 'PLACEHOLDER', quantity: '1' }],
++      [{ menuItemId: 'PLACEHOLDER', quantity: 100 }],
++      Array.from({ length: 101 }, () => ({
++        menuItemId: 'PLACEHOLDER',
++        quantity: 1,
++      })),
++    ].map((payload) => [payload]),
++  )('rejects malformed/empty/out-of-bounds items: %j', async (payload) => {
++    const items = (
++      payload as Array<{ menuItemId?: string; quantity: unknown }>
++    ).map((item) => ({
++      ...item,
++      ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER'
++        ? { menuItemId: menu }
++        : {}),
++    }));
++    const before = await prisma.order.count({ where: { sessionId: a.id } });
++    await api()
++      .post('/customer/orders')
++      .auth(a.token, { type: 'bearer' })
++      .send({ items })
++      .expect(400);
++    await api()
++      .post('/orders')
++      .auth(staff, { type: 'bearer' })
++      .send({ sessionId: a.id, items })
++      .expect(400);
++    expect(await prisma.order.count({ where: { sessionId: a.id } })).toBe(
++      before,
++    );
++  });
++  it('rejects out-of-tier/unavailable/nonexistent and duplicate raw/prefixed menu entries through both APIs', async () => {
++    for (const id of [outside, unavailable, randomUUID()]) {
++      await create(a, [{ menuItemId: id, quantity: 1 }]).expect(400);
++      await api()
++        .post('/orders')
++        .auth(staff, { type: 'bearer' })
++        .send({ sessionId: a.id, items: [{ menuItemId: id, quantity: 1 }] })
++        .expect(400);
++    }
++    await create(a, [
++      { menuItemId: menu, quantity: 1 },
++      { menuItemId: ids.encode(menu, IdPrefix.MENU_ITEM), quantity: 1 },
++    ]).expect(400);
++    await api()
++      .post('/orders')
++      .auth(staff, { type: 'bearer' })
++      .send({
++        sessionId: randomUUID(),
++        items: [{ menuItemId: menu, quantity: 1 }],
++      })
++      .expect(404);
++  });
++  it('checks server endTime before cron; closed/expired credentials cannot read or order', async () => {
++    const expired = await session();
++    await prisma.session.update({
++      where: { id: expired.id },
++      data: { endTime: new Date(Date.now() - 1000) },
++    });
++    await create(expired).expect(403);
++    await api()
++      .get('/customer/orders')
++      .auth(expired.token, { type: 'bearer' })
++      .expect(403);
++    await api()
++      .post('/orders')
++      .auth(staff, { type: 'bearer' })
++      .send({
++        sessionId: expired.wireId,
++        items: [{ menuItemId: menu, quantity: 1 }],
++      })
++      .expect(400);
++    await app.get(SessionsService).checkSessionTime();
++    expect(
++      (await prisma.session.findUniqueOrThrow({ where: { id: expired.id } }))
++        .status,
++    ).toBe('EXPIRED');
++    expect(
++      (await prisma.table.findUniqueOrThrow({ where: { id: expired.tableId } }))
++        .status,
++    ).toBe('CLEANING');
++  });
++  it('QR orders reach assigned KDS; kitchen updates reach customer AND another KDS after commit; reconnect resyncs', async () => {
++    const buyer = await connect({ customerToken: a.token }),
++      cook = await connect({ accessToken: staff }),
++      observer = await connect({ accessToken: staff });
++    await join(buyer, 'session', a.wireId);
++    await join(cook, 'kitchen', kitchen);
++    await join(observer, 'kitchen', kitchen);
++    const received = event<{
++      orderId: string;
++      items: { id: string; status: string }[];
++    }>(cook, 'kitchen:new_order');
++    const orderEvent = event<Order>(buyer, 'order:status_changed');
++    const order = data<Order>(await create().expect(201));
++    expect((await received).orderId).toBe(order.id);
++    expect((await orderEvent).items).toEqual(order.items);
++    const listed = data<{ id: string }[]>(
++      await api()
++        .get(`/orders/kitchen/${kitchen}`)
++        .auth(staff, { type: 'bearer' })
++        .expect(200),
++    );
++    expect(listed.some((row) => row.id === order.items[0].id)).toBe(true);
++    const customerEvent = event<{ status: string }>(
++      buyer,
++      'order:item_status_changed',
++    );
++    const kdsEvent = event<{ status: string }>(
++      observer,
++      'kitchen:item_status_changed',
++    );
++    const updated = data<{ status: string }>(
++      await patch(order.items[0].id, 'PREPARING').expect(200),
++    );
++    expect((await customerEvent).status).toBe(updated.status);
++    expect((await kdsEvent).status).toBe(updated.status);
++    expect(
++      (
++        await prisma.orderItem.findUniqueOrThrow({
++          where: { id: order.items[0].id },
++        })
++      ).status,
++    ).toBe(updated.status);
++    buyer.disconnect();
++    observer.disconnect();
++    await patch(order.items[0].id, 'SERVED').expect(200);
++    const connected = event(buyer, 'connect');
++    buyer.connect();
++    await connected;
++    await join(buyer, 'session', a.wireId);
++    const history = data<Order[]>(
++      await api()
++        .get('/customer/orders')
++        .auth(a.token, { type: 'bearer' })
++        .expect(200),
++    );
++    expect(history.find((row) => row.id === order.id)?.items[0].status).toBe(
++      'SERVED',
++    );
++    expect(history.find((row) => row.id === order.id)?.status).toBe(
++      'CONFIRMED',
++    );
++    const reconnected = event(observer, 'connect');
++    observer.connect();
++    await reconnected;
++    await join(observer, 'kitchen', kitchen);
++    const synced = data<{ id: string; status: string }[]>(
++      await api()
++        .get(`/orders/kitchen/${kitchen}`)
++        .auth(staff, { type: 'bearer' })
++        .expect(200),
++    );
++    expect(synced.find((row) => row.id === order.items[0].id)?.status).toBe(
++      'SERVED',
++    );
++  });
++  it('confirmation returns post-transaction items and emits only actually changed items', async () => {
++    const order = data<Order>(
++      await create(a, [
++        { menuItemId: menu, quantity: 1 },
++        { menuItemId: menu2, quantity: 1 },
++      ]).expect(201),
++    );
++    await patch(order.items[0].id, 'PREPARING').expect(200);
++    await patch(order.items[0].id, 'SERVED').expect(200);
++    const cook = await connect({ accessToken: staff });
++    await join(cook, 'kitchen', kitchen);
++    const changes: { orderItemId: string; status: string }[] = [];
++    const handler = (value: { orderItemId: string; status: string }) =>
++      changes.push(value);
++    cook.on('kitchen:item_status_changed', handler);
++    const result = data<Order>(await confirm(order.id).expect(200));
++    cook.off('kitchen:item_status_changed', handler);
++    expect(
++      result.items.find((row) => row.id === order.items[0].id)?.status,
++    ).toBe('SERVED');
++    expect(
++      result.items.find((row) => row.id === order.items[1].id)?.status,
++    ).toBe('PREPARING');
++    expect(changes.map((row) => row.orderItemId)).toEqual([order.items[1].id]);
++    expect(changes[0].status).toBe('PREPARING');
++    const db = await prisma.order.findUniqueOrThrow({
++      where: { id: order.id },
++      include: { items: true },
++    });
++    expect(db.items.map((row) => [row.id, row.status]).sort()).toEqual(
++      result.items.map((row) => [row.id, row.status]).sort(),
++    );
++    await confirm(order.id).expect(400);
++    await confirm(order.id, 'PENDING').expect(400);
++    await confirm(order.id, 'CANCELLED').expect(400);
++  });
++  it('rejects backward/skipped/terminal transitions and VOIDED shortcut; cancelled legacy order stays cancelled', async () => {
++    const order = data<Order>(await create().expect(201)),
++      item = order.items[0].id;
++    for (const status of ['PENDING', 'SERVED', 'VOIDED'])
++      await patch(item, status).expect(400);
++    await patch(item, 'PREPARING').expect(200);
++    await patch(item, 'PENDING').expect(400);
++    await patch(item, 'SERVED').expect(200);
++    await patch(item, 'PREPARING').expect(400);
++    await voidItem(item).expect(400);
++    const cancelled = data<Order>(await create().expect(201));
++    await prisma.order.update({
++      where: { id: cancelled.id },
++      data: { status: 'CANCELLED' },
++    });
++    await patch(cancelled.items[0].id, 'PREPARING').expect(400);
++    await confirm(cancelled.id).expect(400);
++    expect(
++      (await prisma.order.findUniqueOrThrow({ where: { id: cancelled.id } }))
++        .status,
++    ).toBe('CANCELLED');
++  });
++  it('every accepted VOIDED has one actor/reason log; concurrent void cannot create a second log', async () => {
++    const order = data<Order>(await create().expect(201)),
++      id = order.items[0].id;
++    await voidItem(id, '   ').expect(400);
++    const responses = await Promise.all([voidItem(id), voidItem(id)]);
++    expect(responses.filter((res) => res.status === 201)).toHaveLength(1);
++    expect(
++      responses.filter((res) => [400, 409].includes(res.status)),
++    ).toHaveLength(1);
++    const logs = await prisma.voidLog.findMany({ where: { orderItemId: id } });
++    expect(logs).toHaveLength(1);
++    expect(logs[0].approvedBy).toBe(actor);
++    expect(logs[0].reason).toBe('workflow test approved');
++    expect(
++      (await prisma.orderItem.findUniqueOrThrow({ where: { id } })).status,
++    ).toBe('VOIDED');
++    await patch(id, 'PREPARING').expect(400);
++  });
++  it('PREPARING can be audited VOIDED; confirmation never revives it or emits a false item change', async () => {
++    const order = data<Order>(
++      await create(a, [
++        { menuItemId: menu, quantity: 99 },
++        { menuItemId: menu2, quantity: 1 },
++      ]).expect(201),
++    );
++    const id = order.items[0].id;
++    await patch(id, 'PREPARING').expect(200);
++    await voidItem(id).expect(201);
++    const log = await prisma.voidLog.findUniqueOrThrow({
++      where: { orderItemId: id },
++    });
++    expect(log.approvedBy).toBe(actor);
++    const cook = await connect({ accessToken: staff });
++    await join(cook, 'kitchen', kitchen);
++    const changes: { orderItemId: string }[] = [];
++    const listener = (value: { orderItemId: string }) => changes.push(value);
++    cook.on('kitchen:item_status_changed', listener);
++    const result = data<Order>(await confirm(order.id).expect(200));
++    cook.off('kitchen:item_status_changed', listener);
++    expect(result.items.find((row) => row.id === id)?.status).toBe('VOIDED');
++    expect(changes.map((row) => row.orderItemId)).toEqual([order.items[1].id]);
++  });
++  it('confirmation failure rolls back header AND child status and emits nothing', async () => {
++    const order = data<Order>(await create().expect(201));
++    const cook = await connect({ accessToken: staff });
++    await join(cook, 'kitchen', kitchen);
++    const changes: unknown[] = [];
++    const listener = (value: unknown) => changes.push(value);
++    cook.on('kitchen:item_status_changed', listener);
++    // UUID originates from the fixture DB; this trigger exists only in the opt-in workflow test database.
++    await prisma.$executeRawUnsafe(
++      `CREATE OR REPLACE FUNCTION workflow_fail_confirm() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.id = '${order.id}' THEN RAISE EXCEPTION 'workflow test header failure'; END IF; RETURN NEW; END $$`,
++    );
++    await prisma.$executeRawUnsafe(
++      'CREATE TRIGGER workflow_fail_confirm BEFORE UPDATE ON "Order" FOR EACH ROW EXECUTE FUNCTION workflow_fail_confirm()',
++    );
++    try {
++      await confirm(order.id).expect(500);
++      const db = await prisma.order.findUniqueOrThrow({
++        where: { id: order.id },
++        include: { items: true },
++      });
++      expect(db.status).toBe('PENDING');
++      expect(db.items[0].status).toBe('PENDING');
++      expect(changes).toEqual([]);
++    } finally {
++      await prisma.$executeRawUnsafe(
++        'DROP TRIGGER workflow_fail_confirm ON "Order"',
++      );
++      await prisma.$executeRawUnsafe('DROP FUNCTION workflow_fail_confirm()');
++      cook.off('kitchen:item_status_changed', listener);
++    }
++  });
++  it('audit insert failure rolls back item and produces no status/void events', async () => {
++    const order = data<Order>(await create().expect(201)),
++      id = order.items[0].id;
++    const cook = await connect({ accessToken: staff });
++    await join(cook, 'kitchen', kitchen);
++    const observed: unknown[] = [];
++    const listener = (value: unknown) => observed.push(value);
++    cook.on('kitchen:void_order', listener);
++    cook.on('kitchen:item_status_changed', listener);
++    await prisma.$executeRawUnsafe(
++      `CREATE OR REPLACE FUNCTION workflow_fail_void() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.reason = 'WORKFLOW_ROLLBACK_TEST' THEN RAISE EXCEPTION 'workflow test audit failure'; END IF; RETURN NEW; END $$`,
++    );
++    await prisma.$executeRawUnsafe(
++      `CREATE TRIGGER workflow_fail_void BEFORE INSERT ON "VoidLog" FOR EACH ROW EXECUTE FUNCTION workflow_fail_void()`,
++    );
++    try {
++      await voidItem(id, 'WORKFLOW_ROLLBACK_TEST').expect(500);
++      expect(
++        (await prisma.orderItem.findUniqueOrThrow({ where: { id } })).status,
++      ).toBe('PENDING');
++      expect(await prisma.voidLog.count({ where: { orderItemId: id } })).toBe(
++        0,
++      );
++      expect(observed).toEqual([]);
++    } finally {
++      await prisma.$executeRawUnsafe(
++        'DROP TRIGGER workflow_fail_void ON "VoidLog"',
++      );
++      await prisma.$executeRawUnsafe('DROP FUNCTION workflow_fail_void()');
++      cook.off('kitchen:void_order', listener);
++      cook.off('kitchen:item_status_changed', listener);
++    }
++  });
++  it('closing the session disconnects its authenticated socket and prevents further requests', async () => {
++    const closed = await session(),
++      buyer = await connect({ customerToken: closed.token });
++    await join(buyer, 'session', closed.id);
++    const disconnected = event(buyer, 'disconnect');
++    await api()
++      .patch(`/sessions/${closed.wireId}/status`)
++      .auth(staff, { type: 'bearer' })
++      .send({ status: 'CLOSED' })
++      .expect(200);
++    await disconnected;
++    await api().get(`/sessions/qr/${closed.qrToken}`).expect(403);
++    await create(closed).expect(403);
++    expect(
++      (await prisma.table.findUniqueOrThrow({ where: { id: closed.tableId } }))
++        .status,
++    ).toBe('CLEANING');
++  });
++});
+diff --git a/frontend/src/lib/workflow-client.ts b/frontend/src/lib/workflow-client.ts
+new file mode 100644
+index 0000000..46ae08b
+--- /dev/null
++++ b/frontend/src/lib/workflow-client.ts
+@@ -0,0 +1,42 @@
++import type { Socket } from "socket.io-client";
++import api from "./api";
++import type { KitchenSection } from "@/types";
++
++export const MAX_ITEM_QUANTITY = 99;
++export const MAX_ORDER_ITEMS = 100;
++
++export function latestRequest() {
++  let version = 0;
++  return {
++    begin: () => ++version,
++    isCurrent: (request: number) => request === version,
++    invalidate: () => {
++      version++;
++    },
++  };
++}
++
++export async function listKitchens(): Promise<KitchenSection[]> {
++  return (await api.get("/kitchens")).data.data;
++}
++
++/** Rejoin on every connection and sync only after server authorizes a room. */
++export function bindRoomSync(
++  socket: Socket,
++  join: () => void,
++  joinedEvent: "session:joined" | "kitchen:joined",
++  sync: () => void,
++  events: string[],
++) {
++  const onConnect = () => join();
++  const onSync = () => sync();
++  socket.on("connect", onConnect);
++  socket.on(joinedEvent, onSync);
++  for (const event of events) socket.on(event, onSync);
++  if (socket.connected) onConnect();
++  return () => {
++    socket.off("connect", onConnect);
++    socket.off(joinedEvent, onSync);
++    for (const event of events) socket.off(event, onSync);
++  };
++}
+diff --git a/frontend/test/workflow-clients.test.mjs b/frontend/test/workflow-clients.test.mjs
+new file mode 100644
+index 0000000..6101ba5
+--- /dev/null
++++ b/frontend/test/workflow-clients.test.mjs
+@@ -0,0 +1,45 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import vm from 'node:vm';
++import { EventEmitter } from 'node:events';
++import ts from 'typescript';
++function load() {
++  const requests = [];
++  const source = fs.readFileSync(new URL('../src/lib/workflow-client.ts', import.meta.url), 'utf8');
++  const { outputText } = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true } });
++  const exports = {};
++  vm.runInNewContext(outputText, { exports, require: () => ({ get: async path => { requests.push(path); return { data: { data: [{ id: 1, name: 'Kitchen' }] } }; } }) });
++  return { ...exports, requests };
++}
++test('kitchen client loads the canonical route and returns dropdown entries', async () => {
++  const client = load(); const kitchens = await client.listKitchens();
++  assert.equal(kitchens[0].id, 1); assert.deepEqual(client.requests, ['/kitchens']);
++});
++test('QR joins on every connection; history sync waits for authorization; cleanup preserves other consumers', () => {
++  const { bindRoomSync } = load(); const socket = new EventEmitter(); socket.connected = false;
++  let joined = 0, synced = 0, other = 0;
++  socket.on('order:status_changed', () => { other++; });
++  const cleanup = bindRoomSync(socket, () => { joined++; }, 'session:joined', () => { synced++; }, ['order:status_changed', 'order:item_status_changed']);
++  socket.emit('connect'); assert.equal(joined, 1); assert.equal(synced, 0);
++  socket.emit('session:joined'); assert.equal(synced, 1);
++  socket.emit('order:item_status_changed'); assert.equal(synced, 2);
++  socket.emit('connect'); assert.equal(joined, 2);
++  socket.emit('session:joined'); assert.equal(synced, 3);
++  cleanup(); socket.emit('connect'); socket.emit('order:status_changed');
++  assert.equal(joined, 2); assert.equal(synced, 3); assert.equal(other, 1);
++});
++test('KDS already-connected mount rejoins; remount has one handler and uses kitchen status event', () => {
++  const { bindRoomSync } = load(); const socket = new EventEmitter(); socket.connected = true;
++  let joins = 0, syncs = 0;
++  const bind = () => bindRoomSync(socket, () => { joins++; }, 'kitchen:joined', () => { syncs++; }, ['kitchen:new_order', 'kitchen:item_status_changed', 'kitchen:void_order']);
++  const first = bind(); assert.equal(joins, 1); first();
++  const second = bind(); socket.emit('kitchen:item_status_changed'); assert.equal(joins, 2); assert.equal(syncs, 1); second();
++  assert.equal(socket.listenerCount('connect'), 0); assert.equal(socket.listenerCount('kitchen:item_status_changed'), 0);
++});
++test('latest request rejects stale response and invalidates in-flight work at closure/unmount', () => {
++  const { latestRequest } = load(); const gate = latestRequest(); const old = gate.begin(), recent = gate.begin();
++  assert.equal(gate.isCurrent(old), false); assert.equal(gate.isCurrent(recent), true);
++  gate.invalidate(); assert.equal(gate.isCurrent(recent), false);
++  const next = gate.begin(); assert.equal(gate.isCurrent(next), true); assert.equal(gate.isCurrent(old), false);
++});

@@ -1,0 +1,48 @@
+
+> frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.2.1 (Turbopack)
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.9s
+  Running TypeScript ...
+  Finished TypeScript in 2.6s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/20) ...
+(node:68591) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+  Generating static pages using 7 workers (5/20) 
+  Generating static pages using 7 workers (10/20) 
+  Generating static pages using 7 workers (15/20) 
+✓ Generating static pages using 7 workers (20/20) in 259ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /categories
+├ ○ /dashboard
+├ ○ /ingredients
+├ ○ /invoices
+├ ○ /kds
+├ ○ /kitchen-sections
+├ ○ /login
+├ ○ /menus
+├ ƒ /order/[token]
+├ ○ /orders
+├ ○ /pos
+├ ○ /roles
+├ ○ /sessions
+├ ○ /tables
+├ ○ /tiers
+├ ○ /users
+└ ○ /void-logs
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

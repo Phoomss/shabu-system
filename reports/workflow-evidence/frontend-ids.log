@@ -1,0 +1,15 @@
+
+> frontend@0.1.0 test:ids
+> node --test test/id-contract.test.mjs
+
+✔ REST and Socket session IDs resolve to the same frontend identity (1.05275ms)
+✔ normalizes nested order and invoice references without treating display numbers as PKs (0.104291ms)
+✔ does not decode names, QR credentials or malformed/unknown ID strings (0.087625ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 325.868583

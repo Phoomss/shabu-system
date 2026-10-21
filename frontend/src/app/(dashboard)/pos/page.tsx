@@ -39,7 +39,6 @@ import {
   CheckCircle,
 } from "lucide-react";
 import type { MenuItem, Table, Tier, Session } from "@/types";
-import { Socket } from "socket.io-client";
 import Image from "next/image";
 
 export default function POSPage() {
@@ -58,14 +57,12 @@ export default function POSPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     fetchData();
 
     // Initialize socket
     const s = getSocket();
-    setSocket(s);
 
     // Listen for real-time updates
     s.on("menu:availability_changed", (data) => {
@@ -169,7 +166,6 @@ export default function POSPage() {
       // Create order
       const orderItems = items.map((item) => ({
         menuItemId: item.id,
-        kitchenId: item.kitchen.id,
         quantity: item.quantity,
       }));
 
@@ -185,11 +181,6 @@ export default function POSPage() {
       setSelectedTier("");
       fetchData();
 
-      // Emit socket event for real-time update
-      socket?.emit("new-order", {
-        sessionId,
-        items: orderItems,
-      });
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast.error(error.response?.data?.message || "สร้างออเดอร์ไม่สำเร็จ");

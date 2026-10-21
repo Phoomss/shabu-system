@@ -1,0 +1,35 @@
+
+> backend@0.0.1 test:workflow:e2e
+> jest --runInBand --config test/jest-workflow-e2e.json
+
+(node:67544) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/workflow.e2e-spec.ts
+  QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket)
+    ✓ auth and ownership remain enforced for both REST and rooms (42 ms)
+    ✓ menu is restricted to tier AND availability; uses the real /kitchens contract and static void logs route (38 ms)
+    ✓ rejects malformed/empty/out-of-bounds items: [] (14 ms)
+    ✓ rejects malformed/empty/out-of-bounds items: [{"quantity":1}] (11 ms)
+    ✓ rejects malformed/empty/out-of-bounds items: [{"menuItemId":"invalid","quantity":1}] (12 ms)
+    ✓ rejects malformed/empty/out-of-bounds items: [{"menuItemId":"PLACEHOLDER","quantity":0}] (9 ms)
+    ✓ rejects malformed/empty/out-of-bounds items: [{"menuItemId":"PLACEHOLDER","quantity":-1}] (10 ms)
+    ✓ rejects malformed/empty/out-of-bounds items: [{"menuItemId":"PLACEHOLDER","quantity":1.2}] (6 ms)
+    ✓ rejects malformed/empty/out-of-bounds items: [{"menuItemId":"PLACEHOLDER","quantity":"1"}] (7 ms)
+    ✓ rejects malformed/empty/out-of-bounds items: [{"menuItemId":"PLACEHOLDER","quantity":100}] (8 ms)
+    ✓ rejects malformed/empty/out-of-bounds items: [{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1},{"menuItemId":"PLACEHOLDER","quantity":1}] (15 ms)
+    ✓ rejects out-of-tier/unavailable/nonexistent and duplicate raw/prefixed menu entries through both APIs (66 ms)
+    ✓ checks server endTime before cron; closed/expired credentials cannot read or order (40 ms)
+    ✓ QR orders reach assigned KDS; kitchen updates reach customer AND another KDS after commit; reconnect resyncs (119 ms)
+    ✓ confirmation returns post-transaction items and emits only actually changed items (87 ms)
+    ✓ rejects backward/skipped/terminal transitions and VOIDED shortcut; cancelled legacy order stays cancelled (113 ms)
+    ✓ every accepted VOIDED has one actor/reason log; concurrent void cannot create a second log (112 ms)
+    ✓ PREPARING can be audited VOIDED; confirmation never revives it or emits a false item change (67 ms)
+    ✓ confirmation failure rolls back header AND child status and emits nothing (36 ms)
+    ✓ audit insert failure rolls back item and produces no status/void events (35 ms)
+    ✓ closing the session disconnects its authenticated socket and prevents further requests (26 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       21 passed, 21 total
+Snapshots:   0 total
+Time:        2.103 s, estimated 3 s
+Ran all test suites.

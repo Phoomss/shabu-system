@@ -1,0 +1,176 @@
+
+> backend@0.0.1 test:workflow:e2e
+> jest --runInBand --config test/jest-workflow-e2e.json
+
+(node:66167) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL test/workflow.e2e-spec.ts (12.326 s)
+  QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket)
+    ✓ auth and ownership remain enforced for both REST and rooms (47 ms)
+    ✓ menu is restricted to tier AND availability; uses the real /kitchens contract and static void logs route (42 ms)
+    ✕ rejects malformed/empty/out-of-bounds items: %j (10000 ms)
+    ✕ rejects malformed/empty/out-of-bounds items: {"quantity":1}
+    ✕ rejects malformed/empty/out-of-bounds items: {"menuItemId":"invalid","quantity":1}
+    ✕ rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":0}
+    ✕ rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":-1}
+    ✕ rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":1.2}
+    ✕ rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":"1"}
+    ✕ rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":100} (1 ms)
+    ✕ rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":1}
+    ✓ rejects out-of-tier/unavailable/nonexistent and duplicate raw/prefixed menu entries through both APIs (67 ms)
+    ✓ checks server endTime before cron; closed/expired credentials cannot read or order (47 ms)
+    ✓ QR orders reach assigned KDS; kitchen updates reach customer AND another KDS after commit; reconnect resyncs (133 ms)
+    ✓ confirmation returns post-transaction items and emits only actually changed items (95 ms)
+    ✓ rejects backward/skipped/terminal transitions and VOIDED shortcut; cancelled legacy order stays cancelled (134 ms)
+    ✓ every accepted VOIDED has one actor/reason log; concurrent void cannot create a second log (94 ms)
+    ✓ audit insert failure rolls back item and produces no status/void events (35 ms)
+    ✓ closing the session disconnects its authenticated socket and prevents further requests (26 ms)
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: %j
+
+    thrown: "Exceeded timeout of 10000 ms for a test while waiting for `done()` to be called.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      110 |     expect(Array.isArray(data(logs))).toBe(true);
+      111 |   });
+    > 112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+          |                                                                                                                                                                                                                                                                                                                                                                                                           ^
+      113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+
+      at eachBind (node_modules/jest-each/build/index.js:54:13)
+      at test/workflow.e2e-spec.ts:112:395
+      at Object.<anonymous> (test/workflow.e2e-spec.ts:23:1)
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: %j
+
+    TypeError: payload.map is not a function
+
+      111 |   });
+      112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+    > 113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+          |                           ^
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+      116 |     await api().post('/orders').auth(staff, { type: 'bearer' }).send({ sessionId: a.id, items }).expect(400);
+
+      at test/workflow.e2e-spec.ts:113:27
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: {"quantity":1}
+
+    TypeError: payload.map is not a function
+
+      111 |   });
+      112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+    > 113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+          |                           ^
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+      116 |     await api().post('/orders').auth(staff, { type: 'bearer' }).send({ sessionId: a.id, items }).expect(400);
+
+      at test/workflow.e2e-spec.ts:113:27
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: {"menuItemId":"invalid","quantity":1}
+
+    TypeError: payload.map is not a function
+
+      111 |   });
+      112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+    > 113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+          |                           ^
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+      116 |     await api().post('/orders').auth(staff, { type: 'bearer' }).send({ sessionId: a.id, items }).expect(400);
+
+      at test/workflow.e2e-spec.ts:113:27
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":0}
+
+    TypeError: payload.map is not a function
+
+      111 |   });
+      112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+    > 113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+          |                           ^
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+      116 |     await api().post('/orders').auth(staff, { type: 'bearer' }).send({ sessionId: a.id, items }).expect(400);
+
+      at test/workflow.e2e-spec.ts:113:27
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":-1}
+
+    TypeError: payload.map is not a function
+
+      111 |   });
+      112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+    > 113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+          |                           ^
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+      116 |     await api().post('/orders').auth(staff, { type: 'bearer' }).send({ sessionId: a.id, items }).expect(400);
+
+      at test/workflow.e2e-spec.ts:113:27
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":1.2}
+
+    TypeError: payload.map is not a function
+
+      111 |   });
+      112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+    > 113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+          |                           ^
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+      116 |     await api().post('/orders').auth(staff, { type: 'bearer' }).send({ sessionId: a.id, items }).expect(400);
+
+      at test/workflow.e2e-spec.ts:113:27
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":"1"}
+
+    TypeError: payload.map is not a function
+
+      111 |   });
+      112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+    > 113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+          |                           ^
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+      116 |     await api().post('/orders').auth(staff, { type: 'bearer' }).send({ sessionId: a.id, items }).expect(400);
+
+      at test/workflow.e2e-spec.ts:113:27
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":100}
+
+    TypeError: payload.map is not a function
+
+      111 |   });
+      112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+    > 113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+          |                           ^
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+      116 |     await api().post('/orders').auth(staff, { type: 'bearer' }).send({ sessionId: a.id, items }).expect(400);
+
+      at test/workflow.e2e-spec.ts:113:27
+
+  ● QR -> Order -> KDS -> Status (HTTP/JWT/PostgreSQL/Socket) › rejects malformed/empty/out-of-bounds items: {"menuItemId":"PLACEHOLDER","quantity":1}
+
+    TypeError: payload.map is not a function
+
+      111 |   });
+      112 |   it.each([[], [{ quantity: 1 }], [{ menuItemId: 'invalid', quantity: 1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 0 }], [{ menuItemId: 'PLACEHOLDER', quantity: -1 }], [{ menuItemId: 'PLACEHOLDER', quantity: 1.2 }], [{ menuItemId: 'PLACEHOLDER', quantity: '1' }], [{ menuItemId: 'PLACEHOLDER', quantity: 100 }], Array.from({ length: 101 }, () => ({ menuItemId: 'PLACEHOLDER', quantity: 1 }))])('rejects malformed/empty/out-of-bounds items: %j', async payload => {
+    > 113 |     const items = payload.map(item => ({ ...item, ...('menuItemId' in item && item.menuItemId === 'PLACEHOLDER' ? { menuItemId: menu } : {}) }));
+          |                           ^
+      114 |     const before = await prisma.order.count({ where: { sessionId: a.id } });
+      115 |     await api().post('/customer/orders').auth(a.token, { type: 'bearer' }).send({ items }).expect(400);
+      116 |     await api().post('/orders').auth(staff, { type: 'bearer' }).send({ sessionId: a.id, items }).expect(400);
+
+      at test/workflow.e2e-spec.ts:113:27
+
+Test Suites: 1 failed, 1 total
+Tests:       9 failed, 10 passed, 19 total
+Snapshots:   0 total
+Time:        12.523 s
+Ran all test suites.

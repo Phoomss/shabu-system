@@ -1,0 +1,8 @@
+
+> backend@0.0.1 test:local-start
+> node test/local-start-smoke.cjs
+
+PASS backend start: Swagger 200, anonymous staff data 401, DB-backed invalid login 401
+PASS frontend npm run start: HTTP /login 200
+PASS frontend dynamic /order/[token] HTTP 200 (render smoke only, not browser acceptance)
+Stopped only smoke-test child process groups; database retained.

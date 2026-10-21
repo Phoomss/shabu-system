@@ -1,0 +1,103 @@
+[
+  {
+    "name": "backend-workflow-unit",
+    "cwd": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:workflow"
+    ],
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/backend-workflow-unit.log"
+  },
+  {
+    "name": "backend-id-unit",
+    "cwd": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:ids"
+    ],
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/backend-id-unit.log"
+  },
+  {
+    "name": "backend-security-unit",
+    "cwd": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:security"
+    ],
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/backend-security-unit.log"
+  },
+  {
+    "name": "frontend-workflow",
+    "cwd": "frontend",
+    "command": [
+      "npm",
+      "run",
+      "test:workflow"
+    ],
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/frontend-workflow.log"
+  },
+  {
+    "name": "frontend-id",
+    "cwd": "frontend",
+    "command": [
+      "npm",
+      "run",
+      "test:ids"
+    ],
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/frontend-id.log"
+  },
+  {
+    "name": "frontend-security",
+    "cwd": "frontend",
+    "command": [
+      "npm",
+      "run",
+      "test:security"
+    ],
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/frontend-security.log"
+  },
+  {
+    "name": "frontend-types",
+    "cwd": "frontend",
+    "command": [
+      "node",
+      "node_modules/typescript/bin/tsc",
+      "--noEmit"
+    ],
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/frontend-types.log"
+  },
+  {
+    "name": "frontend-lint-final",
+    "cwd": "frontend",
+    "command": [
+      "node",
+      "node_modules/eslint/bin/eslint.js",
+      "src/lib/workflow-client.ts",
+      "src/app/order/[token]/page.tsx",
+      "src/app/(dashboard)/kds/page.tsx"
+    ],
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/frontend-lint-final.log"
+  },
+  {
+    "name": "diff-check",
+    "cwd": ".",
+    "command": [
+      "git",
+      "diff",
+      "--check"
+    ],
+    "exitStatus": 0,
+    "log": "reports/workflow-evidence/diff-check.log"
+  }
+]

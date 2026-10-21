@@ -228,6 +228,7 @@ export class EventsGateway implements OnGatewayInit {
       orderId: string;
       status: string;
       menuItem?: { id: string; name: string };
+      kitchen?: { id: number; name: string };
       [key: string]: unknown;
     },
   ) {
@@ -239,7 +240,7 @@ export class EventsGateway implements OnGatewayInit {
         ? { menuItem: { id: item.menuItem.id, name: item.menuItem.name } }
         : {}),
     };
-    return this.deliver(
+    const sessionDelivery = this.deliver(
       `session:${sessionId}`,
       'order:item_status_changed',
       item,
@@ -249,6 +250,20 @@ export class EventsGateway implements OnGatewayInit {
           : this.policy.allows(id, 'sessions.read'),
       safe,
     );
+    const kitchenId = item.kitchen?.id;
+    const kitchenDelivery =
+      kitchenId === undefined
+        ? Promise.resolve()
+        : this.deliver(
+            `kitchen:${kitchenId}`,
+            'kitchen:item_status_changed',
+            item,
+            (id) =>
+              id.kind === 'staff' &&
+              this.policy.kitchenIds(id).includes(kitchenId) &&
+              this.policy.allows(id, 'kitchen.orders.read'),
+          );
+    return Promise.all([sessionDelivery, kitchenDelivery]);
   }
   emitTableStatus(tableId: number, status: string) {
     return this.deliver(

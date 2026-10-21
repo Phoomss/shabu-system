@@ -190,15 +190,14 @@ export interface SocketEvents {
   // Client -> Server
   'kitchen:join': { kitchenId: number };
   'session:join': { sessionId: string };
-  'update-order-item': { orderItemId: string; status: OrderItemStatus };
-  'new-order': { sessionId: string; items: { menuItemId: string; kitchenId: number; quantity: number }[] };
   
   // Server -> Client
   'menu:availability_changed': { menuItemId: string; isAvailable: boolean; name: string };
   'kitchen:new_order': { orderId: string; sessionId: string; items: OrderItem[] };
   'kitchen:void_order': { orderItemId: string; orderId: string; reason: string };
+  'kitchen:item_status_changed': { orderItemId: string; orderId: string; menuItem: Pick<MenuItem, 'id' | 'name'>; kitchen: KitchenSection; status: OrderItemStatus };
   'order:status_changed': Order;
-  'order:item_status_changed': { orderItemId: string; orderId: string; menuItem: MenuItem; kitchen: KitchenSection; status: OrderItemStatus };
+  'order:item_status_changed': { orderItemId: string; orderId: string; menuItem?: Pick<MenuItem, 'id' | 'name'>; kitchen?: KitchenSection; status: OrderItemStatus };
   'table:status_changed': { tableId: number; status: TableStatus };
   'session:status_changed': { sessionId: string; status: SessionStatus };
   'session:time_warning': { sessionId: string; minutesLeft: number };
@@ -214,11 +213,11 @@ export interface LoginDto {
 
 export interface CreateOrderDto {
   sessionId: string;
-  items: { menuItemId: string; kitchenId: number; quantity: number }[];
+  items: { menuItemId: string; quantity: number }[];
 }
 
 export interface UpdateOrderItemStatusDto {
-  status: OrderItemStatus;
+  status: 'PREPARING' | 'SERVED';
 }
 
 export interface VoidOrderItemDto {

@@ -1,0 +1,31 @@
+{
+  "modified": [
+    "backend/package.json",
+    "backend/src/customer/customer.controller.ts",
+    "backend/src/events/events.gateway.ts",
+    "backend/src/orders/dto/create-order.dto.ts",
+    "backend/src/orders/dto/update-item-status.dto.ts",
+    "backend/src/orders/dto/update-order-status.dto.ts",
+    "backend/src/orders/dto/void-item.dto.ts",
+    "backend/src/orders/orders-id.spec.ts",
+    "backend/src/orders/orders.service.ts",
+    "backend/test/id-contract.e2e-spec.ts",
+    "backend/test/local-start-smoke.cjs",
+    "frontend/package.json",
+    "frontend/src/app/(dashboard)/kds/page.tsx",
+    "frontend/src/app/(dashboard)/menus/page.tsx",
+    "frontend/src/app/(dashboard)/orders/page.tsx",
+    "frontend/src/app/(dashboard)/pos/page.tsx",
+    "frontend/src/app/order/[token]/page.tsx",
+    "frontend/src/types/index.ts"
+  ],
+  "added": [
+    "backend/src/orders/order-rules.ts",
+    "backend/src/orders/order-rules.spec.ts",
+    "backend/test/create-workflow-db.cjs",
+    "backend/test/jest-workflow-e2e.json",
+    "backend/test/workflow.e2e-spec.ts",
+    "frontend/src/lib/workflow-client.ts",
+    "frontend/test/workflow-clients.test.mjs"
+  ]
+}

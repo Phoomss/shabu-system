@@ -1,0 +1,20 @@
+
+> backend@0.0.1 test:ids:e2e
+> jest --runInBand --config test/jest-id-e2e.json
+
+(node:67229) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/id-contract.e2e-spec.ts
+  ID contract against migrated PostgreSQL + HTTP + Socket
+    ✓ opens table -> resolves QR -> orders/lists using the exact HTTP session ID and raw alias (135 ms)
+    ✓ returns 400 for malformed/wrong-entity IDs and 404 for well-formed nonexistent PKs (45 ms)
+    ✓ closes session and sets its real integer table PK to CLEANING together (26 ms)
+    ✓ rolls back the table update and emits no success if the session write fails (80 ms)
+    ✓ cron expires session/table consistently with only one session event (16 ms)
+    ✓ raw and REST-prefixed Socket join receive the same service events (29 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        1.685 s, estimated 2 s
+Ran all test suites.

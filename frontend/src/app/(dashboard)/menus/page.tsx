@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
+import { listKitchens } from "@/lib/workflow-client";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -74,12 +75,12 @@ export default function MenusPage() {
       const [menuRes, categoriesRes, kitchenRes] = await Promise.all([
         api.get("/menu-items").catch(() => ({ data: { data: [] } })),
         api.get("/categories").catch(() => ({ data: { data: [] } })),
-        api.get("/kitchen-sections").catch(() => ({ data: { data: [] } })),
+        listKitchens(),
       ]);
 
       setMenuItems(menuRes.data.data || []);
       setCategories(categoriesRes.data.data || []);
-      setKitchenSections(kitchenRes.data.data || []);
+      setKitchenSections(kitchenRes);
     } catch (error) {
       console.error("Failed to fetch data:", error);
       toast.error("ไม่สามารถโหลดข้อมูลได้");

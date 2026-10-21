@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,7 +11,14 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdateItemStatusDto } from './dto/update-item-status.dto';
 import { VoidItemDto } from './dto/void-item.dto';
 import { IdTransformer, IdPrefix } from 'src/common/utils/id-transformer.util';
-import { SessionStatus, ItemStatus, OrderStatus } from '@prisma/client';
+import { SessionStatus, ItemStatus, OrderStatus, Prisma } from '@prisma/client';
+
+import {
+  assertItemTransition,
+  assertOrderTransition,
+  MAX_ITEM_QUANTITY,
+  MAX_ORDER_ITEMS,
+} from './order-rules';
 
 const orderItemSelect = {
   id: true,
@@ -55,128 +63,166 @@ export class OrdersService {
     return order;
   }
 
+  /** Serialize workflow mutations; a serialization conflict is a retryable 409, never a partial write. */
+  private async atomic<T>(
+    work: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await this.prisma.$transaction(work, {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2034'
+      )
+        throw new ConflictException(
+          'Order changed concurrently; reload before retrying',
+        );
+      throw error;
+    }
+  }
+
   async create(dto: CreateOrderDto) {
-    dto = {
-      ...dto,
-      sessionId: this.idTransformer.decode(dto.sessionId, IdPrefix.SESSION),
-      items: dto.items.map((item) => ({
-        ...item,
-        menuItemId: this.idTransformer.decode(
-          item.menuItemId,
-          IdPrefix.MENU_ITEM,
-        ),
-      })),
-    };
-    // เช็ค session
-    const session = await this.prisma.session.findUnique({
-      where: { id: dto.sessionId },
-    });
-    if (!session)
-      throw new NotFoundException(`Session #${dto.sessionId} not found`);
-    if (session.status !== SessionStatus.ACTIVE) {
-      throw new BadRequestException('Session is no longer active');
-    }
-
-    // เช็ค menu items
-    const menuItemIds = dto.items.map((i) => i.menuItemId);
-    const menuItems = await this.prisma.menuItem.findMany({
-      where: { id: { in: menuItemIds } },
-    });
-
-    if (menuItems.length !== menuItemIds.length) {
-      throw new BadRequestException('Some menu items not found');
-    }
-
-    const unavailable = menuItems.filter((m) => !m.isAvailable);
-    if (unavailable.length > 0) {
+    if (
+      !Array.isArray(dto.items) ||
+      dto.items.length < 1 ||
+      dto.items.length > MAX_ORDER_ITEMS
+    )
       throw new BadRequestException(
-        `Menu items unavailable: ${unavailable.map((m) => m.name).join(', ')}`,
+        `items must contain 1-${MAX_ORDER_ITEMS} entries`,
       );
+    for (const item of dto.items) {
+      if (
+        !item ||
+        !Number.isInteger(item.quantity) ||
+        item.quantity < 1 ||
+        item.quantity > MAX_ITEM_QUANTITY
+      )
+        throw new BadRequestException(
+          `quantity must be an integer from 1-${MAX_ITEM_QUANTITY}`,
+        );
     }
+    const sessionId = this.idTransformer.decode(
+      dto.sessionId,
+      IdPrefix.SESSION,
+    );
+    const items = dto.items.map((item) => ({
+      ...item,
+      menuItemId: this.idTransformer.decode(
+        item.menuItemId,
+        IdPrefix.MENU_ITEM,
+      ),
+    }));
+    const menuItemIds = items.map((item) => item.menuItemId);
+    if (new Set(menuItemIds).size !== menuItemIds.length)
+      throw new BadRequestException(
+        'Duplicate menu items; use one entry per menu',
+      );
 
-    // สร้าง order
-    const order = await this.prisma.order.create({
-      data: {
-        sessionId: dto.sessionId,
-        items: {
-          create: dto.items.map((item) => {
-            const menuItem = menuItems.find((m) => m.id === item.menuItemId)!;
-            return {
+    const order = await this.atomic(async (tx) => {
+      // Session close/expiry writes the same row. Check time after acquiring this lock.
+      await tx.$queryRaw`SELECT id FROM "Session" WHERE id = ${sessionId} FOR UPDATE`;
+      const session = await tx.session.findUnique({ where: { id: sessionId } });
+      if (!session) throw new NotFoundException('Session not found');
+      if (
+        session.status !== SessionStatus.ACTIVE ||
+        session.endTime.getTime() <= Date.now()
+      )
+        throw new BadRequestException('Session is closed or expired');
+      const menuItems = await tx.menuItem.findMany({
+        where: {
+          id: { in: menuItemIds },
+          isAvailable: true,
+          tierItems: { some: { tierId: session.tierId } },
+        },
+      });
+      if (menuItems.length !== menuItemIds.length)
+        throw new BadRequestException(
+          'Some menu items do not exist, are unavailable, or are outside the session tier',
+        );
+      return tx.order.create({
+        data: {
+          sessionId,
+          items: {
+            create: items.map((item) => ({
               menuItemId: item.menuItemId,
-              kitchenId: menuItem.kitchenId,
+              kitchenId: menuItems.find((menu) => menu.id === item.menuItemId)!
+                .kitchenId,
               quantity: item.quantity,
               status: ItemStatus.PENDING,
-            };
-          }),
+            })),
+          },
         },
-      },
-      include: { items: { select: orderItemSelect } },
-    });
-
-    // [Socket] แจ้งแต่ละครัวที่เกี่ยวข้อง
-    const kitchenGroups = new Map<number, any[]>();
-    for (const item of order.items) {
-      const kitchenId = item.kitchen.id;
-      if (!kitchenGroups.has(kitchenId)) kitchenGroups.set(kitchenId, []);
-      kitchenGroups.get(kitchenId)!.push(item);
-    }
-
-    kitchenGroups.forEach((items, kitchenId) => {
-      console.log(
-        `[Socket] Emitting new order to kitchen ${kitchenId}:`,
-        items,
-      );
-      this.events.emitNewOrderItem(kitchenId, {
-        orderId: order.id,
-        sessionId: dto.sessionId,
-        items,
+        include: { items: { select: orderItemSelect } },
       });
     });
-
-    // [Socket] แจ้ง session
-    this.events.emitOrderStatus(dto.sessionId, order);
-
+    const kitchenIds = new Set(order.items.map((item) => item.kitchen.id));
+    for (const kitchenId of kitchenIds) {
+      await this.events.emitNewOrderItem(kitchenId, {
+        orderId: order.id,
+        sessionId,
+        items: order.items.filter((item) => item.kitchen.id === kitchenId),
+      });
+    }
+    await this.events.emitOrderStatus(sessionId, order);
     return order;
+  }
+
+  private async lockOrder(tx: Prisma.TransactionClient, id: string) {
+    await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${id} FOR UPDATE`;
+    const order = await tx.order.findUnique({
+      where: { id },
+      include: { items: { select: orderItemSelect } },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    return order;
+  }
+
+  private emitItem(
+    sessionId: string,
+    orderId: string,
+    item: {
+      id: string;
+      status: ItemStatus;
+      menuItem: { id: string; name: string };
+      kitchen: { id: number; name: string };
+    },
+  ) {
+    return this.events.emitItemStatus(sessionId, {
+      orderItemId: item.id,
+      orderId,
+      status: item.status,
+      menuItem: item.menuItem,
+      kitchen: item.kitchen,
+    });
   }
 
   async updateStatus(id: string, dto: UpdateOrderStatusDto) {
     id = this.idTransformer.decode(id, IdPrefix.ORDER);
-    const order = await this.findOne(id);
-
-    const updated = await this.prisma.order.update({
-      where: { id },
-      data: { status: dto.status },
-      include: { items: { select: orderItemSelect } },
-    });
-
-    // ถ้า staff ยืนยันออเดอร์ → เปลี่ยน item status เป็น PREPARING
-    if (dto.status === OrderStatus.CONFIRMED) {
-      await this.prisma.orderItem.updateMany({
-        where: {
-          orderId: id,
-          status: ItemStatus.PENDING,
-        },
-        data: {
-          status: ItemStatus.PREPARING,
-        },
+    const result = await this.atomic(async (tx) => {
+      const before = await this.lockOrder(tx, id);
+      assertOrderTransition(before.status, dto.status);
+      const changedIds = before.items
+        .filter((item) => item.status === ItemStatus.PENDING)
+        .map((item) => item.id);
+      await tx.orderItem.updateMany({
+        where: { orderId: id, status: ItemStatus.PENDING },
+        data: { status: ItemStatus.PREPARING },
       });
-
-      // [Socket] แจ้งครัวว่า item ถูกเปลี่ยนเป็น PREPARING
-      for (const item of updated.items) {
-        this.events.emitItemStatus(order.sessionId, {
-          orderItemId: item.id,
-          orderId: id,
-          menuItem: item.menuItem,
-          kitchen: item.kitchen,
-          status: ItemStatus.PREPARING,
-        });
-      }
-    }
-
-    // [Socket] แจ้ง session
-    this.events.emitOrderStatus(order.sessionId, updated);
-
-    return updated;
+      const order = await tx.order.update({
+        where: { id },
+        data: { status: dto.status },
+        include: { items: { select: orderItemSelect } },
+      });
+      return { order, changedIds };
+    });
+    for (const item of result.order.items.filter((item) =>
+      result.changedIds.includes(item.id),
+    ))
+      await this.emitItem(result.order.sessionId, id, item);
+    await this.events.emitOrderStatus(result.order.sessionId, result.order);
+    return result.order;
   }
 
   // ─── OrderItem ────────────────────────────────────────────
@@ -214,106 +260,105 @@ export class OrdersService {
   }
 
   async updateItemStatus(itemId: string, dto: UpdateItemStatusDto) {
-    if (dto.status === ItemStatus.VOIDED)
-      throw new BadRequestException('Use the authorized void endpoint');
     itemId = this.idTransformer.decode(itemId, IdPrefix.ORDER_ITEM);
-    const item = await this.prisma.orderItem.findUnique({
-      where: { id: itemId },
-      include: {
-        order: true,
-        menuItem: { select: { id: true, name: true } },
-        kitchen: { select: { id: true, name: true } },
-      },
-    });
-    if (!item) throw new NotFoundException(`OrderItem #${itemId} not found`);
-    if (item.status === ItemStatus.VOIDED) {
-      throw new BadRequestException('Cannot update voided item');
-    }
-
-    const updated = await this.prisma.orderItem.update({
-      where: { id: itemId },
-      data: { status: dto.status },
-      include: {
-        menuItem: { select: { id: true, name: true, imageUrl: true } },
-        kitchen: { select: { id: true, name: true } },
-      },
-    });
-
-    // [Socket] แจ้ง session ทันที
-    this.events.emitItemStatus(item.order.sessionId, {
-      orderItemId: itemId,
-      orderId: item.orderId,
-      menuItem: updated.menuItem,
-      kitchen: updated.kitchen,
-      status: dto.status,
-    });
-
-    // ถ้าทุก item เสิร์ฟหมดแล้ว → อัปเดต order เป็น CONFIRMED
-    if (dto.status === ItemStatus.SERVED) {
-      const pendingCount = await this.prisma.orderItem.count({
-        where: {
-          orderId: item.orderId,
-          status: { notIn: [ItemStatus.SERVED, ItemStatus.VOIDED] },
+    const result = await this.atomic(async (tx) => {
+      const reference = await tx.orderItem.findUnique({
+        where: { id: itemId },
+        select: { orderId: true },
+      });
+      if (!reference) throw new NotFoundException('Order item not found');
+      const before = await this.lockOrder(tx, reference.orderId);
+      if (before.status === OrderStatus.CANCELLED)
+        throw new BadRequestException('Order is cancelled');
+      const item = before.items.find((row) => row.id === itemId)!;
+      assertItemTransition(item.status, dto.status);
+      const updated = await tx.orderItem.update({
+        where: { id: itemId },
+        data: { status: dto.status },
+        include: {
+          menuItem: { select: { id: true, name: true, imageUrl: true } },
+          kitchen: { select: { id: true, name: true } },
         },
       });
-
-      if (pendingCount === 0) {
-        const confirmedOrder = await this.prisma.order.update({
-          where: { id: item.orderId },
-          data: { status: OrderStatus.CONFIRMED },
-        });
-        this.events.emitOrderStatus(item.order.sessionId, confirmedOrder);
-      }
-    }
-
-    return updated;
+      // Preserve the existing all-served confirmation rule, atomically, without reviving cancelled orders.
+      const complete = before.items.every((row) =>
+        row.id === itemId
+          ? dto.status === ItemStatus.SERVED
+          : [ItemStatus.SERVED, ItemStatus.VOIDED].includes(
+              row.status as 'SERVED' | 'VOIDED',
+            ),
+      );
+      const headerChanged = complete && before.status === OrderStatus.PENDING;
+      const order = headerChanged
+        ? await tx.order.update({
+            where: { id: before.id },
+            data: { status: OrderStatus.CONFIRMED },
+            include: { items: { select: orderItemSelect } },
+          })
+        : null;
+      return {
+        updated,
+        sessionId: before.sessionId,
+        orderId: before.id,
+        order,
+      };
+    });
+    await this.emitItem(result.sessionId, result.orderId, result.updated);
+    if (result.order)
+      await this.events.emitOrderStatus(result.sessionId, result.order);
+    return result.updated;
   }
 
   async voidItem(itemId: string, dto: VoidItemDto, managerId: string) {
     itemId = this.idTransformer.decode(itemId, IdPrefix.ORDER_ITEM);
-    const item = await this.prisma.orderItem.findUnique({
-      where: { id: itemId },
-      include: { order: true, kitchen: true },
-    });
-
-    if (!item) throw new NotFoundException(`OrderItem #${itemId} not found`);
-    if (item.status === ItemStatus.SERVED) {
-      throw new BadRequestException('Cannot void already served item');
-    }
-    if (item.status === ItemStatus.VOIDED) {
-      throw new BadRequestException('Item already voided');
-    }
-
-    const [updatedItem] = await this.prisma.$transaction([
-      this.prisma.orderItem.update({
+    managerId = this.idTransformer.decode(managerId, IdPrefix.USER);
+    const reason = dto.reason?.trim();
+    if (!reason || reason.length < 3 || reason.length > 1000)
+      throw new BadRequestException(
+        'Void reason must contain 3-1000 non-blank characters',
+      );
+    const result = await this.atomic(async (tx) => {
+      const reference = await tx.orderItem.findUnique({
+        where: { id: itemId },
+        select: { orderId: true },
+      });
+      if (!reference) throw new NotFoundException('Order item not found');
+      const order = await this.lockOrder(tx, reference.orderId);
+      const item = order.items.find((row) => row.id === itemId)!;
+      if (
+        order.status === OrderStatus.CANCELLED ||
+        ![ItemStatus.PENDING, ItemStatus.PREPARING].includes(
+          item.status as 'PENDING' | 'PREPARING',
+        )
+      )
+        throw new BadRequestException(
+          'Only pending/preparing items of a non-cancelled order can be voided',
+        );
+      const updated = await tx.orderItem.update({
         where: { id: itemId },
         data: { status: ItemStatus.VOIDED },
-      }),
-      this.prisma.voidLog.create({
-        data: {
-          orderItemId: itemId,
-          reason: dto.reason,
-          approvedBy: managerId,
+        include: {
+          menuItem: { select: { id: true, name: true, imageUrl: true } },
+          kitchen: { select: { id: true, name: true } },
         },
-      }),
-    ]);
-
-    // [Socket] แจ้งครัวว่า item ถูก void
-    this.events.emitVoidOrderItem(item.kitchenId, {
-      orderItemId: itemId,
-      orderId: item.orderId,
-      reason: dto.reason,
+      });
+      await tx.voidLog.create({
+        data: { orderItemId: itemId, reason, approvedBy: managerId },
+      });
+      return { updated, order };
     });
-
-    // [Socket] แจ้ง session ว่า item ถูก void
-    this.events.emitItemStatus(item.order.sessionId, {
+    await this.events.emitVoidOrderItem(result.updated.kitchen.id, {
       orderItemId: itemId,
-      orderId: item.orderId,
-      status: ItemStatus.VOIDED,
-      reason: dto.reason,
+      orderId: result.order.id,
+      status: result.updated.status,
+      reason,
     });
-
-    return updatedItem;
+    await this.emitItem(
+      result.order.sessionId,
+      result.order.id,
+      result.updated,
+    );
+    return result.updated;
   }
 
   async findVoidLogs() {

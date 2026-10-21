@@ -1,0 +1,43 @@
+
+> backend@0.0.1 test:security:e2e
+> jest --runInBand --config test/jest-security-e2e.json
+
+(node:68269) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/security.e2e-spec.ts
+  Security authorization (real HTTP, JWT, PostgreSQL, Socket.IO)
+    ✓ default policy denies OWNER and every unapproved role; self profile still works (29 ms)
+    ✓ anonymous staff endpoint /users returns 401 (1 ms)
+    ✓ anonymous staff endpoint /role returns 401 (1 ms)
+    ✓ anonymous staff endpoint /orders returns 401 (1 ms)
+    ✓ anonymous staff endpoint /sessions returns 401 (1 ms)
+    ✓ anonymous staff endpoint /invoices returns 401 (1 ms)
+    ✓ anonymous staff endpoint /ingredients returns 401
+    ✓ anonymous staff endpoint /tables returns 401 (1 ms)
+    ✓ anonymous staff endpoint /kitchens returns 401 (1 ms)
+    ✓ anonymous staff endpoint /tiers returns 401 (1 ms)
+    ✓ anonymous staff endpoint /categories returns 401 (1 ms)
+    ✓ anonymous staff endpoint /menu-items returns 401 (1 ms)
+    ✓ anonymous staff endpoint /settings/payment returns 401 (1 ms)
+    ✓ configured OWNER can manage users/roles; STAFF/KITCHEN/MANAGER cannot escalate (40 ms)
+    ✓ void/payment settings enforce distinct action permissions with positive and negative cases (56 ms)
+    ✓ QR possession exchanges without staff login; legacy QR URLs work and response is minimal/no-store (6 ms)
+    ✓ sessionId alone or staff token cannot authorize customer access; customer token cannot authorize staff APIs (5 ms)
+    ✓ customer A lists/creates only its own orders and cannot assert table B (49 ms)
+    ✓ rejects tampered signature, expired JWT, wrong audience and wrong signing domain (3 ms)
+    ✓ HTTP kitchen requests require assignment for listing and item updates (27 ms)
+    ✓ Socket handshake rejects anonymous and forged credentials before connection (13 ms)
+    ✓ customer Socket cannot join cross-session/kitchen room but can receive own-session safe events (10 ms)
+    ✓ staff Socket kitchen joins enforce assignment and role action (8 ms)
+    ✓ invoice/stock events reach authorized staff but never customer or ordinary STAFF sockets (13 ms)
+    ✓ Socket reconnect re-authenticates; expired JWT disconnects existing sockets (1782 ms)
+    ✓ closed/expired sessions reject HTTP, Socket handshake and rejoin; legacy QR binding revokes on rotation (63 ms)
+    ✓ inactive staff is revoked on HTTP and on sensitive event delivery for an existing socket (35 ms)
+    ✓ CORS is an explicit origin allowlist for browser HTTP and WebSocket (22 ms)
+    ✓ Swagger marks staff and customer routes with separate bearer schemes (25 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       29 passed, 29 total
+Snapshots:   0 total
+Time:        3.964 s, estimated 4 s
+Ran all test suites.

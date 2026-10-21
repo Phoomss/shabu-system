@@ -389,9 +389,8 @@ export default function OrdersPage() {
                             <Button
                               variant="destructive"
                               size="sm"
-                              onClick={() =>
-                                handleUpdateOrderStatus(order.id, "CANCELLED")
-                              }
+                              disabled
+                              title="การยกเลิกทั้งออเดอร์ยังไม่เปิดใช้งาน กรุณาใช้การยกเลิกรายการพร้อมเหตุผล"
                             >
                               <XCircle className="h-4 w-4" />
                             </Button>

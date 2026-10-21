@@ -1,0 +1,16 @@
+
+> backend@0.0.1 test:ids
+> jest --runInBand --testPathPatterns='(id-transformer|sessions-id|orders-id|events-id)\.spec\.ts$'
+
+(node:67017) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/orders/orders-id.spec.ts
+PASS src/sessions/sessions-id.spec.ts
+PASS src/events/events-id.spec.ts
+PASS src/common/utils/id-transformer.spec.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       30 passed, 30 total
+Snapshots:   0 total
+Time:        1.468 s
+Ran all test suites matching (id-transformer|sessions-id|orders-id|events-id)\.spec\.ts$.

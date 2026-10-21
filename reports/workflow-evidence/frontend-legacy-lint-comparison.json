@@ -1,0 +1,54 @@
+[
+  {
+    "file": "src/app/(dashboard)/menus/page.tsx",
+    "HEAD": {
+      "exitStatus": 1,
+      "errors": 2,
+      "warnings": 2
+    },
+    "working": {
+      "exitStatus": 1,
+      "errors": 2,
+      "warnings": 2
+    }
+  },
+  {
+    "file": "src/app/(dashboard)/orders/page.tsx",
+    "HEAD": {
+      "exitStatus": 1,
+      "errors": 4,
+      "warnings": 3
+    },
+    "working": {
+      "exitStatus": 1,
+      "errors": 4,
+      "warnings": 3
+    }
+  },
+  {
+    "file": "src/app/(dashboard)/pos/page.tsx",
+    "HEAD": {
+      "exitStatus": 1,
+      "errors": 1,
+      "warnings": 12
+    },
+    "working": {
+      "exitStatus": 1,
+      "errors": 1,
+      "warnings": 12
+    }
+  },
+  {
+    "file": "src/types/index.ts",
+    "HEAD": {
+      "exitStatus": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    "working": {
+      "exitStatus": 0,
+      "errors": 0,
+      "warnings": 0
+    }
+  }
+]
