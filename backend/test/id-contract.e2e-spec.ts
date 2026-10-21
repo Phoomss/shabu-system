@@ -27,7 +27,7 @@ if (
   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
   target.hostname !== '127.0.0.1' ||
   target.port !== '55432' ||
-  !/^\/shabu_f04_empty_\d+$/.test(target.pathname)
+  !/^\/(?:shabu_f04_empty_\d+|shabu_payment_empty_\d+)$/.test(target.pathname)
 ) {
   throw new Error(
     'Use the fresh isolated database from test:migrations with explicit opt-in',

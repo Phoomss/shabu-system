@@ -1,0 +1,17 @@
+src/invoices/payment-readiness.ts 39ms
+src/invoices/payment-safety.spec.ts 10ms
+src/invoices/invoices.controller.ts 13ms
+src/invoices/invoices.service.ts 17ms (unchanged)
+src/invoices/dto/create-invoice.dto.ts 4ms
+src/settings/payment-settings.dto.ts 4ms (unchanged)
+src/settings/settings.controller.ts 3ms (unchanged)
+src/settings/settings.module.ts 1ms (unchanged)
+src/settings/settings.service.ts 3ms (unchanged)
+src/sessions/sessions.service.ts 18ms (unchanged)
+src/sessions/sessions.controller.ts 4ms
+src/sessions/dto/create-session.dto.ts 2ms
+src/sessions/dto/session-response.dto.ts 4ms (unchanged)
+src/security/policy.ts 6ms (unchanged)
+test/payment.e2e-spec.ts 41ms
+test/proposals/pricing-policy.proposal.spec.ts 5ms
+test/verify-payment-migrations.cjs 17ms

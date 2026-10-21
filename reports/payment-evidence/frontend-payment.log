@@ -1,0 +1,15 @@
+
+> frontend@0.1.0 test:payment
+> node --test test/payment-display.test.mjs
+
+✔ stored decimals are identical in UI and receipt, without floating arithmetic or silently rounding old data (1.273959ms)
+✔ receipt escapes staff-provided text and never contains raw recipient as a payment QR (0.137375ms)
+✔ malformed monetary values are shown as unavailable, not as a guessed charge (0.080375ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 383.137917

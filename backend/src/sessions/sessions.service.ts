@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,8 +8,15 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { EventsGateway } from 'src/events/events.gateway';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionStatusDto } from './dto/update-session-status.dto';
-import { SessionStatus, TableStatus } from '@prisma/client';
-import { randomUUID } from 'node:crypto';
+import {
+  SessionStatus,
+  TableStatus,
+  Prisma,
+  Session,
+  Table,
+  Tier,
+} from '@prisma/client';
+import { randomUUID, createHash } from 'node:crypto';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { IdTransformer, IdPrefix } from 'src/common/utils/id-transformer.util';
 
@@ -70,29 +78,98 @@ export class SessionsService {
     return this.transformResponse(session);
   }
 
-  async create(dto: CreateSessionDto) {
-    // เช็คว่าโต๊ะมีอยู่และว่างอยู่มั้ย
-    const table = await this.prisma.table.findUnique({
-      where: { id: dto.tableId },
-    });
-    if (!table) throw new NotFoundException(`Table #${dto.tableId} not found`);
-    if (table.status !== TableStatus.AVAILABLE) {
-      throw new BadRequestException(`Table #${table.number} is not available`);
+  private async atomic<T>(
+    work: (tx: Prisma.TransactionClient) => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await this.prisma.$transaction(work);
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        ['P2002', 'P2034'].includes(error.code)
+      )
+        throw new ConflictException(
+          'Concurrent session change; reload before retrying',
+        );
+      throw error;
     }
+  }
 
-    // เช็ค tier
-    const tier = await this.prisma.tier.findUnique({
-      where: { id: dto.tierId },
-    });
-    if (!tier) throw new NotFoundException(`Tier #${dto.tierId} not found`);
-
-    // คำนวณเวลาสิ้นสุด
-    const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + tier.timeLimit * 60 * 1000);
-
-    // สร้าง session และอัปเดต table status พร้อมกัน
-    const [session] = await this.prisma.$transaction([
-      this.prisma.session.create({
+  async create(
+    dto: CreateSessionDto,
+    idempotencyKey?: string,
+    actorId?: string,
+  ) {
+    for (const count of [dto.adultCount, dto.childCount]) {
+      if (!Number.isSafeInteger(count) || count < 0 || count > 2147483647)
+        throw new BadRequestException(
+          'Guest counts must be non-negative database integers',
+        );
+    }
+    if (idempotencyKey !== undefined) {
+      if (!/^[A-Za-z0-9._:-]{1,128}$/.test(idempotencyKey) || !actorId)
+        throw new BadRequestException('Invalid Idempotency-Key');
+      actorId = this.idTransformer.decode(actorId, IdPrefix.USER);
+    }
+    const requestHash = createHash('sha256')
+      .update(
+        JSON.stringify({
+          tableId: dto.tableId,
+          tierId: dto.tierId,
+          adultCount: dto.adultCount,
+          childCount: dto.childCount,
+        }),
+      )
+      .digest('hex');
+    const result = await this.atomic(async (tx) => {
+      if (idempotencyKey && actorId) {
+        const lock = `session-open:${actorId}:${idempotencyKey}`;
+        // Project an integer; PostgreSQL's void return type cannot be deserialized by Prisma.
+        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${lock}, 0))`;
+        const prior = await tx.sessionOpenRequest.findUnique({
+          where: { actorId_key: { actorId, key: idempotencyKey } },
+        });
+        if (prior) {
+          if (prior.requestHash !== requestHash)
+            throw new ConflictException(
+              'Idempotency-Key was used with different input',
+            );
+          return {
+            session: await tx.session.findUniqueOrThrow({
+              where: { id: prior.sessionId },
+              include: { table: true, tier: true },
+            }),
+            replay: true,
+          };
+        }
+      }
+      await tx.$queryRaw`SELECT id FROM "Table" WHERE id = ${dto.tableId} FOR UPDATE`;
+      const table = await tx.table.findUnique({ where: { id: dto.tableId } });
+      if (!table) throw new NotFoundException('Table not found');
+      if (table.status !== TableStatus.AVAILABLE)
+        throw new ConflictException('Table is not available');
+      // Neither CLOSED nor an existing legacy invoice proves payment. While checkout is disabled,
+      // every previous session requires settlement review before reusing a table. Do not infer PAID.
+      const unresolved = await tx.session.findFirst({
+        where: {
+          tableId: dto.tableId,
+        },
+        select: { id: true },
+      });
+      if (unresolved)
+        throw new ConflictException(
+          'Table has a previous session requiring approved settlement review',
+        );
+      const tier = await tx.tier.findUnique({ where: { id: dto.tierId } });
+      if (!tier) throw new NotFoundException('Tier not found');
+      const claimed = await tx.table.updateMany({
+        where: { id: dto.tableId, status: TableStatus.AVAILABLE },
+        data: { status: TableStatus.OCCUPIED },
+      });
+      if (claimed.count !== 1)
+        throw new ConflictException('Table was claimed concurrently');
+      const startTime = new Date();
+      const session = await tx.session.create({
         data: {
           tableId: dto.tableId,
           tierId: dto.tierId,
@@ -100,20 +177,24 @@ export class SessionsService {
           childCount: dto.childCount,
           qrToken: randomUUID(),
           startTime,
-          endTime,
+          endTime: new Date(startTime.getTime() + tier.timeLimit * 60000),
         },
         include: { table: true, tier: true },
-      }),
-      this.prisma.table.update({
-        where: { id: dto.tableId },
-        data: { status: TableStatus.OCCUPIED },
-      }),
-    ]);
-
-    // [Socket] แจ้งอัปเดต table status
-    this.events.emitTableStatus(dto.tableId, TableStatus.OCCUPIED);
-
-    return this.transformResponse(session);
+      });
+      if (idempotencyKey && actorId)
+        await tx.sessionOpenRequest.create({
+          data: {
+            actorId,
+            key: idempotencyKey,
+            requestHash,
+            sessionId: session.id,
+          },
+        });
+      return { session, replay: false };
+    });
+    if (!result.replay)
+      await this.events.emitTableStatus(dto.tableId, TableStatus.OCCUPIED);
+    return this.transformResponse(result.session);
   }
 
   async updateStatus(id: string, dto: UpdateSessionStatusDto) {
@@ -122,7 +203,7 @@ export class SessionsService {
       dto.status === SessionStatus.CLOSED ||
       dto.status === SessionStatus.EXPIRED;
     // Keep records raw until commit; never use a response DTO for DB queries.
-    const updated = await this.prisma.$transaction(async (tx) => {
+    const updated = await this.atomic(async (tx) => {
       const session = await tx.session.findUnique({ where: { id: rawId } });
       if (!session) throw new NotFoundException(`Session #${id} not found`);
       if (closesTable) {
@@ -137,9 +218,9 @@ export class SessionsService {
         include: { table: true, tier: true },
       });
     });
-    this.events.emitSessionStatus(rawId, dto.status);
+    await this.events.emitSessionStatus(rawId, dto.status);
     if (closesTable)
-      this.events.emitTableStatus(updated.tableId, TableStatus.CLEANING);
+      await this.events.emitTableStatus(updated.tableId, TableStatus.CLEANING);
 
     return this.transformResponse(updated);
   }
@@ -164,7 +245,7 @@ export class SessionsService {
         const minutesLeft = Math.ceil(
           (session.endTime.getTime() - now.getTime()) / 60000,
         );
-        this.events.emitSessionWarning(session.id, minutesLeft);
+        await this.events.emitSessionWarning(session.id, minutesLeft);
       }
     }
   }
@@ -172,7 +253,9 @@ export class SessionsService {
   /**
    * Transform session response to use prefixed IDs
    */
-  private transformResponse(session: any) {
+  private transformResponse<T extends Session & { table: Table; tier: Tier }>(
+    session: T,
+  ) {
     return {
       ...session,
       id: this.idTransformer.encode(session.id, IdPrefix.SESSION),

@@ -1,6 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsString, IsOptional, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
 import { SessionStatus, TableStatus } from '@prisma/client';
 
 // --- Child classes first (to avoid reference errors) ---
@@ -43,23 +41,7 @@ export class OrderCountInfo {
 
 // --- Main DTO classes ---
 
-export class CreateSessionDto {
-  @ApiProperty({ example: 1, description: 'Table ID' })
-  @IsInt()
-  tableId: number;
-
-  @ApiProperty({ example: 1, description: 'Tier ID' })
-  @IsInt()
-  tierId: number;
-
-  @ApiProperty({ example: 2, description: 'จำนวนผู้ใหญ่' })
-  @IsInt()
-  adultCount: number;
-
-  @ApiProperty({ example: 1, description: 'จำนวนเด็ก' })
-  @IsInt()
-  childCount: number;
-}
+export { CreateSessionDto } from './create-session.dto';
 
 export class SessionResponse {
   @ApiProperty({

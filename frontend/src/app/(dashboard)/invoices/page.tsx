@@ -1,30 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuthStore } from "@/stores/authStore";
-import { getSocket } from "@/lib/socket";
+import { useCallback, useEffect, useState } from "react";
 import api from "@/lib/api";
+import { getSocket } from "@/lib/socket";
+import {
+  formatStoredMoney,
+  legacyInvoiceDocument,
+} from "@/lib/payment-display";
+import { isAxiosError } from "axios";
 import { toast } from "sonner";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -33,753 +27,226 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Search,
-  DollarSign,
-  CreditCard,
-  Banknote,
-  Smartphone,
-  Building,
-  FileText,
-  Printer,
-  QrCode,
-  Settings,
-  Save,
-  Users,
-} from "lucide-react";
-import { Socket } from "socket.io-client";
-import type { Invoice, Session } from "@/types";
-import { QRCodeSVG } from "qrcode.react";
+import type { Invoice } from "@/types";
+
+type PaymentReadiness = {
+  checkoutEnabled: boolean;
+  qrEnabled: boolean;
+  confirmationEnabled: boolean;
+  code: string;
+};
 
 export default function InvoicesPage() {
-  const { user } = useAuthStore();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [selectedSession, setSelectedSession] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CREDIT_CARD" | "DEBIT_CARD" | "QR_CODE" | "BANK_TRANSFER">("CASH");
-  const [discount, setDiscount] = useState(0);
-  const [promptPayNumber, setPromptPayNumber] = useState("08XXXXXXXX");
-  const [savedPromptPayNumber, setSavedPromptPayNumber] = useState("08XXXXXXXX");
-  const [sessionPrice, setSessionPrice] = useState(0);
-  const [adultCount, setAdultCount] = useState(1);
-  const [childCount, setChildCount] = useState(0);
-  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [selected, setSelected] = useState<Invoice | null>(null);
+  const [receiver, setReceiver] = useState("");
+  const [canEditSettings, setCanEditSettings] = useState(false);
+  const [readiness, setReadiness] = useState<PaymentReadiness | null>(null);
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchData();
-    fetchPaymentSettings();
-    fetchTotalRevenue();
-
-    const s = getSocket();
-    setSocket(s);
-
-    s.on("invoice:new", (data) => {
-      console.log("New invoice:", data);
-      fetchData();
-      fetchTotalRevenue();
-      toast.success("สร้างใบเสร็จสำเร็จ");
-    });
-
-    return () => {
-      s.off("invoice:new");
-    };
+  const load = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const [list, status] = await Promise.all([
+        api.get("/invoices", { signal }),
+        api.get("/invoices/payment-readiness", { signal }),
+      ]);
+      if (signal?.aborted) return;
+      setInvoices(list.data.data);
+      setReadiness(status.data.data);
+      setError(null);
+    } catch {
+      if (!signal?.aborted)
+        setError(
+          "ไม่สามารถโหลดข้อมูลใบเสร็จได้ กรุณาตรวจสิทธิ์และการเชื่อมต่อ",
+        );
+    }
   }, []);
 
-  const fetchTotalRevenue = async () => {
-    try {
-      const res = await api.get("/invoices/stats/total-revenue");
-      console.log("API Response:", res.data);
-      // API returns { status, message, data: { totalRevenue } }
-      const totalRevenue = res.data.data?.totalRevenue ?? res.data.totalRevenue ?? 0;
-      setTotalRevenue(totalRevenue);
-      console.log("Total Revenue:", totalRevenue);
-    } catch (error) {
-      console.error("Failed to fetch total revenue:", error);
-    }
-  };
-
-  const handlePrintInvoice = () => {
-    if (!selectedInvoice) return;
-
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>ใบเสร็จเลขที่ INV-${selectedInvoice.invoiceNumber?.toString().padStart(6, "0") ?? "N/A"}</title>
-        <style>
-          @media print {
-            @page { margin: 20px; size: A5; }
-            body { font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif; }
-            .no-print { display: none; }
-          }
-          body { 
-            font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-          }
-          .header { text-align: center; margin-bottom: 20px; }
-          .header h1 { margin: 0; font-size: 24px; }
-          .header p { margin: 5px 0; color: #666; }
-          .invoice-info { margin-bottom: 20px; }
-          .invoice-info table { width: 100%; border-collapse: collapse; }
-          .invoice-info td { padding: 5px 0; }
-          .invoice-info td:first-child { font-weight: bold; }
-          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-          .items-table th, .items-table td { 
-            border: 1px solid #ddd; 
-            padding: 8px; 
-            text-align: left; 
-          }
-          .items-table th { background-color: #f5f5f5; }
-          .totals { margin-left: auto; width: 250px; }
-          .totals table { width: 100%; }
-          .totals td { padding: 5px; }
-          .totals .total-label { text-align: right; }
-          .totals .total-amount { text-align: right; font-weight: bold; }
-          .totals .net-amount { 
-            text-align: right; 
-            font-size: 18px; 
-            font-weight: bold; 
-            border-top: 2px solid #333;
-          }
-          .footer { 
-            text-align: center; 
-            margin-top: 30px; 
-            padding-top: 20px; 
-            border-top: 1px solid #ddd;
-            font-size: 12px;
-            color: #666;
-          }
-          .qr-section { 
-            text-align: center; 
-            margin: 20px 0; 
-            padding: 15px; 
-            background: #f9f9f9;
-            border-radius: 8px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>ใบเสร็จรับเงิน</h1>
-          <p>Shabu Je Chan</p>
-        </div>
-        
-        <div class="invoice-info">
-          <table>
-            <tr>
-              <td>เลขที่ใบเสร็จ:</td>
-              <td>INV-${selectedInvoice.invoiceNumber?.toString().padStart(6, "0") ?? "N/A"}</td>
-            </tr>
-            <tr>
-              <td>โต๊ะ:</td>
-              <td>${selectedInvoice.session?.table.number || "-"}</td>
-            </tr>
-            <tr>
-              <td>วิธีการชำระเงิน:</td>
-              <td>${getPaymentMethodLabel(selectedInvoice.paymentMethod)}</td>
-            </tr>
-            <tr>
-              <td>วันที่:</td>
-              <td>${new Date(selectedInvoice.createdAt).toLocaleString("th-TH")}</td>
-            </tr>
-            ${selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber ? `
-            <tr>
-              <td>PromptPay:</td>
-              <td>${selectedInvoice.promptPayNumber}</td>
-            </tr>
-            ` : ''}
-          </table>
-        </div>
-
-        ${selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber ? `
-        <div class="qr-section">
-          <div id="qrcode"></div>
-          <p style="margin-top: 10px; font-size: 14px;">${selectedInvoice.promptPayNumber}</p>
-        </div>
-        ` : ''}
-
-        <div class="totals">
-          <table>
-            <tr>
-              <td class="total-label">ยอดรวม</td>
-              <td class="total-amount">฿${selectedInvoice.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            </tr>
-            <tr>
-              <td class="total-label">ส่วนลด</td>
-              <td class="total-amount" style="color: #22c55e;">-฿${selectedInvoice.discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            </tr>
-            <tr>
-              <td class="total-label">ยอดสุทธิ</td>
-              <td class="net-amount">฿${selectedInvoice.netAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            </tr>
-          </table>
-        </div>
-
-        <div class="footer">
-          <p>ขอบคุณที่ใช้บริการ</p>
-          <p>พิมพ์เมื่อ ${new Date().toLocaleString("th-TH")}</p>
-        </div>
-
-        <button class="no-print" onclick="window.print()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">
-          🖨️ พิมพ์
-        </button>
-      </body>
-      </html>
-    `;
-
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(printContent);
-      printWindow.document.close();
-      
-      // Wait for content to load and print
-      printWindow.onload = () => {
-        printWindow.focus();
-        setTimeout(() => {
-          printWindow.print();
-        }, 250);
-      };
-    }
-  };
-
-  // Recalculate price when adult/child count or session changes
   useEffect(() => {
-    if (selectedSession) {
-      const fetchSessionPrice = async () => {
-        try {
-          const sessionRes = await api.get(`/sessions/${selectedSession}`);
-          const session = sessionRes.data.data;
-          const priceAdult = session.tier?.priceAdult || 0;
-          const priceChild = session.tier?.priceChild || 0;
-          // Use adult/child count from session if available, otherwise use current state
-          const adults = session.adultCount || adultCount;
-          const children = session.childCount || childCount;
-          const totalAmount = (priceAdult * adults) + (priceChild * children);
-          setSessionPrice(totalAmount);
-          // Update the count to match the session
-          setAdultCount(adults);
-          setChildCount(children);
-        } catch (error) {
-          console.error("Failed to fetch session price:", error);
+    const controller = new AbortController();
+    queueMicrotask(() => {
+      if (!controller.signal.aborted) void load(controller.signal);
+    });
+    void api
+      .get("/auth/me", { signal: controller.signal })
+      .then(async ({ data }) => {
+        if (controller.signal.aborted) return;
+        const permissions: string[] = data.data.permissions;
+        setCanEditSettings(permissions.includes("payment-settings.write"));
+        if (permissions.includes("payment-settings.read")) {
+          const settings = await api.get("/settings/payment", {
+            signal: controller.signal,
+          });
+          if (!controller.signal.aborted)
+            setReceiver(settings.data.data.promptPayNumber ?? "");
         }
-      };
-      fetchSessionPrice();
-    }
-  }, [selectedSession]);
+      })
+      .catch(() => {
+        /* Settings access is separate from invoice read access. */
+      });
+    const socket = getSocket();
+    const sync = () => {
+      void load(controller.signal);
+    };
+    socket.on("connect", sync);
+    socket.on("invoice:new", sync);
+    return () => {
+      controller.abort();
+      socket.off("connect", sync);
+      socket.off("invoice:new", sync);
+    };
+  }, [load]);
 
-  const fetchPaymentSettings = async () => {
+  const saveSettings = async () => {
     try {
-      const res = await api.get("/settings/payment");
-      if (res.data.data.promptPayNumber) {
-        setSavedPromptPayNumber(res.data.data.promptPayNumber);
-        setPromptPayNumber(res.data.data.promptPayNumber);
-      }
-    } catch (error) {
-      console.log("Using default PromptPay number");
+      await api.post("/settings/payment", {
+        promptPayNumber: receiver.trim() || null,
+      });
+      toast.success(
+        "บันทึกข้อมูลผู้รับแล้ว ข้อมูลนี้ยังไม่ใช่การยืนยันบัญชีหรือการรับเงิน",
+      );
+    } catch (failure: unknown) {
+      toast.error(
+        (isAxiosError<{ message?: string }>(failure) &&
+          failure.response?.data?.message) ||
+          "บันทึกไม่ได้",
+      );
     }
   };
 
-  const handleSavePromptPay = async () => {
-    try {
-      await api.post("/settings/payment", { promptPayNumber });
-      setSavedPromptPayNumber(promptPayNumber);
-      toast.success("บันทึกเบอร์ PromptPay สำเร็จ");
-      setIsSettingsOpen(false);
-    } catch (error: any) {
-      console.error("Failed to save PromptPay:", error);
-      toast.error(error.response?.data?.message || "ไม่สามารถบันทึกได้");
-    }
+  const print = () => {
+    if (!selected) return;
+    const popup = window.open("", "_blank");
+    if (!popup) return;
+    popup.document.write(legacyInvoiceDocument(selected));
+    popup.document.close();
+    popup.focus();
+    popup.print();
   };
-
-  const fetchData = async () => {
-    try {
-      const [invoicesRes, sessionsRes] = await Promise.all([
-        api.get("/invoices").catch(() => ({ data: { data: [] } })),
-        api.get("/sessions").catch(() => ({ data: { data: [] } })),
-      ]);
-      setInvoices(invoicesRes.data.data || []);
-      setSessions(sessionsRes.data.data || []);
-    } catch (error) {
-      console.error("Failed to fetch data:", error);
-      toast.error("ไม่สามารถโหลดข้อมูลได้");
-    }
-  };
-
-  const handleCreateInvoice = async () => {
-    if (!selectedSession) {
-      toast.error("กรุณาเลือกเซสชัน");
-      return;
-    }
-
-    if (adultCount === 0 && childCount === 0) {
-      toast.error("กรุณาระบุจำนวนลูกค้า");
-      return;
-    }
-
-    try {
-      const payload: any = {
-        sessionId: selectedSession,
-        totalAmount: sessionPrice,
-        discount,
-        paymentMethod,
-      };
-
-      // Add PromptPay number if payment method is QR_CODE
-      if (paymentMethod === "QR_CODE" && promptPayNumber) {
-        payload.promptPayNumber = promptPayNumber;
-      }
-
-      console.log("Creating invoice with payload:", payload);
-
-      await api.post("/invoices", payload);
-      toast.success("สร้างใบเสร็จสำเร็จ");
-      setIsCreateOpen(false);
-      setSelectedSession("");
-      setDiscount(0);
-      setSessionPrice(0);
-      setAdultCount(1);
-      setChildCount(0);
-      fetchData();
-    } catch (error: any) {
-      console.error("Failed to create invoice:", error);
-      console.error("Error response:", error.response?.data);
-      toast.error(error.response?.data?.message || "ไม่สามารถสร้างใบเสร็จได้");
-    }
-  };
-
-  const getPaymentMethodIcon = (method: string) => {
-    switch (method) {
-      case "CASH":
-        return <Banknote className="h-4 w-4" />;
-      case "CREDIT_CARD":
-        return <CreditCard className="h-4 w-4" />;
-      case "DEBIT_CARD":
-        return <CreditCard className="h-4 w-4" />;
-      case "QR_CODE":
-        return <Smartphone className="h-4 w-4" />;
-      case "BANK_TRANSFER":
-        return <Building className="h-4 w-4" />;
-      default:
-        return <DollarSign className="h-4 w-4" />;
-    }
-  };
-
-  const getPaymentMethodLabel = (method: string) => {
-    switch (method) {
-      case "CASH":
-        return "เงินสด";
-      case "CREDIT_CARD":
-        return "บัตรเครดิต";
-      case "DEBIT_CARD":
-        return "บัตรเดบิต";
-      case "QR_CODE":
-        return "QR Code";
-      case "BANK_TRANSFER":
-        return "โอนเงิน";
-      default:
-        return method;
-    }
-  };
-
-  const activeSessions = sessions.filter((s) => s.status === "ACTIVE");
-
-  const filteredInvoices = invoices.filter((invoice) => {
-    return (
-      invoice.id.toString().includes(searchQuery) ||
-      invoice.session?.table.number.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  });
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">ใบเสร็จ</h1>
-          <p className="text-gray-500">ประวัติการชำระเงินและรายได้</p>
-        </div>
-        <div className="flex gap-2">
-          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">
-                <Settings className="h-4 w-4 mr-2" />
-                ตั้งค่า PromptPay
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>ตั้งค่าเบอร์โทรศัพท์ PromptPay</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>เบอร์โทรศัพท์ PromptPay</Label>
-                  <Input
-                    value={promptPayNumber}
-                    onChange={(e) => setPromptPayNumber(e.target.value)}
-                    placeholder="0839987275"
-                  />
-                  <p className="text-sm text-gray-500 mt-2">
-                    เบอร์นี้จะแสดงใน QR Code สำหรับชำระเงิน
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" onClick={() => setIsSettingsOpen(false)}>
-                    ยกเลิก
-                  </Button>
-                  <Button className="flex-1" onClick={handleSavePromptPay}>
-                    <Save className="h-4 w-4 mr-2" />
-                    บันทึก
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog open={isCreateOpen} onOpenChange={(open) => {
-            setIsCreateOpen(open);
-            if (!open) {
-              setSelectedSession("");
-              setAdultCount(1);
-              setChildCount(0);
-              setDiscount(0);
-              setSessionPrice(0);
-            }
-          }}>
-            <DialogTrigger asChild>
-              <Button>
-                <FileText className="h-4 w-4 mr-2" />
-                สร้างใบเสร็จ
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-            <DialogHeader>
-              <DialogTitle>สร้างใบเสร็จใหม่</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label>เลือกเซสชัน (กำลังใช้งาน: {activeSessions.length})</Label>
-                <Select value={selectedSession} onValueChange={setSelectedSession}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกเซสชัน" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {activeSessions.map((session) => (
-                      <SelectItem key={session.id} value={session.id}>
-                        SES-{session.sessionNumber?.toString().padStart(6, "0")} | โต๊ะ {session.table.number} - {session.tier.name} ({session.adultCount} ผู้ใหญ่, {session.childCount} เด็ก)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              {selectedSession && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      จำนวนผู้ใหญ่ (คน)
-                    </Label>
-                    <Input
-                      type="number"
-                      value={adultCount}
-                      onChange={(e) => setAdultCount(Number(e.target.value))}
-                      min="0"
-                    />
-                  </div>
-                  <div>
-                    <Label className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      จำนวนเด็ก (คน)
-                    </Label>
-                    <Input
-                      type="number"
-                      value={childCount}
-                      onChange={(e) => setChildCount(Number(e.target.value))}
-                      min="0"
-                    />
-                  </div>
-                </div>
-              )}
-              <div>
-                <Label>วิธีการชำระเงิน</Label>
-                <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as any)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="เลือกวิธีการชำระเงิน" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CASH">เงินสด</SelectItem>
-                    <SelectItem value="CREDIT_CARD">บัตรเครดิต</SelectItem>
-                    <SelectItem value="DEBIT_CARD">บัตรเดบิต</SelectItem>
-                    <SelectItem value="QR_CODE">QR Code (PromptPay)</SelectItem>
-                    <SelectItem value="BANK_TRANSFER">โอนเงิน</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {paymentMethod === "QR_CODE" && promptPayNumber && sessionPrice > 0 && (
-                <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
-                  <div>
-                    <Label>เบอร์โทรศัพท์ PromptPay</Label>
-                    <Input
-                      value={promptPayNumber}
-                      onChange={(e) => setPromptPayNumber(e.target.value)}
-                      placeholder="0839987275"
-                    />
-                  </div>
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="bg-white p-4 rounded-lg shadow">
-                      <QRCodeSVG
-                        value={promptPayNumber}
-                        size={180}
-                        level="H"
-                        includeMargin={true}
-                      />
-                    </div>
-                    <p className="text-sm text-gray-600 font-medium">
-                      สแกนเพื่อชำระเงิน: {promptPayNumber}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      ยอดเงิน: ฿{sessionPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                  </div>
-                </div>
-              )}
-              <div>
-                <Label>ส่วนลด (฿)</Label>
-                <Input
-                  type="number"
-                  value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value))}
-                  placeholder="0"
-                />
-              </div>
-              {selectedSession && (
-                <div className="border-t pt-4">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>ยอดรวม</span>
-                    <span>฿{sessionPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between text-green-600">
-                    <span>ส่วนลด</span>
-                    <span>-฿{discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between text-xl font-bold border-t pt-2">
-                    <span>ยอดสุทธิ</span>
-                    <span>฿{(sessionPrice - discount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-              )}
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setIsCreateOpen(false)}>
-                  ยกเลิก
-                </Button>
-                <Button className="flex-1" onClick={handleCreateInvoice}>
-                  สร้างใบเสร็จ
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold">
+          ใบเสร็จเดิมและการตั้งค่าการชำระเงิน
+        </h1>
+        <p
+          role="status"
+          className="mt-2 rounded border border-amber-300 bg-amber-50 p-4"
+        >
+          ยังไม่เปิด checkout, QR ชำระเงิน หรือการยืนยันรับเงินจริง
+          ระหว่างรออนุมัติกติกาโดยร้าน
+          ใบเสร็จเดิมไม่ใช่หลักฐานว่าระบบได้ตรวจยืนยันเงินเข้าแล้ว
+        </p>
+        <Button disabled className="mt-3">
+          สร้างใบเสร็จ — รออนุมัติกติกา
+        </Button>
+        {!readiness && (
+          <p className="text-sm text-gray-600">
+            ยังไม่ได้รับข้อมูลความพร้อมการชำระเงินจาก server
+          </p>
+        )}
       </div>
-
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ใบเสร็จทั้งหมด</CardTitle>
-            <FileText className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{invoices.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">รายได้รวม</CardTitle>
-            <DollarSign className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">฿{totalRevenue.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-            <p className="text-xs text-gray-500 mt-1">
-              จาก {invoices.length} ใบเสร็จ
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">เซสชันที่ใช้งาน</CardTitle>
-            <Building className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{activeSessions.length}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
+      {error && <p role="alert">{error}</p>}
       <Card>
-        <CardContent className="p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="ค้นหาโดย ID หรือโต๊ะ..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+        <CardHeader>
+          <CardTitle>
+            ข้อมูลผู้รับเดิม (ยังไม่ผ่านการยืนยันโดยผู้ให้บริการ)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Label htmlFor="receiver">ข้อมูลผู้รับ</Label>
+          <Input
+            id="receiver"
+            value={receiver}
+            maxLength={64}
+            onChange={(event) => setReceiver(event.target.value)}
+            disabled={!canEditSettings}
+          />
+          <p className="text-sm text-gray-600">
+            บันทึกในฐานข้อมูลเท่านั้น ยังไม่ใช้สร้าง QR หรือยืนยันการชำระ
+            เว้นว่างเพื่อล้างค่า
+          </p>
+          <Button
+            onClick={() => {
+              void saveSettings();
+            }}
+            disabled={!canEditSettings}
+          >
+            บันทึกข้อมูลผู้รับ
+          </Button>
         </CardContent>
       </Card>
-
-      {/* Invoices Table */}
-      <Card className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Invoice ID</TableHead>
-                <TableHead>โต๊ะ</TableHead>
-                <TableHead>ยอดรวม</TableHead>
-                <TableHead>ส่วนลด</TableHead>
-                <TableHead>สุทธิ</TableHead>
-                <TableHead>ชำระเงิน</TableHead>
-                <TableHead>เวลา</TableHead>
-                <TableHead>จัดการ</TableHead>
+      <Input
+        aria-label="ค้นหาใบเสร็จ"
+        placeholder="ค้นหาเลขใบเสร็จหรือโต๊ะ"
+        value={search}
+        onChange={(event) => setSearch(event.target.value)}
+      />
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ใบเสร็จเดิม</TableHead>
+            <TableHead>โต๊ะ</TableHead>
+            <TableHead>ยอดรวม</TableHead>
+            <TableHead>ส่วนลด</TableHead>
+            <TableHead>ยอดสุทธิ</TableHead>
+            <TableHead>รายละเอียด</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {invoices
+            .filter((invoice) =>
+              `${invoice.invoiceNumber} ${invoice.session?.table.number ?? ""}`
+                .toLowerCase()
+                .includes(search.toLowerCase()),
+            )
+            .map((invoice) => (
+              <TableRow key={invoice.id}>
+                <TableCell>
+                  INV-{String(invoice.invoiceNumber).padStart(6, "0")}
+                </TableCell>
+                <TableCell>{invoice.session?.table.number ?? "-"}</TableCell>
+                <TableCell>฿{formatStoredMoney(invoice.totalAmount)}</TableCell>
+                <TableCell>฿{formatStoredMoney(invoice.discount)}</TableCell>
+                <TableCell>฿{formatStoredMoney(invoice.netAmount)}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelected(invoice)}
+                  >
+                    ดู
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInvoices.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                    ยังไม่มีใบเสร็จ
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredInvoices.map((invoice) => (
-                  <TableRow key={invoice.id}>
-                    <TableCell className="font-mono text-sm">
-                      INV-{invoice.invoiceNumber?.toString().padStart(6, "0") ?? "N/A"}
-                    </TableCell>
-                    <TableCell className="font-medium">
-                      {invoice.session?.table.number || "-"}
-                    </TableCell>
-                    <TableCell>฿{invoice.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-green-600">
-                      -฿{invoice.discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell className="font-bold">
-                      ฿{invoice.netAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getPaymentMethodIcon(invoice.paymentMethod)}
-                        <span className="text-sm">{getPaymentMethodLabel(invoice.paymentMethod)}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {new Date(invoice.createdAt).toLocaleString("th-TH")}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedInvoice(invoice);
-                          setIsDetailsOpen(true);
-                        }}
-                      >
-                        <FileText className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </ScrollArea>
-      </Card>
-
-      {/* Invoice Details Dialog */}
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-2xl">
+            ))}
+        </TableBody>
+      </Table>
+      <Dialog
+        open={selected !== null}
+        onOpenChange={(open) => {
+          if (!open) setSelected(null);
+        }}
+      >
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>รายละเอียดใบเสร็จ</DialogTitle>
+            <DialogTitle>ข้อมูลใบเสร็จเดิม</DialogTitle>
           </DialogHeader>
-          {selectedInvoice && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Invoice ID</p>
-                  <p className="font-mono">INV-{selectedInvoice.invoiceNumber?.toString().padStart(6, "0") ?? "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">โต๊ะ</p>
-                  <p className="font-medium">{selectedInvoice.session?.table.number || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">วิธีการชำระเงิน</p>
-                  <div className="flex items-center gap-2">
-                    {getPaymentMethodIcon(selectedInvoice.paymentMethod)}
-                    <span>{getPaymentMethodLabel(selectedInvoice.paymentMethod)}</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">เวลา</p>
-                  <p>{new Date(selectedInvoice.createdAt).toLocaleString("th-TH")}</p>
-                </div>
-                {selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber && (
-                  <div className="col-span-2">
-                    <p className="text-sm text-gray-500">PromptPay Number</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Smartphone className="h-4 w-4" />
-                      <span className="font-medium">{selectedInvoice.promptPayNumber}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="border-t pt-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span>ยอดรวม</span>
-                    <span className="font-medium">฿{selectedInvoice.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between text-green-600">
-                    <span>ส่วนลด</span>
-                    <span>-฿{selectedInvoice.discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold border-t pt-2">
-                    <span>ยอดสุทธิ</span>
-                    <span>฿{selectedInvoice.netAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                  </div>
-                </div>
-              </div>
-
-              {selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber && (
-                <div className="flex flex-col items-center space-y-2 border-t pt-4">
-                  <QRCodeSVG 
-                    value={selectedInvoice.promptPayNumber}
-                    size={150}
-                    level="H"
-                    includeMargin={true}
-                  />
-                  <p className="text-sm text-gray-600 font-medium">
-                    {selectedInvoice.promptPayNumber}
-                  </p>
-                </div>
-              )}
-
-              <Button className="w-full" variant="outline" onClick={handlePrintInvoice}>
-                <Printer className="h-4 w-4 mr-2" />
-                พิมพ์ใบเสร็จ
-              </Button>
+          {selected && (
+            <div className="space-y-3">
+              <p>
+                INV-{selected.invoiceNumber} · โต๊ะ{" "}
+                {selected.session?.table.number ?? "-"}
+              </p>
+              <p>ยอดรวม ฿{formatStoredMoney(selected.totalAmount)}</p>
+              <p>ส่วนลด ฿{formatStoredMoney(selected.discount)}</p>
+              <p>ยอดสุทธิ ฿{formatStoredMoney(selected.netAmount)}</p>
+              <p>
+                ยังไม่มีหลักฐานยืนยันการรับเงินจริงในข้อมูลเดิม ไม่มี QR
+                ชำระเงินสำหรับรายการนี้
+              </p>
+              <Button onClick={print}>พิมพ์เอกสารเดิม</Button>
             </div>
           )}
         </DialogContent>

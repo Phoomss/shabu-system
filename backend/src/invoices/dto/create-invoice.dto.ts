@@ -1,13 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, Min, IsUUID } from 'class-validator';
+import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateInvoiceDto {
-  @ApiProperty({ example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Session ID (prefixed or raw UUID)' })
+  @ApiProperty({
+    example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    description: 'Session ID (prefixed or raw UUID)',
+  })
   @IsString()
   sessionId: string;
 
-  @ApiProperty({ example: 698.00, description: 'ยอดรวมก่อนส่วนลด' })
+  @ApiProperty({
+    example: 698.0,
+    description:
+      'Legacy display assertion only, never an authoritative charge. Checkout currently returns 503 pending approved policy.',
+  })
   @IsNumber()
   @Min(0)
   @Type(() => Number)
@@ -24,7 +31,10 @@ export class CreateInvoiceDto {
   @IsString()
   paymentMethod: string;
 
-  @ApiPropertyOptional({ example: '08XXXXXXXX', description: 'เบอร์โทรศัพท์ PromptPay (สำหรับ QR_CODE)' })
+  @ApiPropertyOptional({
+    example: '08XXXXXXXX',
+    description: 'เบอร์โทรศัพท์ PromptPay (สำหรับ QR_CODE)',
+  })
   @IsOptional()
   @IsString()
   promptPayNumber?: string;

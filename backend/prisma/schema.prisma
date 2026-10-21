@@ -6,6 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["partialIndexes"]
 }
 
 datasource db {
@@ -61,6 +62,8 @@ model User {
   refreshToken String?
   invoices     Invoice[]
   voidedLogs   VoidLog[]
+  paymentSettings PaymentSettings[]
+  sessionOpenRequests SessionOpenRequest[]
 }
 
 // --- 2. กลุ่มตั้งค่าเมนูและการแยกแผนกครัว (Menu & Kitchen Configuration) ---
@@ -142,6 +145,31 @@ model Session {
   status    SessionStatus @default(ACTIVE) // [Socket] แจ้งเตือนเมื่อมีการปิดโต๊ะหรือเรียกเช็คบิล
   orders    Order[]
   invoices  Invoice[]
+  openRequest SessionOpenRequest?
+
+  @@unique([tableId], map: "Session_one_active_per_table", where: raw("(status = 'ACTIVE'::\"SessionStatus\")"))
+}
+
+// Technical idempotency for opening a session; no pricing/payment policy is inferred.
+model SessionOpenRequest {
+  actorId String
+  key String @db.VarChar(128)
+  requestHash String @db.VarChar(64)
+  sessionId String @unique
+  actor User @relation(fields: [actorId], references: [id])
+  session Session @relation(fields: [sessionId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@id([actorId, key])
+}
+
+// Receiver configuration only. Presence is not provider verification or proof of payment.
+model PaymentSettings {
+  id Int @id @default(1)
+  promptPayNumber String? @db.VarChar(64)
+  updatedBy String?
+  user User? @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
+  updatedAt DateTime @updatedAt
 }
 
 // --- 4. กลุ่มการสั่งอาหารและสถานะออเดอร์ (Ordering System) ---

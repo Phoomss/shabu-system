@@ -23,7 +23,7 @@ if (
   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
   target.hostname !== '127.0.0.1' ||
   target.port !== '55432' ||
-  !/^\/shabu_security_\d+$/.test(target.pathname)
+  !/^\/(?:shabu_security_\d+|shabu_payment_empty_\d+)$/.test(target.pathname)
 )
   throw new Error('Isolated security test DB opt-in required');
 function data<T>(response: request.Response): T {

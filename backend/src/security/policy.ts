@@ -18,6 +18,7 @@ export const RESOURCES = [
 export const PERMISSIONS = [
   ...RESOURCES.flatMap((resource) => [`${resource}.read`, `${resource}.write`]),
   'orders.void',
+  'invoices.discount',
   'void-logs.read',
   'kitchen.orders.read',
   'kitchen.orders.write',

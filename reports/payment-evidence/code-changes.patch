@@ -1,0 +1,2968 @@
+diff --git a/backend/package.json b/backend/package.json
+index f99c758..77f2364 100644
+--- a/backend/package.json
++++ b/backend/package.json
+@@ -15,6 +15,10 @@
+     "prisma:generate": "prisma generate",
+     "migrate:deploy": "prisma migrate deploy",
+     "test:ids": "jest --runInBand --testPathPatterns='(id-transformer|sessions-id|orders-id|events-id)\\.spec\\.ts$'",
++    "test:payment:migrations": "node test/verify-payment-migrations.cjs",
++    "test:payment": "jest --runInBand --testPathPatterns=payment-safety\\.spec\\.ts$",
++    "test:payment:proposal": "jest --runInBand --config test/jest-payment-proposal.json",
++    "test:payment:e2e": "jest --runInBand --config test/jest-payment-e2e.json",
+     "test:workflow": "jest --runInBand --testPathPatterns=order-rules\\.spec\\.ts$",
+     "test:workflow:e2e": "jest --runInBand --config test/jest-workflow-e2e.json",
+     "test:workflow:db": "node test/create-workflow-db.cjs",
+diff --git a/backend/prisma/schema.prisma b/backend/prisma/schema.prisma
+index 7a794c0..8483646 100644
+--- a/backend/prisma/schema.prisma
++++ b/backend/prisma/schema.prisma
+@@ -6,6 +6,7 @@
+ 
+ generator client {
+   provider = "prisma-client-js"
++  previewFeatures = ["partialIndexes"]
+ }
+ 
+ datasource db {
+@@ -61,6 +62,8 @@ model User {
+   refreshToken String?
+   invoices     Invoice[]
+   voidedLogs   VoidLog[]
++  paymentSettings PaymentSettings[]
++  sessionOpenRequests SessionOpenRequest[]
+ }
+ 
+ // --- 2. กลุ่มตั้งค่าเมนูและการแยกแผนกครัว (Menu & Kitchen Configuration) ---
+@@ -142,6 +145,31 @@ model Session {
+   status    SessionStatus @default(ACTIVE) // [Socket] แจ้งเตือนเมื่อมีการปิดโต๊ะหรือเรียกเช็คบิล
+   orders    Order[]
+   invoices  Invoice[]
++  openRequest SessionOpenRequest?
++
++  @@unique([tableId], map: "Session_one_active_per_table", where: raw("(status = 'ACTIVE'::\"SessionStatus\")"))
++}
++
++// Technical idempotency for opening a session; no pricing/payment policy is inferred.
++model SessionOpenRequest {
++  actorId String
++  key String @db.VarChar(128)
++  requestHash String @db.VarChar(64)
++  sessionId String @unique
++  actor User @relation(fields: [actorId], references: [id])
++  session Session @relation(fields: [sessionId], references: [id])
++  createdAt DateTime @default(now())
++
++  @@id([actorId, key])
++}
++
++// Receiver configuration only. Presence is not provider verification or proof of payment.
++model PaymentSettings {
++  id Int @id @default(1)
++  promptPayNumber String? @db.VarChar(64)
++  updatedBy String?
++  user User? @relation(fields: [updatedBy], references: [id], onDelete: SetNull)
++  updatedAt DateTime @updatedAt
+ }
+ 
+ // --- 4. กลุ่มการสั่งอาหารและสถานะออเดอร์ (Ordering System) ---
+@@ -218,4 +246,4 @@ model VoidLog {
+   approvedBy  String
+   manager     User      @relation(fields: [approvedBy], references: [id])
+   createdAt   DateTime  @default(now()) // [Socket] แจ้งเตือนผู้จัดการเมื่อมีรายการขอ Void
+-}
+\ No newline at end of file
++}
+diff --git a/backend/src/invoices/dto/create-invoice.dto.ts b/backend/src/invoices/dto/create-invoice.dto.ts
+index 807de02..90e71d1 100644
+--- a/backend/src/invoices/dto/create-invoice.dto.ts
++++ b/backend/src/invoices/dto/create-invoice.dto.ts
+@@ -1,13 +1,20 @@
+ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+-import { IsString, IsNumber, IsOptional, Min, IsUUID } from 'class-validator';
++import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
+ import { Type } from 'class-transformer';
+ 
+ export class CreateInvoiceDto {
+-  @ApiProperty({ example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Session ID (prefixed or raw UUID)' })
++  @ApiProperty({
++    example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
++    description: 'Session ID (prefixed or raw UUID)',
++  })
+   @IsString()
+   sessionId: string;
+ 
+-  @ApiProperty({ example: 698.00, description: 'ยอดรวมก่อนส่วนลด' })
++  @ApiProperty({
++    example: 698.0,
++    description:
++      'Legacy display assertion only, never an authoritative charge. Checkout currently returns 503 pending approved policy.',
++  })
+   @IsNumber()
+   @Min(0)
+   @Type(() => Number)
+@@ -24,7 +31,10 @@ export class CreateInvoiceDto {
+   @IsString()
+   paymentMethod: string;
+ 
+-  @ApiPropertyOptional({ example: '08XXXXXXXX', description: 'เบอร์โทรศัพท์ PromptPay (สำหรับ QR_CODE)' })
++  @ApiPropertyOptional({
++    example: '08XXXXXXXX',
++    description: 'เบอร์โทรศัพท์ PromptPay (สำหรับ QR_CODE)',
++  })
+   @IsOptional()
+   @IsString()
+   promptPayNumber?: string;
+diff --git a/backend/src/invoices/dto/invoice-response.dto.ts b/backend/src/invoices/dto/invoice-response.dto.ts
+index b3ba799..32381ca 100644
+--- a/backend/src/invoices/dto/invoice-response.dto.ts
++++ b/backend/src/invoices/dto/invoice-response.dto.ts
+@@ -1,6 +1,4 @@
+ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+-import { IsString, IsNumber, IsOptional } from 'class-validator';
+-import { Type } from 'class-transformer';
+ 
+ // --- Child classes first (to avoid reference errors) ---
+ 
+@@ -48,14 +46,19 @@ export class InvoiceResponse {
+   })
+   sessionId: string;
+ 
+-  @ApiProperty({ example: 698.0 })
+-  totalAmount: number;
++  @ApiProperty({
++    type: String,
++    example: '698',
++    description:
++      'Stored legacy Decimal string; not an approved quote or verified payment.',
++  })
++  totalAmount: string;
+ 
+-  @ApiProperty({ example: 50.0 })
+-  discount: number;
++  @ApiProperty({ type: String, example: '50' })
++  discount: string;
+ 
+-  @ApiProperty({ example: 648.0 })
+-  netAmount: number;
++  @ApiProperty({ type: String, example: '648' })
++  netAmount: string;
+ 
+   @ApiProperty({ example: 'เงินสด' })
+   paymentMethod: string;
+diff --git a/backend/src/invoices/invoices.controller.ts b/backend/src/invoices/invoices.controller.ts
+index 5f5aa17..35f29d4 100644
+--- a/backend/src/invoices/invoices.controller.ts
++++ b/backend/src/invoices/invoices.controller.ts
+@@ -19,6 +19,8 @@ import { InvoicesService } from './invoices.service';
+ import { CreateInvoiceDto } from './dto/create-invoice.dto';
+ import { InvoiceResponse } from './dto/invoice-response.dto';
+ import { JwtGuard } from 'src/auth/guards/jwt.guard';
++import { PermissionPolicy, PolicyUser } from '../security/policy';
++import { PAYMENT_READINESS } from './payment-readiness';
+ 
+ @ApiTags('invoices')
+ @ApiBearerAuth('JWT')
+@@ -26,13 +28,20 @@ import { JwtGuard } from 'src/auth/guards/jwt.guard';
+ @EmployeeResource('invoices')
+ @Controller('invoices')
+ export class InvoicesController {
+-  constructor(private readonly invoicesService: InvoicesService) {}
++  constructor(
++    private readonly invoicesService: InvoicesService,
++    private readonly policy: PermissionPolicy,
++  ) {}
+ 
+   @Post()
+-  @ApiOperation({ summary: 'Create invoice (เก็บเงิน) [Socket]' })
+-  @ApiResponse({ type: InvoiceResponse })
++  @ApiOperation({
++    summary:
++      'Checkout disabled pending approved pricing/payment policy; no financial writes',
++  })
++  @ApiResponse({ status: 503, description: 'CHECKOUT_POLICY_PENDING' })
+   create(@Body() dto: CreateInvoiceDto, @Req() req: Request) {
+-    const user = req.user as any;
++    const user = req.user as PolicyUser;
++    if ((dto.discount ?? 0) > 0) this.policy.assert(user, 'invoices.discount');
+     return this.invoicesService.create(dto, user.id);
+   }
+ 
+@@ -43,6 +52,15 @@ export class InvoicesController {
+     return this.invoicesService.findAll();
+   }
+ 
++  @Get('payment-readiness')
++  @ApiOperation({
++    summary:
++      'Read-only payment readiness; never returns a guessed quote or marks PAID',
++  })
++  readiness() {
++    return PAYMENT_READINESS;
++  }
++
+   @Get(':id')
+   @ApiOperation({ summary: 'Get invoice by id' })
+   @ApiResponse({ type: InvoiceResponse })
+diff --git a/backend/src/invoices/invoices.service.ts b/backend/src/invoices/invoices.service.ts
+index 229b33c..2f04533 100644
+--- a/backend/src/invoices/invoices.service.ts
++++ b/backend/src/invoices/invoices.service.ts
+@@ -1,12 +1,13 @@
+ import {
+-  BadRequestException,
++  ServiceUnavailableException,
+   Injectable,
+   NotFoundException,
+ } from '@nestjs/common';
+ import { PrismaService } from 'src/prisma/prisma.service';
+ import { EventsGateway } from 'src/events/events.gateway';
+ import { CreateInvoiceDto } from './dto/create-invoice.dto';
+-import { SessionStatus, TableStatus } from '@prisma/client';
++import { Invoice, Session, Table, Tier } from '@prisma/client';
++import { PAYMENT_READINESS } from './payment-readiness';
+ import { IdTransformer, IdPrefix } from 'src/common/utils/id-transformer.util';
+ 
+ @Injectable()
+@@ -46,70 +47,12 @@ export class InvoicesService {
+     return this.transformResponse(invoice);
+   }
+ 
+-  async create(dto: CreateInvoiceDto, staffId: string) {
+-    // Decode session ID if it's prefixed
+-    const rawSessionId = this.idTransformer.decode(
+-      dto.sessionId,
+-      IdPrefix.SESSION,
+-    );
+-
+-    // เช็ค session
+-    const session = await this.prisma.session.findUnique({
+-      where: { id: rawSessionId },
+-      include: { table: true },
+-    });
+-    if (!session)
+-      throw new NotFoundException(`Session #${dto.sessionId} not found`);
+-    if (session.status !== SessionStatus.ACTIVE) {
+-      throw new BadRequestException('Session is not active');
+-    }
+-
+-    const discount = dto.discount ?? 0;
+-    const netAmount = dto.totalAmount - discount;
+-
+-    // create invoice, close session, update table together
+-    const [invoice] = await this.prisma.$transaction([
+-      this.prisma.invoice.create({
+-        data: {
+-          sessionId: rawSessionId,
+-          totalAmount: dto.totalAmount,
+-          discount,
+-          netAmount,
+-          paymentMethod: dto.paymentMethod,
+-          promptPayNumber: dto.promptPayNumber,
+-          createdBy: staffId,
+-        },
+-        include: {
+-          session: { include: { table: true, tier: true } },
+-          user: { select: { id: true, fullName: true } },
+-        },
+-      }),
+-      this.prisma.session.update({
+-        where: { id: rawSessionId },
+-        data: { status: SessionStatus.CLOSED },
+-      }),
+-      this.prisma.table.update({
+-        where: { id: session.tableId },
+-        data: { status: TableStatus.CLEANING },
+-      }),
+-    ]);
+-
+-    // [Socket] noti dashboard owner new amount
+-    this.events.emitNewInvoice({
+-      invoiceId: invoice.id,
+-      netAmount,
+-      paymentMethod: dto.paymentMethod,
+-      tableNumber: session.table.number,
+-      createdAt: invoice.createdAt,
+-    });
+-
+-    // [Socket] noti table status
+-    this.events.emitTableStatus(session.tableId, TableStatus.CLEANING);
+-
+-    // [Socket] noti session clonse
+-    this.events.emitSessionStatus(rawSessionId, SessionStatus.CLOSED);
+-
+-    return this.transformResponse(invoice);
++  create(dto: CreateInvoiceDto, staffId: string): never {
++    this.idTransformer.decode(dto.sessionId, IdPrefix.SESSION);
++    this.idTransformer.decode(staffId, IdPrefix.USER);
++    // Fail closed: no client-controlled amount may create a financial record or release a table.
++    // Implement approved quotes/settlement/idempotency together after the business decisions are signed off.
++    throw new ServiceUnavailableException(PAYMENT_READINESS);
+   }
+ 
+   async getTotalRevenue() {
+@@ -126,7 +69,9 @@ export class InvoicesService {
+   /**
+    * Transform invoice response to use prefixed IDs
+    */
+-  private transformResponse(invoice: any) {
++  private transformResponse<
++    T extends Invoice & { session: Session & { table: Table; tier: Tier } },
++  >(invoice: T) {
+     return {
+       ...invoice,
+       id: this.idTransformer.encode(invoice.id, IdPrefix.INVOICE),
+diff --git a/backend/src/security/policy.ts b/backend/src/security/policy.ts
+index ed77959..223a502 100644
+--- a/backend/src/security/policy.ts
++++ b/backend/src/security/policy.ts
+@@ -18,6 +18,7 @@ export const RESOURCES = [
+ export const PERMISSIONS = [
+   ...RESOURCES.flatMap((resource) => [`${resource}.read`, `${resource}.write`]),
+   'orders.void',
++  'invoices.discount',
+   'void-logs.read',
+   'kitchen.orders.read',
+   'kitchen.orders.write',
+diff --git a/backend/src/sessions/dto/create-session.dto.ts b/backend/src/sessions/dto/create-session.dto.ts
+index 6a387f4..1351d2a 100644
+--- a/backend/src/sessions/dto/create-session.dto.ts
++++ b/backend/src/sessions/dto/create-session.dto.ts
+@@ -1,20 +1,28 @@
+-import { ApiProperty } from "@nestjs/swagger";
+-import { IsInt } from "class-validator";
++import { ApiProperty } from '@nestjs/swagger';
++import { IsInt, Min, Max } from 'class-validator';
+ 
+ export class CreateSessionDto {
+   @ApiProperty({ example: 1, description: 'Table ID' })
+   @IsInt()
++  @Min(1)
++  @Max(2147483647)
+   tableId: number;
+ 
+   @ApiProperty({ example: 1, description: 'Tier ID' })
+   @IsInt()
++  @Min(1)
++  @Max(2147483647)
+   tierId: number;
+ 
+   @ApiProperty({ example: 2, description: 'จำนวนผู้ใหญ่' })
+   @IsInt()
++  @Min(0)
++  @Max(2147483647)
+   adultCount: number;
+ 
+   @ApiProperty({ example: 1, description: 'จำนวนเด็ก' })
+   @IsInt()
++  @Min(0)
++  @Max(2147483647)
+   childCount: number;
+-}
+\ No newline at end of file
++}
+diff --git a/backend/src/sessions/dto/session-response.dto.ts b/backend/src/sessions/dto/session-response.dto.ts
+index cf7460e..24de928 100644
+--- a/backend/src/sessions/dto/session-response.dto.ts
++++ b/backend/src/sessions/dto/session-response.dto.ts
+@@ -1,6 +1,4 @@
+ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+-import { IsInt, IsString, IsOptional, IsEnum } from 'class-validator';
+-import { Type } from 'class-transformer';
+ import { SessionStatus, TableStatus } from '@prisma/client';
+ 
+ // --- Child classes first (to avoid reference errors) ---
+@@ -43,23 +41,7 @@ export class OrderCountInfo {
+ 
+ // --- Main DTO classes ---
+ 
+-export class CreateSessionDto {
+-  @ApiProperty({ example: 1, description: 'Table ID' })
+-  @IsInt()
+-  tableId: number;
+-
+-  @ApiProperty({ example: 1, description: 'Tier ID' })
+-  @IsInt()
+-  tierId: number;
+-
+-  @ApiProperty({ example: 2, description: 'จำนวนผู้ใหญ่' })
+-  @IsInt()
+-  adultCount: number;
+-
+-  @ApiProperty({ example: 1, description: 'จำนวนเด็ก' })
+-  @IsInt()
+-  childCount: number;
+-}
++export { CreateSessionDto } from './create-session.dto';
+ 
+ export class SessionResponse {
+   @ApiProperty({
+diff --git a/backend/src/sessions/sessions.controller.ts b/backend/src/sessions/sessions.controller.ts
+index d54860f..e0a2472 100644
+--- a/backend/src/sessions/sessions.controller.ts
++++ b/backend/src/sessions/sessions.controller.ts
+@@ -11,12 +11,17 @@ import {
+   Patch,
+   Param,
+   UseGuards,
++  Headers,
++  Req,
+ } from '@nestjs/common';
++import { Request } from 'express';
++import { PolicyUser } from '../security/policy';
+ import {
+   ApiTags,
+   ApiOperation,
+   ApiBearerAuth,
+   ApiResponse,
++  ApiHeader,
+ } from '@nestjs/swagger';
+ import { CustomerAuthService } from '../customer/customer-auth.service';
+ import { Header } from '@nestjs/common';
+@@ -39,8 +44,18 @@ export class SessionsController {
+   @ApiBearerAuth('JWT')
+   @ApiOperation({ summary: 'Open new session (เปิดโต๊ะ)' })
+   @ApiResponse({ type: SessionResponse })
+-  create(@Body() dto: CreateSessionDto) {
+-    return this.sessionsService.create(dto);
++  @ApiHeader({
++    name: 'Idempotency-Key',
++    required: false,
++    description:
++      'Optional, scoped to authenticated actor; 1-128 ASCII letters/digits . _ : -. Same key with different body returns 409.',
++  })
++  create(
++    @Body() dto: CreateSessionDto,
++    @Headers('idempotency-key') key: string | undefined,
++    @Req() req: Request,
++  ) {
++    return this.sessionsService.create(dto, key, (req.user as PolicyUser).id);
+   }
+ 
+   @Get()
+diff --git a/backend/src/sessions/sessions.service.ts b/backend/src/sessions/sessions.service.ts
+index f730bbf..f1d8a15 100644
+--- a/backend/src/sessions/sessions.service.ts
++++ b/backend/src/sessions/sessions.service.ts
+@@ -1,5 +1,6 @@
+ import {
+   BadRequestException,
++  ConflictException,
+   Injectable,
+   NotFoundException,
+ } from '@nestjs/common';
+@@ -7,8 +8,15 @@ import { PrismaService } from 'src/prisma/prisma.service';
+ import { EventsGateway } from 'src/events/events.gateway';
+ import { CreateSessionDto } from './dto/create-session.dto';
+ import { UpdateSessionStatusDto } from './dto/update-session-status.dto';
+-import { SessionStatus, TableStatus } from '@prisma/client';
+-import { randomUUID } from 'node:crypto';
++import {
++  SessionStatus,
++  TableStatus,
++  Prisma,
++  Session,
++  Table,
++  Tier,
++} from '@prisma/client';
++import { randomUUID, createHash } from 'node:crypto';
+ import { Cron, CronExpression } from '@nestjs/schedule';
+ import { IdTransformer, IdPrefix } from 'src/common/utils/id-transformer.util';
+ 
+@@ -70,29 +78,98 @@ export class SessionsService {
+     return this.transformResponse(session);
+   }
+ 
+-  async create(dto: CreateSessionDto) {
+-    // เช็คว่าโต๊ะมีอยู่และว่างอยู่มั้ย
+-    const table = await this.prisma.table.findUnique({
+-      where: { id: dto.tableId },
+-    });
+-    if (!table) throw new NotFoundException(`Table #${dto.tableId} not found`);
+-    if (table.status !== TableStatus.AVAILABLE) {
+-      throw new BadRequestException(`Table #${table.number} is not available`);
++  private async atomic<T>(
++    work: (tx: Prisma.TransactionClient) => Promise<T>,
++  ): Promise<T> {
++    try {
++      return await this.prisma.$transaction(work);
++    } catch (error) {
++      if (
++        error instanceof Prisma.PrismaClientKnownRequestError &&
++        ['P2002', 'P2034'].includes(error.code)
++      )
++        throw new ConflictException(
++          'Concurrent session change; reload before retrying',
++        );
++      throw error;
+     }
++  }
+ 
+-    // เช็ค tier
+-    const tier = await this.prisma.tier.findUnique({
+-      where: { id: dto.tierId },
+-    });
+-    if (!tier) throw new NotFoundException(`Tier #${dto.tierId} not found`);
+-
+-    // คำนวณเวลาสิ้นสุด
+-    const startTime = new Date();
+-    const endTime = new Date(startTime.getTime() + tier.timeLimit * 60 * 1000);
+-
+-    // สร้าง session และอัปเดต table status พร้อมกัน
+-    const [session] = await this.prisma.$transaction([
+-      this.prisma.session.create({
++  async create(
++    dto: CreateSessionDto,
++    idempotencyKey?: string,
++    actorId?: string,
++  ) {
++    for (const count of [dto.adultCount, dto.childCount]) {
++      if (!Number.isSafeInteger(count) || count < 0 || count > 2147483647)
++        throw new BadRequestException(
++          'Guest counts must be non-negative database integers',
++        );
++    }
++    if (idempotencyKey !== undefined) {
++      if (!/^[A-Za-z0-9._:-]{1,128}$/.test(idempotencyKey) || !actorId)
++        throw new BadRequestException('Invalid Idempotency-Key');
++      actorId = this.idTransformer.decode(actorId, IdPrefix.USER);
++    }
++    const requestHash = createHash('sha256')
++      .update(
++        JSON.stringify({
++          tableId: dto.tableId,
++          tierId: dto.tierId,
++          adultCount: dto.adultCount,
++          childCount: dto.childCount,
++        }),
++      )
++      .digest('hex');
++    const result = await this.atomic(async (tx) => {
++      if (idempotencyKey && actorId) {
++        const lock = `session-open:${actorId}:${idempotencyKey}`;
++        // Project an integer; PostgreSQL's void return type cannot be deserialized by Prisma.
++        await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${lock}, 0))`;
++        const prior = await tx.sessionOpenRequest.findUnique({
++          where: { actorId_key: { actorId, key: idempotencyKey } },
++        });
++        if (prior) {
++          if (prior.requestHash !== requestHash)
++            throw new ConflictException(
++              'Idempotency-Key was used with different input',
++            );
++          return {
++            session: await tx.session.findUniqueOrThrow({
++              where: { id: prior.sessionId },
++              include: { table: true, tier: true },
++            }),
++            replay: true,
++          };
++        }
++      }
++      await tx.$queryRaw`SELECT id FROM "Table" WHERE id = ${dto.tableId} FOR UPDATE`;
++      const table = await tx.table.findUnique({ where: { id: dto.tableId } });
++      if (!table) throw new NotFoundException('Table not found');
++      if (table.status !== TableStatus.AVAILABLE)
++        throw new ConflictException('Table is not available');
++      // Neither CLOSED nor an existing legacy invoice proves payment. While checkout is disabled,
++      // every previous session requires settlement review before reusing a table. Do not infer PAID.
++      const unresolved = await tx.session.findFirst({
++        where: {
++          tableId: dto.tableId,
++        },
++        select: { id: true },
++      });
++      if (unresolved)
++        throw new ConflictException(
++          'Table has a previous session requiring approved settlement review',
++        );
++      const tier = await tx.tier.findUnique({ where: { id: dto.tierId } });
++      if (!tier) throw new NotFoundException('Tier not found');
++      const claimed = await tx.table.updateMany({
++        where: { id: dto.tableId, status: TableStatus.AVAILABLE },
++        data: { status: TableStatus.OCCUPIED },
++      });
++      if (claimed.count !== 1)
++        throw new ConflictException('Table was claimed concurrently');
++      const startTime = new Date();
++      const session = await tx.session.create({
+         data: {
+           tableId: dto.tableId,
+           tierId: dto.tierId,
+@@ -100,20 +177,24 @@ export class SessionsService {
+           childCount: dto.childCount,
+           qrToken: randomUUID(),
+           startTime,
+-          endTime,
++          endTime: new Date(startTime.getTime() + tier.timeLimit * 60000),
+         },
+         include: { table: true, tier: true },
+-      }),
+-      this.prisma.table.update({
+-        where: { id: dto.tableId },
+-        data: { status: TableStatus.OCCUPIED },
+-      }),
+-    ]);
+-
+-    // [Socket] แจ้งอัปเดต table status
+-    this.events.emitTableStatus(dto.tableId, TableStatus.OCCUPIED);
+-
+-    return this.transformResponse(session);
++      });
++      if (idempotencyKey && actorId)
++        await tx.sessionOpenRequest.create({
++          data: {
++            actorId,
++            key: idempotencyKey,
++            requestHash,
++            sessionId: session.id,
++          },
++        });
++      return { session, replay: false };
++    });
++    if (!result.replay)
++      await this.events.emitTableStatus(dto.tableId, TableStatus.OCCUPIED);
++    return this.transformResponse(result.session);
+   }
+ 
+   async updateStatus(id: string, dto: UpdateSessionStatusDto) {
+@@ -122,7 +203,7 @@ export class SessionsService {
+       dto.status === SessionStatus.CLOSED ||
+       dto.status === SessionStatus.EXPIRED;
+     // Keep records raw until commit; never use a response DTO for DB queries.
+-    const updated = await this.prisma.$transaction(async (tx) => {
++    const updated = await this.atomic(async (tx) => {
+       const session = await tx.session.findUnique({ where: { id: rawId } });
+       if (!session) throw new NotFoundException(`Session #${id} not found`);
+       if (closesTable) {
+@@ -137,9 +218,9 @@ export class SessionsService {
+         include: { table: true, tier: true },
+       });
+     });
+-    this.events.emitSessionStatus(rawId, dto.status);
++    await this.events.emitSessionStatus(rawId, dto.status);
+     if (closesTable)
+-      this.events.emitTableStatus(updated.tableId, TableStatus.CLEANING);
++      await this.events.emitTableStatus(updated.tableId, TableStatus.CLEANING);
+ 
+     return this.transformResponse(updated);
+   }
+@@ -164,7 +245,7 @@ export class SessionsService {
+         const minutesLeft = Math.ceil(
+           (session.endTime.getTime() - now.getTime()) / 60000,
+         );
+-        this.events.emitSessionWarning(session.id, minutesLeft);
++        await this.events.emitSessionWarning(session.id, minutesLeft);
+       }
+     }
+   }
+@@ -172,7 +253,9 @@ export class SessionsService {
+   /**
+    * Transform session response to use prefixed IDs
+    */
+-  private transformResponse(session: any) {
++  private transformResponse<T extends Session & { table: Table; tier: Tier }>(
++    session: T,
++  ) {
+     return {
+       ...session,
+       id: this.idTransformer.encode(session.id, IdPrefix.SESSION),
+diff --git a/backend/src/settings/payment-settings.dto.ts b/backend/src/settings/payment-settings.dto.ts
+index 67b632f..3830892 100644
+--- a/backend/src/settings/payment-settings.dto.ts
++++ b/backend/src/settings/payment-settings.dto.ts
+@@ -1,9 +1,32 @@
+-import { ApiPropertyOptional } from '@nestjs/swagger';
+-import { IsOptional, IsString, MaxLength } from 'class-validator';
++import { ApiProperty } from '@nestjs/swagger';
++import {
++  IsString,
++  MaxLength,
++  MinLength,
++  ValidateBy,
++  ValidateIf,
++} from 'class-validator';
++import { Transform } from 'class-transformer';
++import { hasControlCharacters } from './receiver-reference';
+ export class PaymentSettingsDto {
+-  @ApiPropertyOptional({ nullable: true })
+-  @IsOptional()
++  @ApiProperty({
++    nullable: true,
++    description:
++      'Unverified legacy receiver reference, not an approved QR payload. Explicit null clears it; otherwise a trimmed non-empty string without controls, max 64 characters.',
++  })
++  @Transform(({ value }: { value: unknown }) =>
++    typeof value === 'string' ? value.trim() : value,
++  )
++  @ValidateIf((_object, value: unknown) => value !== null)
+   @IsString()
++  @MinLength(1)
+   @MaxLength(64)
++  @ValidateBy({
++    name: 'noControlCharacters',
++    validator: {
++      validate: (value: unknown) =>
++        typeof value === 'string' && !hasControlCharacters(value),
++    },
++  })
+   promptPayNumber: string | null;
+ }
+diff --git a/backend/src/settings/settings.controller.ts b/backend/src/settings/settings.controller.ts
+index 00b5399..30c195a 100644
+--- a/backend/src/settings/settings.controller.ts
++++ b/backend/src/settings/settings.controller.ts
+@@ -1,6 +1,8 @@
+ import { PaymentSettingsDto } from './payment-settings.dto';
+ import { EmployeeResource } from '../security/access.decorators';
+-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
++import { Controller, Get, Post, Body, UseGuards, Req } from '@nestjs/common';
++import { Request } from 'express';
++import { PolicyUser } from '../security/policy';
+ import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+ import { SettingsService, PaymentSettings } from './settings.service';
+ import { JwtGuard } from 'src/auth/guards/jwt.guard';
+@@ -14,28 +16,27 @@ export class SettingsController {
+   constructor(private readonly settingsService: SettingsService) {}
+ 
+   @Get('payment')
+-  @ApiOperation({ summary: 'Get payment settings (PromptPay number)' })
++  @ApiOperation({
++    summary:
++      'Read stored, unverified receiver configuration; not proof of payment',
++  })
+   getPaymentSettings(): Promise<PaymentSettings> {
+     return this.settingsService.getPaymentSettings();
+   }
+ 
+   @Post('payment')
+-  @ApiBody({
+-    schema: {
+-      type: 'object',
+-      properties: {
+-        promptPayNumber: {
+-          type: 'string',
+-          example: '08XXXXXXXX',
+-          description: 'เบอร์โทรศัพท์ PromptPay',
+-        },
+-      },
+-    },
++  @ApiBody({ type: PaymentSettingsDto })
++  @ApiOperation({
++    summary:
++      'Persist unverified receiver config; never generates QR or confirms payment',
+   })
+-  @ApiOperation({ summary: 'Update payment settings (PromptPay number)' })
+   updatePaymentSettings(
+     @Body() dto: PaymentSettingsDto,
++    @Req() req: Request,
+   ): Promise<PaymentSettings> {
+-    return this.settingsService.updatePaymentSettings(dto);
++    return this.settingsService.updatePaymentSettings(
++      dto,
++      (req.user as PolicyUser).id,
++    );
+   }
+ }
+diff --git a/backend/src/settings/settings.service.ts b/backend/src/settings/settings.service.ts
+index c170bdd..83d38f2 100644
+--- a/backend/src/settings/settings.service.ts
++++ b/backend/src/settings/settings.service.ts
+@@ -1,5 +1,6 @@
+-import { Injectable, NotFoundException } from '@nestjs/common';
++import { BadRequestException, Injectable } from '@nestjs/common';
+ import { PrismaService } from 'src/prisma/prisma.service';
++import { hasControlCharacters } from './receiver-reference';
+ 
+ export interface PaymentSettings {
+   promptPayNumber: string | null;
+@@ -7,20 +8,39 @@ export interface PaymentSettings {
+ 
+ @Injectable()
+ export class SettingsService {
+-  private promptPayNumber: string | null = null;
+-
+   constructor(private prisma: PrismaService) {}
+ 
+   async getPaymentSettings(): Promise<PaymentSettings> {
++    const settings = await this.prisma.paymentSettings.findUnique({
++      where: { id: 1 },
++    });
+     return {
+-      promptPayNumber: this.promptPayNumber,
++      promptPayNumber: settings?.promptPayNumber ?? null,
+     };
+   }
+ 
+-  async updatePaymentSettings(dto: PaymentSettings): Promise<PaymentSettings> {
+-    this.promptPayNumber = dto.promptPayNumber;
++  async updatePaymentSettings(
++    dto: PaymentSettings,
++    actorId: string,
++  ): Promise<PaymentSettings> {
++    if (
++      dto.promptPayNumber !== null &&
++      (typeof dto.promptPayNumber !== 'string' ||
++        !dto.promptPayNumber.trim() ||
++        dto.promptPayNumber.trim().length > 64 ||
++        hasControlCharacters(dto.promptPayNumber.trim()))
++    )
++      throw new BadRequestException(
++        'Receiver reference must be null or a non-empty string without controls, max 64 characters',
++      );
++    const promptPayNumber = dto.promptPayNumber?.trim() ?? null;
++    const settings = await this.prisma.paymentSettings.upsert({
++      where: { id: 1 },
++      create: { id: 1, promptPayNumber, updatedBy: actorId },
++      update: { promptPayNumber, updatedBy: actorId },
++    });
+     return {
+-      promptPayNumber: this.promptPayNumber,
++      promptPayNumber: settings.promptPayNumber,
+     };
+   }
+ }
+diff --git a/backend/test/id-contract.e2e-spec.ts b/backend/test/id-contract.e2e-spec.ts
+index d094c26..b8bd016 100644
+--- a/backend/test/id-contract.e2e-spec.ts
++++ b/backend/test/id-contract.e2e-spec.ts
+@@ -27,7 +27,7 @@ if (
+   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
+   target.hostname !== '127.0.0.1' ||
+   target.port !== '55432' ||
+-  !/^\/shabu_f04_empty_\d+$/.test(target.pathname)
++  !/^\/(?:shabu_f04_empty_\d+|shabu_payment_empty_\d+)$/.test(target.pathname)
+ ) {
+   throw new Error(
+     'Use the fresh isolated database from test:migrations with explicit opt-in',
+diff --git a/backend/test/local-start-smoke.cjs b/backend/test/local-start-smoke.cjs
+index 31057d8..6fc576f 100644
+--- a/backend/test/local-start-smoke.cjs
++++ b/backend/test/local-start-smoke.cjs
+@@ -6,7 +6,7 @@ const net = require('node:net');
+ const assert = require('node:assert/strict');
+ const root = path.resolve(__dirname, '../..');
+ const suite = process.env.SHABU_SMOKE_SUITE || 'security';
+-if (!['security', 'workflow'].includes(suite))
++if (!['security', 'workflow', 'payment'].includes(suite))
+   throw new Error('Unknown smoke suite');
+ const artifacts = path.join(root, `reports/${suite}-evidence`);
+ fs.mkdirSync(artifacts, { recursive: true });
+@@ -15,7 +15,7 @@ if (
+   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
+   url.hostname !== '127.0.0.1' ||
+   url.port !== '55432' ||
+-  !/^\/shabu_(?:f04_empty|security|workflow)_\d+$/.test(url.pathname)
++  !/^\/shabu_(?:f04_empty|security|workflow|payment_empty)_\d+$/.test(url.pathname)
+ ) {
+   throw new Error('Refusing to start against a non-isolated database');
+ }
+diff --git a/backend/test/security.e2e-spec.ts b/backend/test/security.e2e-spec.ts
+index cb78d6f..40cfe80 100644
+--- a/backend/test/security.e2e-spec.ts
++++ b/backend/test/security.e2e-spec.ts
+@@ -23,7 +23,7 @@ if (
+   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
+   target.hostname !== '127.0.0.1' ||
+   target.port !== '55432' ||
+-  !/^\/shabu_security_\d+$/.test(target.pathname)
++  !/^\/(?:shabu_security_\d+|shabu_payment_empty_\d+)$/.test(target.pathname)
+ )
+   throw new Error('Isolated security test DB opt-in required');
+ function data<T>(response: request.Response): T {
+diff --git a/backend/test/workflow.e2e-spec.ts b/backend/test/workflow.e2e-spec.ts
+index 3914f80..c25bdac 100644
+--- a/backend/test/workflow.e2e-spec.ts
++++ b/backend/test/workflow.e2e-spec.ts
+@@ -23,7 +23,7 @@ if (
+   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
+   target.hostname !== '127.0.0.1' ||
+   target.port !== '55432' ||
+-  !/^\/shabu_workflow_\d+$/.test(target.pathname)
++  !/^\/(?:shabu_workflow_\d+|shabu_payment_empty_\d+)$/.test(target.pathname)
+ )
+   throw new Error('Isolated workflow test DB opt-in required');
+ const data = <T>(res: request.Response): T => (res.body as { data: T }).data;
+diff --git a/frontend/package.json b/frontend/package.json
+index efa25f0..c2b7503 100644
+--- a/frontend/package.json
++++ b/frontend/package.json
+@@ -6,6 +6,7 @@
+     "dev": "next dev -p 3001",
+     "build": "next build",
+     "start": "next start -p 3001",
++    "test:payment": "node --test test/payment-display.test.mjs",
+     "test:workflow": "node --test test/workflow-clients.test.mjs",
+     "test:security": "node --test test/security-clients.test.mjs",
+     "test:ids": "node --test test/id-contract.test.mjs",
+diff --git a/frontend/src/app/(dashboard)/invoices/page.tsx b/frontend/src/app/(dashboard)/invoices/page.tsx
+index d59b042..babe82e 100644
+--- a/frontend/src/app/(dashboard)/invoices/page.tsx
++++ b/frontend/src/app/(dashboard)/invoices/page.tsx
+@@ -1,30 +1,24 @@
+ "use client";
+ 
+-import { useEffect, useState } from "react";
+-import { useAuthStore } from "@/stores/authStore";
+-import { getSocket } from "@/lib/socket";
++import { useCallback, useEffect, useState } from "react";
+ import api from "@/lib/api";
++import { getSocket } from "@/lib/socket";
++import {
++  formatStoredMoney,
++  legacyInvoiceDocument,
++} from "@/lib/payment-display";
++import { isAxiosError } from "axios";
+ import { toast } from "sonner";
+-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import { Button } from "@/components/ui/button";
+-import { Badge } from "@/components/ui/badge";
+ import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
+-import { ScrollArea } from "@/components/ui/scroll-area";
++import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+ import {
+   Dialog,
+   DialogContent,
+   DialogHeader,
+   DialogTitle,
+-  DialogTrigger,
+ } from "@/components/ui/dialog";
+-import {
+-  Select,
+-  SelectContent,
+-  SelectItem,
+-  SelectTrigger,
+-  SelectValue,
+-} from "@/components/ui/select";
+ import {
+   Table,
+   TableBody,
+@@ -33,753 +27,226 @@ import {
+   TableHeader,
+   TableRow,
+ } from "@/components/ui/table";
+-import {
+-  Search,
+-  DollarSign,
+-  CreditCard,
+-  Banknote,
+-  Smartphone,
+-  Building,
+-  FileText,
+-  Printer,
+-  QrCode,
+-  Settings,
+-  Save,
+-  Users,
+-} from "lucide-react";
+-import { Socket } from "socket.io-client";
+-import type { Invoice, Session } from "@/types";
+-import { QRCodeSVG } from "qrcode.react";
++import type { Invoice } from "@/types";
++
++type PaymentReadiness = {
++  checkoutEnabled: boolean;
++  qrEnabled: boolean;
++  confirmationEnabled: boolean;
++  code: string;
++};
+ 
+ export default function InvoicesPage() {
+-  const { user } = useAuthStore();
+   const [invoices, setInvoices] = useState<Invoice[]>([]);
+-  const [sessions, setSessions] = useState<Session[]>([]);
+-  const [socket, setSocket] = useState<Socket | null>(null);
+-  const [searchQuery, setSearchQuery] = useState("");
+-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
+-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+-  const [selectedSession, setSelectedSession] = useState("");
+-  const [paymentMethod, setPaymentMethod] = useState<"CASH" | "CREDIT_CARD" | "DEBIT_CARD" | "QR_CODE" | "BANK_TRANSFER">("CASH");
+-  const [discount, setDiscount] = useState(0);
+-  const [promptPayNumber, setPromptPayNumber] = useState("08XXXXXXXX");
+-  const [savedPromptPayNumber, setSavedPromptPayNumber] = useState("08XXXXXXXX");
+-  const [sessionPrice, setSessionPrice] = useState(0);
+-  const [adultCount, setAdultCount] = useState(1);
+-  const [childCount, setChildCount] = useState(0);
+-  const [totalRevenue, setTotalRevenue] = useState(0);
+-
+-  useEffect(() => {
+-    fetchData();
+-    fetchPaymentSettings();
+-    fetchTotalRevenue();
+-
+-    const s = getSocket();
+-    setSocket(s);
+-
+-    s.on("invoice:new", (data) => {
+-      console.log("New invoice:", data);
+-      fetchData();
+-      fetchTotalRevenue();
+-      toast.success("สร้างใบเสร็จสำเร็จ");
+-    });
+-
+-    return () => {
+-      s.off("invoice:new");
+-    };
+-  }, []);
+-
+-  const fetchTotalRevenue = async () => {
++  const [selected, setSelected] = useState<Invoice | null>(null);
++  const [receiver, setReceiver] = useState("");
++  const [canEditSettings, setCanEditSettings] = useState(false);
++  const [readiness, setReadiness] = useState<PaymentReadiness | null>(null);
++  const [search, setSearch] = useState("");
++  const [error, setError] = useState<string | null>(null);
++
++  const load = useCallback(async (signal?: AbortSignal) => {
+     try {
+-      const res = await api.get("/invoices/stats/total-revenue");
+-      console.log("API Response:", res.data);
+-      // API returns { status, message, data: { totalRevenue } }
+-      const totalRevenue = res.data.data?.totalRevenue ?? res.data.totalRevenue ?? 0;
+-      setTotalRevenue(totalRevenue);
+-      console.log("Total Revenue:", totalRevenue);
+-    } catch (error) {
+-      console.error("Failed to fetch total revenue:", error);
+-    }
+-  };
+-
+-  const handlePrintInvoice = () => {
+-    if (!selectedInvoice) return;
+-
+-    const printContent = `
+-      <!DOCTYPE html>
+-      <html>
+-      <head>
+-        <title>ใบเสร็จเลขที่ INV-${selectedInvoice.invoiceNumber?.toString().padStart(6, "0") ?? "N/A"}</title>
+-        <style>
+-          @media print {
+-            @page { margin: 20px; size: A5; }
+-            body { font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif; }
+-            .no-print { display: none; }
+-          }
+-          body { 
+-            font-family: 'Sarabun', 'TH Sarabun New', Arial, sans-serif;
+-            max-width: 600px;
+-            margin: 0 auto;
+-            padding: 20px;
+-          }
+-          .header { text-align: center; margin-bottom: 20px; }
+-          .header h1 { margin: 0; font-size: 24px; }
+-          .header p { margin: 5px 0; color: #666; }
+-          .invoice-info { margin-bottom: 20px; }
+-          .invoice-info table { width: 100%; border-collapse: collapse; }
+-          .invoice-info td { padding: 5px 0; }
+-          .invoice-info td:first-child { font-weight: bold; }
+-          .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+-          .items-table th, .items-table td { 
+-            border: 1px solid #ddd; 
+-            padding: 8px; 
+-            text-align: left; 
+-          }
+-          .items-table th { background-color: #f5f5f5; }
+-          .totals { margin-left: auto; width: 250px; }
+-          .totals table { width: 100%; }
+-          .totals td { padding: 5px; }
+-          .totals .total-label { text-align: right; }
+-          .totals .total-amount { text-align: right; font-weight: bold; }
+-          .totals .net-amount { 
+-            text-align: right; 
+-            font-size: 18px; 
+-            font-weight: bold; 
+-            border-top: 2px solid #333;
+-          }
+-          .footer { 
+-            text-align: center; 
+-            margin-top: 30px; 
+-            padding-top: 20px; 
+-            border-top: 1px solid #ddd;
+-            font-size: 12px;
+-            color: #666;
+-          }
+-          .qr-section { 
+-            text-align: center; 
+-            margin: 20px 0; 
+-            padding: 15px; 
+-            background: #f9f9f9;
+-            border-radius: 8px;
+-          }
+-        </style>
+-      </head>
+-      <body>
+-        <div class="header">
+-          <h1>ใบเสร็จรับเงิน</h1>
+-          <p>Shabu Je Chan</p>
+-        </div>
+-        
+-        <div class="invoice-info">
+-          <table>
+-            <tr>
+-              <td>เลขที่ใบเสร็จ:</td>
+-              <td>INV-${selectedInvoice.invoiceNumber?.toString().padStart(6, "0") ?? "N/A"}</td>
+-            </tr>
+-            <tr>
+-              <td>โต๊ะ:</td>
+-              <td>${selectedInvoice.session?.table.number || "-"}</td>
+-            </tr>
+-            <tr>
+-              <td>วิธีการชำระเงิน:</td>
+-              <td>${getPaymentMethodLabel(selectedInvoice.paymentMethod)}</td>
+-            </tr>
+-            <tr>
+-              <td>วันที่:</td>
+-              <td>${new Date(selectedInvoice.createdAt).toLocaleString("th-TH")}</td>
+-            </tr>
+-            ${selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber ? `
+-            <tr>
+-              <td>PromptPay:</td>
+-              <td>${selectedInvoice.promptPayNumber}</td>
+-            </tr>
+-            ` : ''}
+-          </table>
+-        </div>
+-
+-        ${selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber ? `
+-        <div class="qr-section">
+-          <div id="qrcode"></div>
+-          <p style="margin-top: 10px; font-size: 14px;">${selectedInvoice.promptPayNumber}</p>
+-        </div>
+-        ` : ''}
+-
+-        <div class="totals">
+-          <table>
+-            <tr>
+-              <td class="total-label">ยอดรวม</td>
+-              <td class="total-amount">฿${selectedInvoice.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+-            </tr>
+-            <tr>
+-              <td class="total-label">ส่วนลด</td>
+-              <td class="total-amount" style="color: #22c55e;">-฿${selectedInvoice.discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+-            </tr>
+-            <tr>
+-              <td class="total-label">ยอดสุทธิ</td>
+-              <td class="net-amount">฿${selectedInvoice.netAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+-            </tr>
+-          </table>
+-        </div>
+-
+-        <div class="footer">
+-          <p>ขอบคุณที่ใช้บริการ</p>
+-          <p>พิมพ์เมื่อ ${new Date().toLocaleString("th-TH")}</p>
+-        </div>
+-
+-        <button class="no-print" onclick="window.print()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">
+-          🖨️ พิมพ์
+-        </button>
+-      </body>
+-      </html>
+-    `;
+-
+-    const printWindow = window.open('', '_blank');
+-    if (printWindow) {
+-      printWindow.document.write(printContent);
+-      printWindow.document.close();
+-      
+-      // Wait for content to load and print
+-      printWindow.onload = () => {
+-        printWindow.focus();
+-        setTimeout(() => {
+-          printWindow.print();
+-        }, 250);
+-      };
++      const [list, status] = await Promise.all([
++        api.get("/invoices", { signal }),
++        api.get("/invoices/payment-readiness", { signal }),
++      ]);
++      if (signal?.aborted) return;
++      setInvoices(list.data.data);
++      setReadiness(status.data.data);
++      setError(null);
++    } catch {
++      if (!signal?.aborted)
++        setError(
++          "ไม่สามารถโหลดข้อมูลใบเสร็จได้ กรุณาตรวจสิทธิ์และการเชื่อมต่อ",
++        );
+     }
+-  };
++  }, []);
+ 
+-  // Recalculate price when adult/child count or session changes
+   useEffect(() => {
+-    if (selectedSession) {
+-      const fetchSessionPrice = async () => {
+-        try {
+-          const sessionRes = await api.get(`/sessions/${selectedSession}`);
+-          const session = sessionRes.data.data;
+-          const priceAdult = session.tier?.priceAdult || 0;
+-          const priceChild = session.tier?.priceChild || 0;
+-          // Use adult/child count from session if available, otherwise use current state
+-          const adults = session.adultCount || adultCount;
+-          const children = session.childCount || childCount;
+-          const totalAmount = (priceAdult * adults) + (priceChild * children);
+-          setSessionPrice(totalAmount);
+-          // Update the count to match the session
+-          setAdultCount(adults);
+-          setChildCount(children);
+-        } catch (error) {
+-          console.error("Failed to fetch session price:", error);
++    const controller = new AbortController();
++    queueMicrotask(() => {
++      if (!controller.signal.aborted) void load(controller.signal);
++    });
++    void api
++      .get("/auth/me", { signal: controller.signal })
++      .then(async ({ data }) => {
++        if (controller.signal.aborted) return;
++        const permissions: string[] = data.data.permissions;
++        setCanEditSettings(permissions.includes("payment-settings.write"));
++        if (permissions.includes("payment-settings.read")) {
++          const settings = await api.get("/settings/payment", {
++            signal: controller.signal,
++          });
++          if (!controller.signal.aborted)
++            setReceiver(settings.data.data.promptPayNumber ?? "");
+         }
+-      };
+-      fetchSessionPrice();
+-    }
+-  }, [selectedSession]);
+-
+-  const fetchPaymentSettings = async () => {
+-    try {
+-      const res = await api.get("/settings/payment");
+-      if (res.data.data.promptPayNumber) {
+-        setSavedPromptPayNumber(res.data.data.promptPayNumber);
+-        setPromptPayNumber(res.data.data.promptPayNumber);
+-      }
+-    } catch (error) {
+-      console.log("Using default PromptPay number");
+-    }
+-  };
+-
+-  const handleSavePromptPay = async () => {
+-    try {
+-      await api.post("/settings/payment", { promptPayNumber });
+-      setSavedPromptPayNumber(promptPayNumber);
+-      toast.success("บันทึกเบอร์ PromptPay สำเร็จ");
+-      setIsSettingsOpen(false);
+-    } catch (error: any) {
+-      console.error("Failed to save PromptPay:", error);
+-      toast.error(error.response?.data?.message || "ไม่สามารถบันทึกได้");
+-    }
+-  };
+-
+-  const fetchData = async () => {
+-    try {
+-      const [invoicesRes, sessionsRes] = await Promise.all([
+-        api.get("/invoices").catch(() => ({ data: { data: [] } })),
+-        api.get("/sessions").catch(() => ({ data: { data: [] } })),
+-      ]);
+-      setInvoices(invoicesRes.data.data || []);
+-      setSessions(sessionsRes.data.data || []);
+-    } catch (error) {
+-      console.error("Failed to fetch data:", error);
+-      toast.error("ไม่สามารถโหลดข้อมูลได้");
+-    }
+-  };
+-
+-  const handleCreateInvoice = async () => {
+-    if (!selectedSession) {
+-      toast.error("กรุณาเลือกเซสชัน");
+-      return;
+-    }
+-
+-    if (adultCount === 0 && childCount === 0) {
+-      toast.error("กรุณาระบุจำนวนลูกค้า");
+-      return;
+-    }
++      })
++      .catch(() => {
++        /* Settings access is separate from invoice read access. */
++      });
++    const socket = getSocket();
++    const sync = () => {
++      void load(controller.signal);
++    };
++    socket.on("connect", sync);
++    socket.on("invoice:new", sync);
++    return () => {
++      controller.abort();
++      socket.off("connect", sync);
++      socket.off("invoice:new", sync);
++    };
++  }, [load]);
+ 
++  const saveSettings = async () => {
+     try {
+-      const payload: any = {
+-        sessionId: selectedSession,
+-        totalAmount: sessionPrice,
+-        discount,
+-        paymentMethod,
+-      };
+-
+-      // Add PromptPay number if payment method is QR_CODE
+-      if (paymentMethod === "QR_CODE" && promptPayNumber) {
+-        payload.promptPayNumber = promptPayNumber;
+-      }
+-
+-      console.log("Creating invoice with payload:", payload);
+-
+-      await api.post("/invoices", payload);
+-      toast.success("สร้างใบเสร็จสำเร็จ");
+-      setIsCreateOpen(false);
+-      setSelectedSession("");
+-      setDiscount(0);
+-      setSessionPrice(0);
+-      setAdultCount(1);
+-      setChildCount(0);
+-      fetchData();
+-    } catch (error: any) {
+-      console.error("Failed to create invoice:", error);
+-      console.error("Error response:", error.response?.data);
+-      toast.error(error.response?.data?.message || "ไม่สามารถสร้างใบเสร็จได้");
++      await api.post("/settings/payment", {
++        promptPayNumber: receiver.trim() || null,
++      });
++      toast.success(
++        "บันทึกข้อมูลผู้รับแล้ว ข้อมูลนี้ยังไม่ใช่การยืนยันบัญชีหรือการรับเงิน",
++      );
++    } catch (failure: unknown) {
++      toast.error(
++        (isAxiosError<{ message?: string }>(failure) &&
++          failure.response?.data?.message) ||
++          "บันทึกไม่ได้",
++      );
+     }
+   };
+ 
+-  const getPaymentMethodIcon = (method: string) => {
+-    switch (method) {
+-      case "CASH":
+-        return <Banknote className="h-4 w-4" />;
+-      case "CREDIT_CARD":
+-        return <CreditCard className="h-4 w-4" />;
+-      case "DEBIT_CARD":
+-        return <CreditCard className="h-4 w-4" />;
+-      case "QR_CODE":
+-        return <Smartphone className="h-4 w-4" />;
+-      case "BANK_TRANSFER":
+-        return <Building className="h-4 w-4" />;
+-      default:
+-        return <DollarSign className="h-4 w-4" />;
+-    }
++  const print = () => {
++    if (!selected) return;
++    const popup = window.open("", "_blank");
++    if (!popup) return;
++    popup.document.write(legacyInvoiceDocument(selected));
++    popup.document.close();
++    popup.focus();
++    popup.print();
+   };
+ 
+-  const getPaymentMethodLabel = (method: string) => {
+-    switch (method) {
+-      case "CASH":
+-        return "เงินสด";
+-      case "CREDIT_CARD":
+-        return "บัตรเครดิต";
+-      case "DEBIT_CARD":
+-        return "บัตรเดบิต";
+-      case "QR_CODE":
+-        return "QR Code";
+-      case "BANK_TRANSFER":
+-        return "โอนเงิน";
+-      default:
+-        return method;
+-    }
+-  };
+-
+-  const activeSessions = sessions.filter((s) => s.status === "ACTIVE");
+-
+-  const filteredInvoices = invoices.filter((invoice) => {
+-    return (
+-      invoice.id.toString().includes(searchQuery) ||
+-      invoice.session?.table.number.toLowerCase().includes(searchQuery.toLowerCase())
+-    );
+-  });
+-
+   return (
+-    <div className="h-[calc(100vh-8rem)] flex flex-col gap-4">
+-      {/* Header */}
+-      <div className="flex items-center justify-between">
+-        <div>
+-          <h1 className="text-2xl font-bold">ใบเสร็จ</h1>
+-          <p className="text-gray-500">ประวัติการชำระเงินและรายได้</p>
+-        </div>
+-        <div className="flex gap-2">
+-          <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+-            <DialogTrigger asChild>
+-              <Button variant="outline">
+-                <Settings className="h-4 w-4 mr-2" />
+-                ตั้งค่า PromptPay
+-              </Button>
+-            </DialogTrigger>
+-            <DialogContent>
+-              <DialogHeader>
+-                <DialogTitle>ตั้งค่าเบอร์โทรศัพท์ PromptPay</DialogTitle>
+-              </DialogHeader>
+-              <div className="space-y-4">
+-                <div>
+-                  <Label>เบอร์โทรศัพท์ PromptPay</Label>
+-                  <Input
+-                    value={promptPayNumber}
+-                    onChange={(e) => setPromptPayNumber(e.target.value)}
+-                    placeholder="0839987275"
+-                  />
+-                  <p className="text-sm text-gray-500 mt-2">
+-                    เบอร์นี้จะแสดงใน QR Code สำหรับชำระเงิน
+-                  </p>
+-                </div>
+-                <div className="flex gap-2">
+-                  <Button variant="outline" className="flex-1" onClick={() => setIsSettingsOpen(false)}>
+-                    ยกเลิก
+-                  </Button>
+-                  <Button className="flex-1" onClick={handleSavePromptPay}>
+-                    <Save className="h-4 w-4 mr-2" />
+-                    บันทึก
+-                  </Button>
+-                </div>
+-              </div>
+-            </DialogContent>
+-          </Dialog>
+-
+-          <Dialog open={isCreateOpen} onOpenChange={(open) => {
+-            setIsCreateOpen(open);
+-            if (!open) {
+-              setSelectedSession("");
+-              setAdultCount(1);
+-              setChildCount(0);
+-              setDiscount(0);
+-              setSessionPrice(0);
+-            }
+-          }}>
+-            <DialogTrigger asChild>
+-              <Button>
+-                <FileText className="h-4 w-4 mr-2" />
+-                สร้างใบเสร็จ
+-              </Button>
+-            </DialogTrigger>
+-            <DialogContent>
+-            <DialogHeader>
+-              <DialogTitle>สร้างใบเสร็จใหม่</DialogTitle>
+-            </DialogHeader>
+-            <div className="space-y-4">
+-              <div>
+-                <Label>เลือกเซสชัน (กำลังใช้งาน: {activeSessions.length})</Label>
+-                <Select value={selectedSession} onValueChange={setSelectedSession}>
+-                  <SelectTrigger>
+-                    <SelectValue placeholder="เลือกเซสชัน" />
+-                  </SelectTrigger>
+-                  <SelectContent>
+-                    {activeSessions.map((session) => (
+-                      <SelectItem key={session.id} value={session.id}>
+-                        SES-{session.sessionNumber?.toString().padStart(6, "0")} | โต๊ะ {session.table.number} - {session.tier.name} ({session.adultCount} ผู้ใหญ่, {session.childCount} เด็ก)
+-                      </SelectItem>
+-                    ))}
+-                  </SelectContent>
+-                </Select>
+-              </div>
+-              {selectedSession && (
+-                <div className="grid grid-cols-2 gap-4">
+-                  <div>
+-                    <Label className="flex items-center gap-2">
+-                      <Users className="h-4 w-4" />
+-                      จำนวนผู้ใหญ่ (คน)
+-                    </Label>
+-                    <Input
+-                      type="number"
+-                      value={adultCount}
+-                      onChange={(e) => setAdultCount(Number(e.target.value))}
+-                      min="0"
+-                    />
+-                  </div>
+-                  <div>
+-                    <Label className="flex items-center gap-2">
+-                      <Users className="h-4 w-4" />
+-                      จำนวนเด็ก (คน)
+-                    </Label>
+-                    <Input
+-                      type="number"
+-                      value={childCount}
+-                      onChange={(e) => setChildCount(Number(e.target.value))}
+-                      min="0"
+-                    />
+-                  </div>
+-                </div>
+-              )}
+-              <div>
+-                <Label>วิธีการชำระเงิน</Label>
+-                <Select value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as any)}>
+-                  <SelectTrigger>
+-                    <SelectValue placeholder="เลือกวิธีการชำระเงิน" />
+-                  </SelectTrigger>
+-                  <SelectContent>
+-                    <SelectItem value="CASH">เงินสด</SelectItem>
+-                    <SelectItem value="CREDIT_CARD">บัตรเครดิต</SelectItem>
+-                    <SelectItem value="DEBIT_CARD">บัตรเดบิต</SelectItem>
+-                    <SelectItem value="QR_CODE">QR Code (PromptPay)</SelectItem>
+-                    <SelectItem value="BANK_TRANSFER">โอนเงิน</SelectItem>
+-                  </SelectContent>
+-                </Select>
+-              </div>
+-              {paymentMethod === "QR_CODE" && promptPayNumber && sessionPrice > 0 && (
+-                <div className="space-y-4 border rounded-lg p-4 bg-gray-50">
+-                  <div>
+-                    <Label>เบอร์โทรศัพท์ PromptPay</Label>
+-                    <Input
+-                      value={promptPayNumber}
+-                      onChange={(e) => setPromptPayNumber(e.target.value)}
+-                      placeholder="0839987275"
+-                    />
+-                  </div>
+-                  <div className="flex flex-col items-center space-y-2">
+-                    <div className="bg-white p-4 rounded-lg shadow">
+-                      <QRCodeSVG
+-                        value={promptPayNumber}
+-                        size={180}
+-                        level="H"
+-                        includeMargin={true}
+-                      />
+-                    </div>
+-                    <p className="text-sm text-gray-600 font-medium">
+-                      สแกนเพื่อชำระเงิน: {promptPayNumber}
+-                    </p>
+-                    <p className="text-xs text-gray-500">
+-                      ยอดเงิน: ฿{sessionPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+-                    </p>
+-                  </div>
+-                </div>
+-              )}
+-              <div>
+-                <Label>ส่วนลด (฿)</Label>
+-                <Input
+-                  type="number"
+-                  value={discount}
+-                  onChange={(e) => setDiscount(Number(e.target.value))}
+-                  placeholder="0"
+-                />
+-              </div>
+-              {selectedSession && (
+-                <div className="border-t pt-4">
+-                  <div className="flex justify-between text-lg font-bold">
+-                    <span>ยอดรวม</span>
+-                    <span>฿{sessionPrice.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+-                  </div>
+-                  <div className="flex justify-between text-green-600">
+-                    <span>ส่วนลด</span>
+-                    <span>-฿{discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+-                  </div>
+-                  <div className="flex justify-between text-xl font-bold border-t pt-2">
+-                    <span>ยอดสุทธิ</span>
+-                    <span>฿{(sessionPrice - discount).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+-                  </div>
+-                </div>
+-              )}
+-              <div className="flex gap-2">
+-                <Button variant="outline" className="flex-1" onClick={() => setIsCreateOpen(false)}>
+-                  ยกเลิก
+-                </Button>
+-                <Button className="flex-1" onClick={handleCreateInvoice}>
+-                  สร้างใบเสร็จ
+-                </Button>
+-              </div>
+-            </div>
+-          </DialogContent>
+-        </Dialog>
+-        </div>
+-      </div>
+-
+-      {/* Stats */}
+-      <div className="grid gap-4 md:grid-cols-3">
+-        <Card>
+-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+-            <CardTitle className="text-sm font-medium">ใบเสร็จทั้งหมด</CardTitle>
+-            <FileText className="h-4 w-4 text-gray-500" />
+-          </CardHeader>
+-          <CardContent>
+-            <div className="text-2xl font-bold">{invoices.length}</div>
+-          </CardContent>
+-        </Card>
+-        <Card>
+-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+-            <CardTitle className="text-sm font-medium">รายได้รวม</CardTitle>
+-            <DollarSign className="h-4 w-4 text-gray-500" />
+-          </CardHeader>
+-          <CardContent>
+-            <div className="text-2xl font-bold">฿{totalRevenue.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+-            <p className="text-xs text-gray-500 mt-1">
+-              จาก {invoices.length} ใบเสร็จ
+-            </p>
+-          </CardContent>
+-        </Card>
+-        <Card>
+-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+-            <CardTitle className="text-sm font-medium">เซสชันที่ใช้งาน</CardTitle>
+-            <Building className="h-4 w-4 text-gray-500" />
+-          </CardHeader>
+-          <CardContent>
+-            <div className="text-2xl font-bold">{activeSessions.length}</div>
+-          </CardContent>
+-        </Card>
++    <div className="space-y-6">
++      <div>
++        <h1 className="text-2xl font-bold">
++          ใบเสร็จเดิมและการตั้งค่าการชำระเงิน
++        </h1>
++        <p
++          role="status"
++          className="mt-2 rounded border border-amber-300 bg-amber-50 p-4"
++        >
++          ยังไม่เปิด checkout, QR ชำระเงิน หรือการยืนยันรับเงินจริง
++          ระหว่างรออนุมัติกติกาโดยร้าน
++          ใบเสร็จเดิมไม่ใช่หลักฐานว่าระบบได้ตรวจยืนยันเงินเข้าแล้ว
++        </p>
++        <Button disabled className="mt-3">
++          สร้างใบเสร็จ — รออนุมัติกติกา
++        </Button>
++        {!readiness && (
++          <p className="text-sm text-gray-600">
++            ยังไม่ได้รับข้อมูลความพร้อมการชำระเงินจาก server
++          </p>
++        )}
+       </div>
+-
+-      {/* Filters */}
++      {error && <p role="alert">{error}</p>}
+       <Card>
+-        <CardContent className="p-4">
+-          <div className="relative">
+-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+-            <Input
+-              placeholder="ค้นหาโดย ID หรือโต๊ะ..."
+-              value={searchQuery}
+-              onChange={(e) => setSearchQuery(e.target.value)}
+-              className="pl-10"
+-            />
+-          </div>
++        <CardHeader>
++          <CardTitle>
++            ข้อมูลผู้รับเดิม (ยังไม่ผ่านการยืนยันโดยผู้ให้บริการ)
++          </CardTitle>
++        </CardHeader>
++        <CardContent className="space-y-3">
++          <Label htmlFor="receiver">ข้อมูลผู้รับ</Label>
++          <Input
++            id="receiver"
++            value={receiver}
++            maxLength={64}
++            onChange={(event) => setReceiver(event.target.value)}
++            disabled={!canEditSettings}
++          />
++          <p className="text-sm text-gray-600">
++            บันทึกในฐานข้อมูลเท่านั้น ยังไม่ใช้สร้าง QR หรือยืนยันการชำระ
++            เว้นว่างเพื่อล้างค่า
++          </p>
++          <Button
++            onClick={() => {
++              void saveSettings();
++            }}
++            disabled={!canEditSettings}
++          >
++            บันทึกข้อมูลผู้รับ
++          </Button>
+         </CardContent>
+       </Card>
+-
+-      {/* Invoices Table */}
+-      <Card className="flex-1 overflow-hidden">
+-        <ScrollArea className="h-full">
+-          <Table>
+-            <TableHeader>
+-              <TableRow>
+-                <TableHead>Invoice ID</TableHead>
+-                <TableHead>โต๊ะ</TableHead>
+-                <TableHead>ยอดรวม</TableHead>
+-                <TableHead>ส่วนลด</TableHead>
+-                <TableHead>สุทธิ</TableHead>
+-                <TableHead>ชำระเงิน</TableHead>
+-                <TableHead>เวลา</TableHead>
+-                <TableHead>จัดการ</TableHead>
++      <Input
++        aria-label="ค้นหาใบเสร็จ"
++        placeholder="ค้นหาเลขใบเสร็จหรือโต๊ะ"
++        value={search}
++        onChange={(event) => setSearch(event.target.value)}
++      />
++      <Table>
++        <TableHeader>
++          <TableRow>
++            <TableHead>ใบเสร็จเดิม</TableHead>
++            <TableHead>โต๊ะ</TableHead>
++            <TableHead>ยอดรวม</TableHead>
++            <TableHead>ส่วนลด</TableHead>
++            <TableHead>ยอดสุทธิ</TableHead>
++            <TableHead>รายละเอียด</TableHead>
++          </TableRow>
++        </TableHeader>
++        <TableBody>
++          {invoices
++            .filter((invoice) =>
++              `${invoice.invoiceNumber} ${invoice.session?.table.number ?? ""}`
++                .toLowerCase()
++                .includes(search.toLowerCase()),
++            )
++            .map((invoice) => (
++              <TableRow key={invoice.id}>
++                <TableCell>
++                  INV-{String(invoice.invoiceNumber).padStart(6, "0")}
++                </TableCell>
++                <TableCell>{invoice.session?.table.number ?? "-"}</TableCell>
++                <TableCell>฿{formatStoredMoney(invoice.totalAmount)}</TableCell>
++                <TableCell>฿{formatStoredMoney(invoice.discount)}</TableCell>
++                <TableCell>฿{formatStoredMoney(invoice.netAmount)}</TableCell>
++                <TableCell>
++                  <Button
++                    variant="outline"
++                    onClick={() => setSelected(invoice)}
++                  >
++                    ดู
++                  </Button>
++                </TableCell>
+               </TableRow>
+-            </TableHeader>
+-            <TableBody>
+-              {filteredInvoices.length === 0 ? (
+-                <TableRow>
+-                  <TableCell colSpan={8} className="text-center py-8 text-gray-500">
+-                    ยังไม่มีใบเสร็จ
+-                  </TableCell>
+-                </TableRow>
+-              ) : (
+-                filteredInvoices.map((invoice) => (
+-                  <TableRow key={invoice.id}>
+-                    <TableCell className="font-mono text-sm">
+-                      INV-{invoice.invoiceNumber?.toString().padStart(6, "0") ?? "N/A"}
+-                    </TableCell>
+-                    <TableCell className="font-medium">
+-                      {invoice.session?.table.number || "-"}
+-                    </TableCell>
+-                    <TableCell>฿{invoice.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</TableCell>
+-                    <TableCell className="text-green-600">
+-                      -฿{invoice.discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+-                    </TableCell>
+-                    <TableCell className="font-bold">
+-                      ฿{invoice.netAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+-                    </TableCell>
+-                    <TableCell>
+-                      <div className="flex items-center gap-2">
+-                        {getPaymentMethodIcon(invoice.paymentMethod)}
+-                        <span className="text-sm">{getPaymentMethodLabel(invoice.paymentMethod)}</span>
+-                      </div>
+-                    </TableCell>
+-                    <TableCell>
+-                      {new Date(invoice.createdAt).toLocaleString("th-TH")}
+-                    </TableCell>
+-                    <TableCell>
+-                      <Button
+-                        variant="outline"
+-                        size="sm"
+-                        onClick={() => {
+-                          setSelectedInvoice(invoice);
+-                          setIsDetailsOpen(true);
+-                        }}
+-                      >
+-                        <FileText className="h-4 w-4" />
+-                      </Button>
+-                    </TableCell>
+-                  </TableRow>
+-                ))
+-              )}
+-            </TableBody>
+-          </Table>
+-        </ScrollArea>
+-      </Card>
+-
+-      {/* Invoice Details Dialog */}
+-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+-        <DialogContent className="max-w-2xl">
++            ))}
++        </TableBody>
++      </Table>
++      <Dialog
++        open={selected !== null}
++        onOpenChange={(open) => {
++          if (!open) setSelected(null);
++        }}
++      >
++        <DialogContent>
+           <DialogHeader>
+-            <DialogTitle>รายละเอียดใบเสร็จ</DialogTitle>
++            <DialogTitle>ข้อมูลใบเสร็จเดิม</DialogTitle>
+           </DialogHeader>
+-          {selectedInvoice && (
+-            <div className="space-y-4">
+-              <div className="grid grid-cols-2 gap-4">
+-                <div>
+-                  <p className="text-sm text-gray-500">Invoice ID</p>
+-                  <p className="font-mono">INV-{selectedInvoice.invoiceNumber?.toString().padStart(6, "0") ?? "N/A"}</p>
+-                </div>
+-                <div>
+-                  <p className="text-sm text-gray-500">โต๊ะ</p>
+-                  <p className="font-medium">{selectedInvoice.session?.table.number || "-"}</p>
+-                </div>
+-                <div>
+-                  <p className="text-sm text-gray-500">วิธีการชำระเงิน</p>
+-                  <div className="flex items-center gap-2">
+-                    {getPaymentMethodIcon(selectedInvoice.paymentMethod)}
+-                    <span>{getPaymentMethodLabel(selectedInvoice.paymentMethod)}</span>
+-                  </div>
+-                </div>
+-                <div>
+-                  <p className="text-sm text-gray-500">เวลา</p>
+-                  <p>{new Date(selectedInvoice.createdAt).toLocaleString("th-TH")}</p>
+-                </div>
+-                {selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber && (
+-                  <div className="col-span-2">
+-                    <p className="text-sm text-gray-500">PromptPay Number</p>
+-                    <div className="flex items-center gap-2 mt-1">
+-                      <Smartphone className="h-4 w-4" />
+-                      <span className="font-medium">{selectedInvoice.promptPayNumber}</span>
+-                    </div>
+-                  </div>
+-                )}
+-              </div>
+-
+-              <div className="border-t pt-4">
+-                <div className="space-y-2">
+-                  <div className="flex justify-between">
+-                    <span>ยอดรวม</span>
+-                    <span className="font-medium">฿{selectedInvoice.totalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+-                  </div>
+-                  <div className="flex justify-between text-green-600">
+-                    <span>ส่วนลด</span>
+-                    <span>-฿{selectedInvoice.discount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+-                  </div>
+-                  <div className="flex justify-between text-lg font-bold border-t pt-2">
+-                    <span>ยอดสุทธิ</span>
+-                    <span>฿{selectedInvoice.netAmount.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+-                  </div>
+-                </div>
+-              </div>
+-
+-              {selectedInvoice.paymentMethod === "QR_CODE" && selectedInvoice.promptPayNumber && (
+-                <div className="flex flex-col items-center space-y-2 border-t pt-4">
+-                  <QRCodeSVG 
+-                    value={selectedInvoice.promptPayNumber}
+-                    size={150}
+-                    level="H"
+-                    includeMargin={true}
+-                  />
+-                  <p className="text-sm text-gray-600 font-medium">
+-                    {selectedInvoice.promptPayNumber}
+-                  </p>
+-                </div>
+-              )}
+-
+-              <Button className="w-full" variant="outline" onClick={handlePrintInvoice}>
+-                <Printer className="h-4 w-4 mr-2" />
+-                พิมพ์ใบเสร็จ
+-              </Button>
++          {selected && (
++            <div className="space-y-3">
++              <p>
++                INV-{selected.invoiceNumber} · โต๊ะ{" "}
++                {selected.session?.table.number ?? "-"}
++              </p>
++              <p>ยอดรวม ฿{formatStoredMoney(selected.totalAmount)}</p>
++              <p>ส่วนลด ฿{formatStoredMoney(selected.discount)}</p>
++              <p>ยอดสุทธิ ฿{formatStoredMoney(selected.netAmount)}</p>
++              <p>
++                ยังไม่มีหลักฐานยืนยันการรับเงินจริงในข้อมูลเดิม ไม่มี QR
++                ชำระเงินสำหรับรายการนี้
++              </p>
++              <Button onClick={print}>พิมพ์เอกสารเดิม</Button>
+             </div>
+           )}
+         </DialogContent>
+diff --git a/frontend/src/types/index.ts b/frontend/src/types/index.ts
+index 748df3f..c4b1d84 100644
+--- a/frontend/src/types/index.ts
++++ b/frontend/src/types/index.ts
+@@ -129,9 +129,9 @@ export interface Invoice {
+   invoiceNumber: number;
+   sessionId: string;
+   session?: Session;
+-  totalAmount: number;
+-  discount: number;
+-  netAmount: number;
++  totalAmount: string | number;
++  discount: string | number;
++  netAmount: string | number;
+   paymentMethod: PaymentMethod;
+   promptPayNumber?: string | null;
+   createdBy: string;
+diff --git a/backend/prisma/migrations/20261021110000_payment_safety_foundation/migration.sql b/backend/prisma/migrations/20261021110000_payment_safety_foundation/migration.sql
+new file mode 100644
+index 0000000..bb3e22c
+--- /dev/null
++++ b/backend/prisma/migrations/20261021110000_payment_safety_foundation/migration.sql
+@@ -0,0 +1,36 @@
++BEGIN;
++
++-- Preserve all historical rows; require explicit reconciliation instead of choosing a winner.
++DO $$ BEGIN
++  IF EXISTS (SELECT 1 FROM "Session" WHERE status = 'ACTIVE' GROUP BY "tableId" HAVING count(*) > 1) THEN
++    RAISE EXCEPTION 'PAYMENT_PREFLIGHT_DUPLICATE_ACTIVE_SESSIONS: reconcile active sessions per table before retrying migration';
++  END IF;
++END $$;
++
++CREATE UNIQUE INDEX "Session_one_active_per_table" ON "Session"("tableId") WHERE (status = 'ACTIVE'::"SessionStatus");
++
++CREATE TABLE "SessionOpenRequest" (
++  "actorId" TEXT NOT NULL,
++  "key" VARCHAR(128) NOT NULL,
++  "requestHash" VARCHAR(64) NOT NULL,
++  "sessionId" TEXT NOT NULL,
++  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
++  CONSTRAINT "SessionOpenRequest_pkey" PRIMARY KEY ("actorId", "key"),
++  CONSTRAINT "SessionOpenRequest_actorId_fkey" FOREIGN KEY ("actorId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE,
++  CONSTRAINT "SessionOpenRequest_sessionId_fkey" FOREIGN KEY ("sessionId") REFERENCES "Session"("id") ON DELETE RESTRICT ON UPDATE CASCADE
++);
++CREATE UNIQUE INDEX "SessionOpenRequest_sessionId_key" ON "SessionOpenRequest"("sessionId");
++
++CREATE TABLE "PaymentSettings" (
++  "id" INTEGER NOT NULL DEFAULT 1,
++  "promptPayNumber" VARCHAR(64),
++  "updatedBy" TEXT,
++  "updatedAt" TIMESTAMP(3) NOT NULL,
++  CONSTRAINT "PaymentSettings_pkey" PRIMARY KEY ("id"),
++  CONSTRAINT "PaymentSettings_singleton" CHECK (id = 1),
++  CONSTRAINT "PaymentSettings_reference_syntax" CHECK ("promptPayNumber" IS NULL OR (length(btrim("promptPayNumber")) > 0 AND "promptPayNumber" !~ '[[:cntrl:]]')),
++  CONSTRAINT "PaymentSettings_updatedBy_fkey" FOREIGN KEY ("updatedBy") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE
++);
++-- Old settings were process-local memory; no receiver can be reconstructed safely.
++INSERT INTO "PaymentSettings" (id, "promptPayNumber", "updatedAt") VALUES (1, NULL, CURRENT_TIMESTAMP);
++COMMIT;
+diff --git a/backend/src/invoices/payment-readiness.ts b/backend/src/invoices/payment-readiness.ts
+new file mode 100644
+index 0000000..ac07307
+--- /dev/null
++++ b/backend/src/invoices/payment-readiness.ts
+@@ -0,0 +1,8 @@
++export const PAYMENT_READINESS = Object.freeze({
++  checkoutEnabled: false,
++  qrEnabled: false,
++  confirmationEnabled: false,
++  code: 'CHECKOUT_POLICY_PENDING',
++  message:
++    'CHECKOUT_POLICY_PENDING: Pricing, settlement and payment confirmation policy require business approval. Legacy invoices are not proof of verified payment.',
++});
+diff --git a/backend/src/invoices/payment-safety.spec.ts b/backend/src/invoices/payment-safety.spec.ts
+new file mode 100644
+index 0000000..ddc828a
+--- /dev/null
++++ b/backend/src/invoices/payment-safety.spec.ts
+@@ -0,0 +1,49 @@
++import { ServiceUnavailableException } from '@nestjs/common';
++import { InvoicesService } from './invoices.service';
++import { IdTransformer } from '../common/utils/id-transformer.util';
++import { PrismaService } from '../prisma/prisma.service';
++import { EventsGateway } from '../events/events.gateway';
++import { SettingsService } from '../settings/settings.service';
++
++describe('Payment safety while business policy is unapproved', () => {
++  it.each([0, 0.01, 999999])(
++    'client amount %s cannot create an invoice or emit a payment event',
++    (totalAmount) => {
++      const prisma = { $transaction: jest.fn() },
++        events = { emitNewInvoice: jest.fn() };
++      const service = new InvoicesService(
++        prisma as unknown as PrismaService,
++        events as unknown as EventsGateway,
++        new IdTransformer(),
++      );
++      expect(() =>
++        service.create(
++          {
++            sessionId: '00000000-0000-4000-8000-000000000001',
++            totalAmount,
++            paymentMethod: 'QR_CODE',
++          },
++          '00000000-0000-4000-8000-000000000002',
++        ),
++      ).toThrow(ServiceUnavailableException);
++      expect(prisma.$transaction).not.toHaveBeenCalled();
++      expect(events.emitNewInvoice).not.toHaveBeenCalled();
++    },
++  );
++  it.each([undefined, '', '   ', 'x'.repeat(65), 'bad\u0000reference'])(
++    'invalid receiver config is rejected before writing: %j',
++    async (value) => {
++      const upsert = jest.fn();
++      const settings = new SettingsService({
++        paymentSettings: { upsert },
++      } as unknown as PrismaService);
++      await expect(
++        settings.updatePaymentSettings(
++          { promptPayNumber: value as string },
++          'fixture',
++        ),
++      ).rejects.toThrow();
++      expect(upsert).not.toHaveBeenCalled();
++    },
++  );
++});
+diff --git a/backend/src/settings/receiver-reference.ts b/backend/src/settings/receiver-reference.ts
+new file mode 100644
+index 0000000..f556561
+--- /dev/null
++++ b/backend/src/settings/receiver-reference.ts
+@@ -0,0 +1,6 @@
++export function hasControlCharacters(value: string): boolean {
++  return Array.from(value).some((character) => {
++    const code = character.charCodeAt(0);
++    return code < 32 || (code >= 127 && code <= 159);
++  });
++}
+diff --git a/backend/test/jest-payment-e2e.json b/backend/test/jest-payment-e2e.json
+new file mode 100644
+index 0000000..d955dc2
+--- /dev/null
++++ b/backend/test/jest-payment-e2e.json
+@@ -0,0 +1,8 @@
++{
++  "rootDir": "..",
++  "testEnvironment": "node",
++  "testMatch": ["<rootDir>/test/payment.e2e-spec.ts"],
++  "moduleNameMapper": { "^src/(.*)$": "<rootDir>/src/$1" },
++  "transform": { "^.+\\.ts$": "ts-jest" },
++  "testTimeout": 10000
++}
+diff --git a/backend/test/jest-payment-proposal.json b/backend/test/jest-payment-proposal.json
+new file mode 100644
+index 0000000..131e445
+--- /dev/null
++++ b/backend/test/jest-payment-proposal.json
+@@ -0,0 +1,8 @@
++{
++  "rootDir": "..",
++  "testEnvironment": "node",
++  "testMatch": ["<rootDir>/test/proposals/pricing-policy.proposal.spec.ts"],
++  "moduleNameMapper": { "^src/(.*)$": "<rootDir>/src/$1" },
++  "transform": { "^.+\\.ts$": "ts-jest" },
++  "testTimeout": 10000
++}
+diff --git a/backend/test/payment.e2e-spec.ts b/backend/test/payment.e2e-spec.ts
+new file mode 100644
+index 0000000..6ec412d
+--- /dev/null
++++ b/backend/test/payment.e2e-spec.ts
+@@ -0,0 +1,503 @@
++import { randomUUID } from 'node:crypto';
++import { spawn, ChildProcess } from 'node:child_process';
++import { createServer } from 'node:net';
++import { openSync, closeSync } from 'node:fs';
++import { Server } from 'node:http';
++import { INestApplication, ValidationPipe } from '@nestjs/common';
++import { Test } from '@nestjs/testing';
++import { ConfigService } from '@nestjs/config';
++import { JwtService } from '@nestjs/jwt';
++import request from 'supertest';
++import { AppModule } from '../src/app.module';
++import { PrismaService } from '../src/prisma/prisma.service';
++import { SessionsService } from '../src/sessions/sessions.service';
++import { EventsGateway } from '../src/events/events.gateway';
++import { ResponseInterceptor } from '../src/common/response.interceptor';
++import { AllExceptionsFilter } from '../src/common/all-exceptions.filter';
++import {
++  IdPrefix,
++  IdTransformer,
++} from '../src/common/utils/id-transformer.util';
++
++const url = new URL(process.env.DATABASE_URL || 'postgresql://invalid/invalid');
++if (
++  process.env.ALLOW_SHABU_TEST_DB !== '1' ||
++  url.hostname !== '127.0.0.1' ||
++  url.port !== '55432' ||
++  !/^\/shabu_payment_empty_\d+$/.test(url.pathname)
++)
++  throw new Error('Isolated payment test DB opt-in required');
++const data = <T>(response: request.Response) =>
++  (response.body as { data: T }).data;
++type WireSession = {
++  id: string;
++  tableId: string;
++  qrToken: string;
++  status: string;
++};
++const ids = new IdTransformer();
++
++describe('Payment safety foundation; approved checkout remains BLOCKED', () => {
++  let app: INestApplication<Server>, prisma: PrismaService, tierId: number;
++  const marker = randomUUID(),
++    grants: Record<string, string[]> = {},
++    tokens: Record<string, string> = {},
++    actors: Record<string, string> = {};
++  const api = () => request(app.getHttpServer());
++  const authorize = (role = 'WRITER') => tokens[role];
++  const open = (
++    tableId: number,
++    key?: string,
++    role = 'WRITER',
++    counts = { adultCount: 2, childCount: 1 },
++  ) => {
++    const call = api()
++      .post('/sessions')
++      .auth(authorize(role), { type: 'bearer' });
++    if (key !== undefined) call.set('Idempotency-Key', key);
++    return call.send({ tableId, tierId, ...counts });
++  };
++  const newTable = async () =>
++    (await prisma.table.create({ data: { number: randomUUID() } })).id;
++  const invoice = (
++    sessionId: string,
++    totalAmount = 0.01,
++    discount = 0,
++    role = 'WRITER',
++  ) =>
++    api().post('/invoices').auth(authorize(role), { type: 'bearer' }).send({
++      sessionId,
++      totalAmount,
++      discount,
++      paymentMethod: 'QR_CODE',
++      promptPayNumber: 'not-a-payment-payload',
++    });
++  beforeAll(async () => {
++    prisma = new PrismaService();
++    await prisma.$connect();
++    tierId = (
++      await prisma.tier.create({
++        data: { name: marker, priceAdult: '0.10', priceChild: '0.20' },
++      })
++    ).id;
++    for (const name of ['WRITER', 'DISCOUNTER', 'READER']) {
++      const role = await prisma.role.create({
++        data: { name: `${marker}-${name}` },
++      });
++      actors[name] = (
++        await prisma.user.create({
++          data: {
++            username: `${marker}-${name}`,
++            fullName: name,
++            roleId: role.id,
++            passwordHash: 'unused-test-fixture',
++          },
++        })
++      ).id;
++      grants[role.name] =
++        name === 'READER'
++          ? ['invoices.read']
++          : [
++              'invoices.read',
++              'invoices.write',
++              'sessions.read',
++              'sessions.write',
++              'payment-settings.read',
++              'payment-settings.write',
++              ...(name === 'DISCOUNTER' ? ['invoices.discount'] : []),
++            ];
++      tokens[name] = new JwtService().sign(
++        { sub: actors[name], kind: 'access' },
++        { secret: process.env.JWT_SECRET, algorithm: 'HS256', expiresIn: '1h' },
++      );
++    }
++    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
++      .overrideProvider(ConfigService)
++      .useValue(
++        new ConfigService({
++          ...process.env,
++          STAFF_PERMISSION_GRANTS: JSON.stringify(grants),
++          KITCHEN_USER_ASSIGNMENTS: '{}',
++        }),
++      )
++      .compile();
++    app = moduleRef.createNestApplication<INestApplication<Server>>();
++    app.useGlobalPipes(
++      new ValidationPipe({
++        whitelist: true,
++        forbidNonWhitelisted: true,
++        transform: true,
++      }),
++    );
++    app.useGlobalInterceptors(new ResponseInterceptor());
++    app.useGlobalFilters(new AllExceptionsFilter());
++    await app.listen(0, '127.0.0.1');
++  }, 30000);
++  afterAll(async () => {
++    if (app) await app.close();
++    if (prisma) await prisma.$disconnect();
++  });
++
++  it('readiness route precedes dynamic id and cannot imply PAID or provide a guessed quote', async () => {
++    const ready = data<{
++      checkoutEnabled: boolean;
++      qrEnabled: boolean;
++      confirmationEnabled: boolean;
++      code: string;
++    }>(
++      await api()
++        .get('/invoices/payment-readiness')
++        .auth(authorize('READER'), { type: 'bearer' })
++        .expect(200),
++    );
++    expect(ready).toMatchObject({
++      checkoutEnabled: false,
++      qrEnabled: false,
++      confirmationEnabled: false,
++      code: 'CHECKOUT_POLICY_PENDING',
++    });
++    expect(ready).not.toHaveProperty('totalAmount');
++  });
++  it('anonymous/wrong permission/discount without explicit grant are denied', async () => {
++    const table = await newTable(),
++      session = data<WireSession>(await open(table).expect(201));
++    await api().post('/invoices').send({}).expect(401);
++    await invoice(session.id, 0.01, 0, 'READER').expect(403);
++    await invoice(session.id, 1, 0.01).expect(403);
++    await api()
++      .post('/settings/payment')
++      .send({ promptPayNumber: 'fixture' })
++      .expect(401);
++    await api()
++      .post('/settings/payment')
++      .auth(authorize('READER'), { type: 'bearer' })
++      .send({ promptPayNumber: 'fixture' })
++      .expect(403);
++  });
++  it('tampering totals, excessive discounts, repeated/concurrent checkout cannot write anything while policy is pending', async () => {
++    const tableId = await newTable(),
++      session = data<WireSession>(await open(tableId).expect(201)),
++      raw = ids.decode(session.id, IdPrefix.SESSION);
++    const gateway = app.get(EventsGateway),
++      emit = jest.spyOn(gateway, 'emitNewInvoice');
++    const before = await prisma.invoice.count();
++    for (const total of [0, 0.01, 999999])
++      await invoice(session.id, total).expect(503);
++    await invoice(session.id, 1, 999999, 'DISCOUNTER').expect(503);
++    const results = await Promise.all([
++      invoice(session.id),
++      invoice(session.id),
++    ]);
++    expect(results.map((row) => row.status)).toEqual([503, 503]);
++    expect((results[0].body as { message: string }).message).toContain(
++      'CHECKOUT_POLICY_PENDING',
++    );
++    expect(await prisma.invoice.count()).toBe(before);
++    expect(
++      (await prisma.session.findUniqueOrThrow({ where: { id: raw } })).status,
++    ).toBe('ACTIVE');
++    expect(
++      (await prisma.table.findUniqueOrThrow({ where: { id: tableId } })).status,
++    ).toBe('OCCUPIED');
++    expect(emit).not.toHaveBeenCalled();
++    emit.mockRestore();
++  });
++  it('two concurrent opening requests claim one session; database constraint also rejects direct duplicate ACTIVE insertion', async () => {
++    const tableId = await newTable();
++    const responses = await Promise.all([open(tableId), open(tableId)]);
++    expect(responses.map((res) => res.status).sort()).toEqual([201, 409]);
++    expect(
++      await prisma.session.count({ where: { tableId, status: 'ACTIVE' } }),
++    ).toBe(1);
++    await expect(
++      prisma.session.create({
++        data: {
++          tableId,
++          tierId,
++          qrToken: randomUUID(),
++          endTime: new Date(Date.now() + 3600000),
++        },
++      }),
++    ).rejects.toMatchObject({ code: 'P2002' });
++  });
++  it('same opening key retries concurrently as one resource; different input conflicts without claiming another table', async () => {
++    const tableId = await newTable(),
++      other = await newTable(),
++      key = randomUUID();
++    const gateway = app.get(EventsGateway),
++      emit = jest.spyOn(gateway, 'emitTableStatus');
++    const responses = await Promise.all([
++      open(tableId, key),
++      open(tableId, key),
++    ]);
++    expect(responses.map((res) => res.status)).toEqual([201, 201]);
++    expect(data<WireSession>(responses[0]).id).toBe(
++      data<WireSession>(responses[1]).id,
++    );
++    expect(await prisma.session.count({ where: { tableId } })).toBe(1);
++    expect(emit).toHaveBeenCalledTimes(1);
++    emit.mockRestore();
++    await open(other, key).expect(409);
++    expect(
++      (await prisma.table.findUniqueOrThrow({ where: { id: other } })).status,
++    ).toBe('AVAILABLE');
++    await open(other, 'bad key with spaces').expect(400);
++  });
++  it('idempotency keys are actor-scoped and key replay never opens a fresh session after closure', async () => {
++    const key = randomUUID(),
++      table = await newTable(),
++      other = await newTable();
++    const first = data<WireSession>(await open(table, key).expect(201));
++    await app.get(SessionsService).updateStatus(first.id, { status: 'CLOSED' });
++    const replay = data<WireSession>(await open(table, key).expect(201));
++    expect(replay.id).toBe(first.id);
++    expect(replay.status).toBe('CLOSED');
++    await prisma.table.update({
++      where: { id: table },
++      data: { status: 'AVAILABLE' },
++    });
++    await open(table, randomUUID()).expect(409);
++    await open(other, key, 'DISCOUNTER').expect(201);
++    expect(await prisma.session.count({ where: { tableId: table } })).toBe(1);
++  });
++  it('session insert failure rolls back table claim and idempotency row, and emits no OCCUPIED', async () => {
++    const tableId = await newTable(),
++      key = randomUUID(),
++      gateway = app.get(EventsGateway),
++      emit = jest.spyOn(gateway, 'emitTableStatus');
++    await prisma.$executeRawUnsafe(
++      `CREATE OR REPLACE FUNCTION payment_fail_open() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW."tableId" = ${tableId} THEN RAISE EXCEPTION 'payment session fixture failure'; END IF; RETURN NEW; END $$`,
++    );
++    await prisma.$executeRawUnsafe(
++      'CREATE TRIGGER payment_fail_open BEFORE INSERT ON "Session" FOR EACH ROW EXECUTE FUNCTION payment_fail_open()',
++    );
++    try {
++      await open(tableId, key).expect(500);
++      expect(
++        (await prisma.table.findUniqueOrThrow({ where: { id: tableId } }))
++          .status,
++      ).toBe('AVAILABLE');
++      expect(await prisma.session.count({ where: { tableId } })).toBe(0);
++      expect(await prisma.sessionOpenRequest.count({ where: { key } })).toBe(0);
++      expect(emit).not.toHaveBeenCalled();
++    } finally {
++      await prisma.$executeRawUnsafe(
++        'DROP TRIGGER payment_fail_open ON "Session"',
++      );
++      await prisma.$executeRawUnsafe('DROP FUNCTION payment_fail_open()');
++      emit.mockRestore();
++    }
++    await open(tableId, key).expect(201);
++  });
++  it.each([-1, 2147483648, 1.5])(
++    'rejects invalid guest count %s before opening',
++    async (count) => {
++      const tableId = await newTable();
++      await open(tableId, undefined, 'WRITER', {
++        adultCount: count,
++        childCount: 0,
++      }).expect(400);
++      expect(
++        (await prisma.table.findUniqueOrThrow({ where: { id: tableId } }))
++          .status,
++      ).toBe('AVAILABLE');
++    },
++  );
++  it('expired session cannot order or be overlapped, but approved overdue checkout is still BLOCKED', async () => {
++    const tableId = await newTable(),
++      wire = data<WireSession>(await open(tableId).expect(201)),
++      raw = ids.decode(wire.id, IdPrefix.SESSION);
++    const qr = data<{ customerAccessToken: string }>(
++      await api().get(`/sessions/qr/${wire.qrToken}`).expect(200),
++    );
++    await prisma.session.update({
++      where: { id: raw },
++      data: { endTime: new Date(Date.now() - 1000) },
++    });
++    await api()
++      .post('/customer/orders')
++      .auth(qr.customerAccessToken, { type: 'bearer' })
++      .send({ items: [] })
++      .expect(403);
++    await app.get(SessionsService).checkSessionTime();
++    expect(
++      (await prisma.session.findUniqueOrThrow({ where: { id: raw } })).status,
++    ).toBe('EXPIRED');
++    // Legacy cron still assigns CLEANING; that unresolved state machine is characterized, not approved here.
++    expect(
++      (await prisma.table.findUniqueOrThrow({ where: { id: tableId } })).status,
++    ).toBe('CLEANING');
++    await prisma.table.update({
++      where: { id: tableId },
++      data: { status: 'AVAILABLE' },
++    });
++    await open(tableId).expect(409);
++    await invoice(wire.id).expect(503);
++  });
++  it('historical stored decimals are unchanged by current tier price edits; no retrospective repricing', async () => {
++    const tableId = await newTable(),
++      wire = data<WireSession>(await open(tableId).expect(201));
++    const row = await prisma.invoice.create({
++      data: {
++        sessionId: ids.decode(wire.id, IdPrefix.SESSION),
++        totalAmount: '0.50',
++        discount: '0.20',
++        netAmount: '0.30',
++        paymentMethod: 'LEGACY_UNVERIFIED',
++        createdBy: actors.WRITER,
++      },
++    });
++    await prisma.tier.update({
++      where: { id: tierId },
++      data: { priceAdult: '99999.99' },
++    });
++    const response = data<{
++      totalAmount: string;
++      discount: string;
++      netAmount: string;
++    }>(
++      await api()
++        .get(`/invoices/${row.id}`)
++        .auth(authorize(), { type: 'bearer' })
++        .expect(200),
++    );
++    expect([
++      response.totalAmount,
++      response.discount,
++      response.netAmount,
++    ]).toEqual(['0.5', '0.2', '0.3']);
++    await app.get(SessionsService).updateStatus(wire.id, { status: 'CLOSED' });
++    await prisma.table.update({
++      where: { id: tableId },
++      data: { status: 'AVAILABLE' },
++    });
++    await open(tableId).expect(409); // Invoice existence is not verified settlement.
++  });
++  it.each([
++    {},
++    { promptPayNumber: '' },
++    { promptPayNumber: 42 },
++    { promptPayNumber: 'x'.repeat(65) },
++    { promptPayNumber: 'bad\u0000reference' },
++  ])('rejects invalid settings input %j', async (payload) => {
++    await api()
++      .post('/settings/payment')
++      .auth(authorize(), { type: 'bearer' })
++      .send(payload)
++      .expect(400);
++  });
++  it('settings persist with authenticated updater; explicit null clears config', async () => {
++    await api()
++      .post('/settings/payment')
++      .auth(authorize(), { type: 'bearer' })
++      .send({ promptPayNumber: '  fixture-unverified-receiver  ' })
++      .expect(201);
++    const row = await prisma.paymentSettings.findUniqueOrThrow({
++      where: { id: 1 },
++    });
++    expect(row.promptPayNumber).toBe('fixture-unverified-receiver');
++    expect(row.updatedBy).toBe(actors.WRITER);
++    await api()
++      .post('/settings/payment')
++      .auth(authorize(), { type: 'bearer' })
++      .send({ promptPayNumber: null })
++      .expect(201);
++    expect(
++      data<{ promptPayNumber: null }>(
++        await api()
++          .get('/settings/payment')
++          .auth(authorize(), { type: 'bearer' })
++          .expect(200),
++      ).promptPayNumber,
++    ).toBeNull();
++  });
++  it('settings survive actual backend process stop/start; readiness remains disabled', async () => {
++    async function start() {
++      const probe = createServer();
++      await new Promise<void>((resolve) =>
++        probe.listen(0, '127.0.0.1', resolve),
++      );
++      const port = (probe.address() as { port: number }).port;
++      await new Promise<void>((resolve) => probe.close(() => resolve()));
++      const log = openSync(
++        '../reports/payment-evidence/restart-process.log',
++        'a',
++      );
++      const child = spawn(
++        process.execPath,
++        ['-r', './register-paths.cjs', 'dist/main.js'],
++        {
++          cwd: process.cwd(),
++          env: {
++            ...process.env,
++            PORT: String(port),
++            NODE_ENV: 'test',
++            STAFF_PERMISSION_GRANTS: JSON.stringify(grants),
++            KITCHEN_USER_ASSIGNMENTS: '{}',
++          },
++          stdio: ['ignore', log, log],
++        },
++      );
++      closeSync(log);
++      const address = `http://127.0.0.1:${port}`;
++      for (let attempt = 0; attempt < 60; attempt++) {
++        if (child.exitCode !== null)
++          throw new Error(`Backend exited ${child.exitCode}`);
++        try {
++          if ((await fetch(address + '/api-docs')).status === 200)
++            return { child, address };
++        } catch {
++          /* wait for boot */
++        }
++        await new Promise((resolve) => setTimeout(resolve, 100));
++      }
++      child.kill('SIGTERM');
++      throw new Error('Backend startup timeout');
++    }
++    async function stop(child: ChildProcess) {
++      const exited = new Promise((resolve) => child.once('exit', resolve));
++      child.kill('SIGTERM');
++      await exited;
++    }
++    const first = await start();
++    try {
++      expect(
++        (
++          await fetch(first.address + '/settings/payment', {
++            method: 'POST',
++            headers: {
++              Authorization: `Bearer ${authorize()}`,
++              'Content-Type': 'application/json',
++            },
++            body: JSON.stringify({
++              promptPayNumber: 'restart-fixture-unverified',
++            }),
++          })
++        ).status,
++      ).toBe(201);
++    } finally {
++      await stop(first.child);
++    }
++    const second = await start();
++    try {
++      const response = await fetch(second.address + '/settings/payment', {
++        headers: { Authorization: `Bearer ${authorize()}` },
++      });
++      expect(response.status).toBe(200);
++      expect(
++        ((await response.json()) as { data: { promptPayNumber: string } }).data
++          .promptPayNumber,
++      ).toBe('restart-fixture-unverified');
++      const ready = await fetch(
++        second.address + '/invoices/payment-readiness',
++        { headers: { Authorization: `Bearer ${authorize()}` } },
++      );
++      expect(
++        ((await ready.json()) as { data: { confirmationEnabled: boolean } })
++          .data.confirmationEnabled,
++      ).toBe(false);
++    } finally {
++      await stop(second.child);
++    }
++  }, 20000);
++});
+diff --git a/backend/test/proposals/pricing-policy.proposal.spec.ts b/backend/test/proposals/pricing-policy.proposal.spec.ts
+new file mode 100644
+index 0000000..0c9171a
+--- /dev/null
++++ b/backend/test/proposals/pricing-policy.proposal.spec.ts
+@@ -0,0 +1,129 @@
++// DESIGN TEST ONLY. Synthetic policies below are not business approval and are not imported by runtime services.
++import { Prisma } from '@prisma/client';
++
++type Policy = {
++  basis: 'OPEN' | 'CHECKOUT';
++  tax: string;
++  service: string;
++  rounding: Prisma.Decimal.Rounding;
++};
++function proposedQuote(
++  policy: Policy,
++  input: {
++    opening: string;
++    checkout: string;
++    child: string;
++    adults: number;
++    children: number;
++    discount: string;
++  },
++) {
++  const unit = new Prisma.Decimal(
++    policy.basis === 'OPEN' ? input.opening : input.checkout,
++  );
++  const subtotal = unit
++    .mul(input.adults)
++    .plus(new Prisma.Decimal(input.child).mul(input.children));
++  const discount = new Prisma.Decimal(input.discount);
++  if (discount.isNegative() || discount.gt(subtotal))
++    throw new Error('Discount exceeds subtotal');
++  const base = subtotal.minus(discount);
++  // A fixture-only proposal: exclusive service then tax, final rounding only. Not an approved restaurant rule.
++  return base
++    .mul(new Prisma.Decimal(1).plus(policy.service))
++    .mul(new Prisma.Decimal(1).plus(policy.tax))
++    .toDecimalPlaces(2, policy.rounding)
++    .toFixed(2);
++}
++const input = {
++  opening: '0.10',
++  checkout: '0.20',
++  child: '0.20',
++  adults: 3,
++  children: 1,
++  discount: '0.00',
++};
++describe('UNAPPROVED pricing design fixtures; not checkout acceptance', () => {
++  it('opening-price hypothesis produces 0.50 exactly', () => {
++    expect(
++      proposedQuote(
++        {
++          basis: 'OPEN',
++          tax: '0',
++          service: '0',
++          rounding: Prisma.Decimal.ROUND_HALF_UP,
++        },
++        input,
++      ),
++    ).toBe('0.50');
++  });
++  it('checkout-price hypothesis differs deliberately: 0.80', () => {
++    expect(
++      proposedQuote(
++        {
++          basis: 'CHECKOUT',
++          tax: '0',
++          service: '0',
++          rounding: Prisma.Decimal.ROUND_HALF_UP,
++        },
++        input,
++      ),
++    ).toBe('0.80');
++  });
++  it('discount above the authoritative hypothesis is rejected and full discount has zero net', () => {
++    const policy: Policy = {
++      basis: 'OPEN',
++      tax: '0',
++      service: '0',
++      rounding: Prisma.Decimal.ROUND_HALF_UP,
++    };
++    expect(() =>
++      proposedQuote(policy, { ...input, discount: '0.51' }),
++    ).toThrow();
++    expect(proposedQuote(policy, { ...input, discount: '0.50' })).toBe('0.00');
++  });
++  it('rounding choice is observable and must be approved', () => {
++    const example = { ...input, opening: '1.005', adults: 1, children: 0 };
++    expect(
++      proposedQuote(
++        {
++          basis: 'OPEN',
++          tax: '0',
++          service: '0',
++          rounding: Prisma.Decimal.ROUND_HALF_UP,
++        },
++        example,
++      ),
++    ).toBe('1.01');
++    expect(
++      proposedQuote(
++        {
++          basis: 'OPEN',
++          tax: '0',
++          service: '0',
++          rounding: Prisma.Decimal.ROUND_HALF_EVEN,
++        },
++        example,
++      ),
++    ).toBe('1.00');
++  });
++  it('synthetic service/tax order uses exact decimals, without declaring actual tax rates', () => {
++    expect(
++      proposedQuote(
++        {
++          basis: 'OPEN',
++          tax: '0.07',
++          service: '0.10',
++          rounding: Prisma.Decimal.ROUND_HALF_UP,
++        },
++        {
++          ...input,
++          opening: '100.00',
++          adults: 1,
++          children: 0,
++          discount: '10.00',
++        },
++      ),
++    ).toBe('105.93');
++  });
++});
+diff --git a/backend/test/verify-payment-migrations.cjs b/backend/test/verify-payment-migrations.cjs
+new file mode 100644
+index 0000000..5fe146a
+--- /dev/null
++++ b/backend/test/verify-payment-migrations.cjs
+@@ -0,0 +1,190 @@
++// Opt-in isolated databases only. Retains every DB/fixture, including rejected preflight data.
++const { Client } = require('pg');
++const { spawnSync } = require('node:child_process');
++const fs = require('node:fs');
++const os = require('node:os');
++const path = require('node:path');
++const assert = require('node:assert/strict');
++const root = path.resolve(__dirname, '..');
++const out = path.resolve(root, '../reports/payment-evidence');
++fs.mkdirSync(out, { recursive: true });
++const adminUrl = new URL(
++  process.env.SHABU_TEST_ADMIN_URL || 'postgresql://invalid/invalid',
++);
++if (
++  process.env.ALLOW_SHABU_TEST_DB !== '1' ||
++  adminUrl.hostname !== '127.0.0.1' ||
++  adminUrl.port !== '55432' ||
++  adminUrl.pathname !== '/shabu_test' ||
++  adminUrl.username !== 'shabu_test'
++)
++  throw new Error('Isolated test DB opt-in required');
++const latest = '20261021110000_payment_safety_foundation';
++const stage = fs.mkdtempSync(
++  path.join(os.tmpdir(), 'shabu-payment-migrations-'),
++);
++fs.mkdirSync(path.join(stage, 'migrations'));
++for (const entry of fs.readdirSync(path.join(root, 'prisma/migrations'))) {
++  if (entry !== latest)
++    fs.cpSync(
++      path.join(root, 'prisma/migrations', entry),
++      path.join(stage, 'migrations', entry),
++      { recursive: true },
++    );
++}
++const config = path.join(stage, 'legacy.config.ts');
++fs.writeFileSync(
++  config,
++  `export default { schema: ${JSON.stringify(path.join(root, 'prisma/schema.prisma'))}, migrations: { path: ${JSON.stringify(path.join(stage, 'migrations'))} }, datasource: { url: process.env.DATABASE_URL } };`,
++);
++const commands = [];
++function prisma(args, url, expected = 0) {
++  const result = spawnSync(
++    process.execPath,
++    ['node_modules/prisma/build/index.js', ...args],
++    { cwd: root, env: { ...process.env, DATABASE_URL: url }, encoding: 'utf8' },
++  );
++  console.log(result.stdout, result.stderr, 'EXIT', result.status);
++  commands.push({
++    args,
++    exitStatus: result.status,
++    expectedExitStatus: expected,
++  });
++  assert.equal(result.status, expected);
++  return result;
++}
++async function main() {
++  const admin = new Client({ connectionString: adminUrl.toString() });
++  await admin.connect();
++  const stamp = Date.now(),
++    databases = {};
++  try {
++    for (const kind of ['empty', 'populated', 'duplicates']) {
++      const name = `shabu_payment_${kind}_${stamp}`;
++      await admin.query(`CREATE DATABASE "${name}"`);
++      const url = new URL(adminUrl);
++      url.pathname = '/' + name;
++      databases[kind] = url.toString();
++    }
++  } finally {
++    await admin.end();
++  }
++  fs.writeFileSync(
++    path.join(out, 'test-databases.json'),
++    JSON.stringify(databases, null, 2),
++  );
++  prisma(['migrate', 'deploy'], databases.empty);
++  for (const kind of ['populated', 'duplicates']) {
++    prisma(['migrate', 'deploy', '--config', config], databases[kind]);
++    const db = new Client({ connectionString: databases[kind] });
++    await db.connect();
++    try {
++      await db.query(`INSERT INTO "Role" (id,name) VALUES (1,'PAYMENT_FIXTURE');
++        INSERT INTO "User" (id,"roleId",username,"passwordHash","fullName") VALUES ('legacy-user',1,'legacy','unused','Legacy');
++        INSERT INTO "Tier" (id,name,"priceAdult","priceChild") VALUES (1,'Legacy',100.10,50.05);
++        INSERT INTO "Table" (id,number) VALUES (1,'Legacy');
++        INSERT INTO "Session" (id,"tableId","tierId","qrToken","endTime") VALUES ('legacy-session',1,1,'legacy-qr',now());
++        INSERT INTO "Invoice" (id,"sessionId","totalAmount",discount,"netAmount","paymentMethod","createdBy") VALUES ('legacy-invoice-a','legacy-session',100.10,0.05,100.05,'CASH','legacy-user'),('legacy-invoice-b','legacy-session',50.05,0,50.05,'CASH','legacy-user');`);
++      if (kind === 'duplicates')
++        await db.query(
++          `INSERT INTO "Session" (id,"tableId","tierId","qrToken","endTime") VALUES ('duplicate-active',1,1,'duplicate-qr',now())`,
++        );
++      const before = {};
++      for (const table of ['User', 'Tier', 'Table', 'Session', 'Invoice'])
++        before[table] = (
++          await db.query(`SELECT * FROM "${table}" ORDER BY id`)
++        ).rows;
++      const result = prisma(
++        ['migrate', 'deploy'],
++        databases[kind],
++        kind === 'duplicates' ? 1 : 0,
++      );
++      for (const table of Object.keys(before))
++        assert.deepEqual(
++          (await db.query(`SELECT * FROM "${table}" ORDER BY id`)).rows,
++          before[table],
++        );
++      if (kind === 'duplicates') {
++        // Prisma 7.4 can surface a generic aborted-transaction error after a SQL RAISE.
++        // Verify the exact preflight failure using the identical migration SQL, then roll back this test connection.
++        assert.notEqual(result.status, 0);
++        await assert.rejects(
++          db.query(
++            fs.readFileSync(
++              path.join(root, 'prisma/migrations', latest, 'migration.sql'),
++              'utf8',
++            ),
++          ),
++          /PAYMENT_PREFLIGHT_DUPLICATE_ACTIVE_SESSIONS/,
++        );
++        await db.query('ROLLBACK');
++        assert.equal(
++          (
++            await db.query(
++              `SELECT to_regclass('public."PaymentSettings"') AS name`,
++            )
++          ).rows[0].name,
++          null,
++        );
++        console.log(
++          'PASS duplicate preflight abort preserves all rows and rolls back DDL; reconciliation still required',
++        );
++      } else {
++        assert.equal(
++          (
++            await db.query(
++              'SELECT "promptPayNumber" FROM "PaymentSettings" WHERE id=1',
++            )
++          ).rows[0].promptPayNumber,
++          null,
++        );
++        assert.equal(
++          (
++            await db.query(
++              'SELECT count(*)::int AS n FROM "SessionOpenRequest"',
++            )
++          ).rows[0].n,
++          0,
++        );
++        console.log(
++          'PASS populated migration retains multiple legacy invoices and exact decimal values; no invented receiver/pricing backfill',
++        );
++      }
++    } finally {
++      await db.end();
++    }
++  }
++  prisma(
++    [
++      'migrate',
++      'diff',
++      '--from-config-datasource',
++      '--to-schema',
++      'prisma/schema.prisma',
++      '--exit-code',
++    ],
++    databases.empty,
++  );
++  prisma(
++    [
++      'migrate',
++      'diff',
++      '--from-config-datasource',
++      '--to-schema',
++      'prisma/schema.prisma',
++      '--exit-code',
++    ],
++    databases.populated,
++  );
++  fs.writeFileSync(
++    path.join(out, 'migration-results.json'),
++    JSON.stringify(commands, null, 2),
++  );
++  console.log(
++    'PASS migration checks; all databases retained; no reset/drop/truncate',
++  );
++}
++main().catch((error) => {
++  console.error(error);
++  process.exitCode = 1;
++});
+diff --git a/frontend/src/lib/payment-display.ts b/frontend/src/lib/payment-display.ts
+new file mode 100644
+index 0000000..fe9e50d
+--- /dev/null
++++ b/frontend/src/lib/payment-display.ts
+@@ -0,0 +1,34 @@
++import type { Invoice } from "@/types";
++
++/** Display stored decimal strings without binary arithmetic or silently rounding historical money. */
++export function formatStoredMoney(value: unknown): string {
++  const text =
++    typeof value === "string" || typeof value === "number" ? String(value) : "";
++  const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(text);
++  if (!match) return "ไม่ระบุ";
++  const integer = match[2]
++    .replace(/^0+(?=\d)/, "")
++    .replace(/\B(?=(\d{3})+(?!\d))/g, ",");
++  const fraction = (match[3] || "").replace(/0+$/, "").padEnd(2, "0");
++  return `${match[1]}${integer}.${fraction}`;
++}
++
++function escapeHtml(value: unknown): string {
++  return String(value ?? "").replace(
++    /[&<>"']/g,
++    (char) =>
++      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
++        char
++      ]!,
++  );
++}
++
++export function legacyInvoiceDocument(invoice: Invoice): string {
++  return `<!doctype html><html lang="th"><meta charset="utf-8"><title>เอกสารใบเสร็จเดิม ${escapeHtml(invoice.invoiceNumber)}</title>
++  <body><h1>เอกสารใบเสร็จเดิม ${escapeHtml(invoice.invoiceNumber)}</h1>
++  <p>เอกสารเดิมยังไม่ใช่หลักฐานยืนยันรับเงินจริงจากระบบ ไม่มี payment confirmation policy ที่อนุมัติ</p>
++  <p>โต๊ะ ${escapeHtml(invoice.session?.table.number)} — ${escapeHtml(invoice.createdAt)}</p>
++  <p>ยอดรวม ฿${formatStoredMoney(invoice.totalAmount)}</p><p>ส่วนลด ฿${formatStoredMoney(invoice.discount)}</p>
++  <p>ยอดสุทธิ ฿${formatStoredMoney(invoice.netAmount)}</p>
++  <p>แสดงยอดที่บันทึกไว้ ไม่คำนวณใหม่จากราคาแพ็กเกจปัจจุบัน ไม่สร้าง QR ชำระเงิน</p></body></html>`;
++}
+diff --git a/frontend/test/payment-display.test.mjs b/frontend/test/payment-display.test.mjs
+new file mode 100644
+index 0000000..f38ec04
+--- /dev/null
++++ b/frontend/test/payment-display.test.mjs
+@@ -0,0 +1,23 @@
++import { test } from 'node:test';
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import vm from 'node:vm';
++import ts from 'typescript';
++const exports = {};
++const source = fs.readFileSync(new URL('../src/lib/payment-display.ts',import.meta.url),'utf8');
++const {outputText}=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}});
++vm.runInNewContext(outputText,{exports});
++const {formatStoredMoney,legacyInvoiceDocument}=exports;
++test('stored decimals are identical in UI and receipt, without floating arithmetic or silently rounding old data',()=>{
++  for(const [value,expected] of [['0.30','0.30'],['1000.100000','1,000.10'],['9007199254740993.01','9,007,199,254,740,993.01'],['1.005','1.005'],[0,'0.00'],['-0.01','-0.01']]) assert.equal(formatStoredMoney(value),expected);
++  const invoice={invoiceNumber:1,createdAt:'2026-10-21',totalAmount:'0.50',discount:'0.20',netAmount:'0.30',session:{table:{number:'A1'},tier:{priceAdult:'99999.99'}}};
++  const html=legacyInvoiceDocument(invoice);
++  assert.ok(html.includes('฿'+formatStoredMoney(invoice.netAmount)));assert.ok(html.includes('฿0.50'));assert.ok(!html.includes('99999.99'));
++});
++test('receipt escapes staff-provided text and never contains raw recipient as a payment QR',()=>{
++  const html=legacyInvoiceDocument({invoiceNumber:1,createdAt:'<script>alert(1)</script>',totalAmount:'10',discount:'0',netAmount:'10',promptPayNumber:'SECRET_REFERENCE',session:{table:{number:'<img onerror=alert(1)>'}}});
++  assert.ok(!html.includes('<script>'));assert.ok(html.includes('&lt;script&gt;'));assert.ok(!html.includes('<img'));assert.ok(!html.includes('SECRET_REFERENCE'));assert.ok(html.includes('ยังไม่ใช่หลักฐานยืนยันรับเงินจริง'));assert.ok(!html.includes('<svg'));
++});
++test('malformed monetary values are shown as unavailable, not as a guessed charge',()=>{
++  for(const value of [null,undefined,NaN,Infinity,'1e99','<b>1</b>']) assert.equal(formatStoredMoney(value),'ไม่ระบุ');
++});

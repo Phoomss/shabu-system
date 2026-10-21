@@ -1,6 +1,8 @@
 import { PaymentSettingsDto } from './payment-settings.dto';
 import { EmployeeResource } from '../security/access.decorators';
-import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
+import { PolicyUser } from '../security/policy';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { SettingsService, PaymentSettings } from './settings.service';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
@@ -14,28 +16,27 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get('payment')
-  @ApiOperation({ summary: 'Get payment settings (PromptPay number)' })
+  @ApiOperation({
+    summary:
+      'Read stored, unverified receiver configuration; not proof of payment',
+  })
   getPaymentSettings(): Promise<PaymentSettings> {
     return this.settingsService.getPaymentSettings();
   }
 
   @Post('payment')
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        promptPayNumber: {
-          type: 'string',
-          example: '08XXXXXXXX',
-          description: 'เบอร์โทรศัพท์ PromptPay',
-        },
-      },
-    },
+  @ApiBody({ type: PaymentSettingsDto })
+  @ApiOperation({
+    summary:
+      'Persist unverified receiver config; never generates QR or confirms payment',
   })
-  @ApiOperation({ summary: 'Update payment settings (PromptPay number)' })
   updatePaymentSettings(
     @Body() dto: PaymentSettingsDto,
+    @Req() req: Request,
   ): Promise<PaymentSettings> {
-    return this.settingsService.updatePaymentSettings(dto);
+    return this.settingsService.updatePaymentSettings(
+      dto,
+      (req.user as PolicyUser).id,
+    );
   }
 }

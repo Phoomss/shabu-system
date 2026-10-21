@@ -1,0 +1,93 @@
+[
+  {
+    "name": "payment-migrations",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 SHABU_TEST_ADMIN_URL=<isolated-admin> npm run test:payment:migrations",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/migrations.log"
+  },
+  {
+    "name": "payment-e2e-final",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 DATABASE_URL=<payment_empty test DB> JWT_SECRET=<test> JWT_REFRESH_SECRET=<test> CUSTOMER_JWT_SECRET=<test> npm run test:payment:e2e",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/payment-e2e-final.log"
+  },
+  {
+    "name": "security-e2e",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 DATABASE_URL=<payment_empty test DB> JWT_SECRET=<test> JWT_REFRESH_SECRET=<test> CUSTOMER_JWT_SECRET=<test> npm run test:security:e2e",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/security-e2e.log"
+  },
+  {
+    "name": "workflow-e2e",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 DATABASE_URL=<payment_empty test DB> JWT_SECRET=<test> JWT_REFRESH_SECRET=<test> CUSTOMER_JWT_SECRET=<test> npm run test:workflow:e2e",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/workflow-e2e.log"
+  },
+  {
+    "name": "id-e2e",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 DATABASE_URL=<payment_empty test DB> JWT_SECRET=<test> JWT_REFRESH_SECRET=<test> CUSTOMER_JWT_SECRET=<test> npm run test:ids:e2e",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/id-e2e.log"
+  },
+  {
+    "name": "backend-build",
+    "cwd": "backend",
+    "command": "npm run build",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/backend-build.log"
+  },
+  {
+    "name": "frontend-build-sandbox",
+    "cwd": "frontend",
+    "command": "NEXT_PUBLIC_API_URL=http://localhost:3000 NEXT_PUBLIC_SOCKET_URL=http://localhost:3000 npm run build",
+    "exitStatus": 1,
+    "log": "reports/payment-evidence/frontend-build.log"
+  },
+  {
+    "name": "frontend-build-final",
+    "cwd": "frontend",
+    "command": "NEXT_PUBLIC_API_URL=http://localhost:3000 NEXT_PUBLIC_SOCKET_URL=http://localhost:3000 npm run build",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/frontend-build-final.log"
+  },
+  {
+    "name": "local-start",
+    "cwd": "backend",
+    "command": "ALLOW_SHABU_TEST_DB=1 SHABU_SMOKE_SUITE=payment DATABASE_URL=<payment_empty test DB> CUSTOMER_JWT_SECRET=<test> npm run test:local-start",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/local-start.log"
+  },
+  {
+    "name": "backend-lint-final",
+    "cwd": "backend",
+    "command": "node node_modules/eslint/bin/eslint.js <payment/sessions/settings/policy files and tests>",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/backend-lint-final.log"
+  },
+  {
+    "name": "frontend-lint",
+    "cwd": "frontend",
+    "command": "node node_modules/eslint/bin/eslint.js src/lib/payment-display.ts src/app/(dashboard)/invoices/page.tsx",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/frontend-lint.log"
+  },
+  {
+    "name": "frontend-types",
+    "cwd": "frontend",
+    "command": "node node_modules/typescript/bin/tsc --noEmit",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/frontend-types.log"
+  },
+  {
+    "name": "prisma-validate",
+    "cwd": "backend",
+    "command": "node node_modules/prisma/build/index.js validate",
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/prisma-validate.log"
+  }
+]

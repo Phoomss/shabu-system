@@ -1,0 +1,113 @@
+[
+  {
+    "name": "payment-unit",
+    "cwd": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:payment"
+    ],
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/payment-unit.log"
+  },
+  {
+    "name": "pricing-proposal",
+    "cwd": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:payment:proposal"
+    ],
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/pricing-proposal.log"
+  },
+  {
+    "name": "id-unit",
+    "cwd": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:ids"
+    ],
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/id-unit.log"
+  },
+  {
+    "name": "security-unit",
+    "cwd": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:security"
+    ],
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/security-unit.log"
+  },
+  {
+    "name": "workflow-unit",
+    "cwd": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:workflow"
+    ],
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/workflow-unit.log"
+  },
+  {
+    "name": "frontend-payment",
+    "cwd": "frontend",
+    "command": [
+      "node",
+      "--test",
+      "test/payment-display.test.mjs"
+    ],
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/frontend-payment.log"
+  },
+  {
+    "name": "frontend-security",
+    "cwd": "frontend",
+    "command": [
+      "npm",
+      "run",
+      "test:security"
+    ],
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/frontend-security.log"
+  },
+  {
+    "name": "frontend-ids",
+    "cwd": "frontend",
+    "command": [
+      "npm",
+      "run",
+      "test:ids"
+    ],
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/frontend-ids.log"
+  },
+  {
+    "name": "frontend-workflow",
+    "cwd": "frontend",
+    "command": [
+      "npm",
+      "run",
+      "test:workflow"
+    ],
+    "exitStatus": 0,
+    "log": "reports/payment-evidence/frontend-workflow.log"
+  },
+  {
+    "name": "backend-full-tests",
+    "cwd": "backend",
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--runInBand"
+    ],
+    "exitStatus": 1,
+    "log": "reports/payment-evidence/backend-full-tests.log"
+  }
+]

@@ -11,12 +11,17 @@ import {
   Patch,
   Param,
   UseGuards,
+  Headers,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
+import { PolicyUser } from '../security/policy';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiResponse,
+  ApiHeader,
 } from '@nestjs/swagger';
 import { CustomerAuthService } from '../customer/customer-auth.service';
 import { Header } from '@nestjs/common';
@@ -39,8 +44,18 @@ export class SessionsController {
   @ApiBearerAuth('JWT')
   @ApiOperation({ summary: 'Open new session (เปิดโต๊ะ)' })
   @ApiResponse({ type: SessionResponse })
-  create(@Body() dto: CreateSessionDto) {
-    return this.sessionsService.create(dto);
+  @ApiHeader({
+    name: 'Idempotency-Key',
+    required: false,
+    description:
+      'Optional, scoped to authenticated actor; 1-128 ASCII letters/digits . _ : -. Same key with different body returns 409.',
+  })
+  create(
+    @Body() dto: CreateSessionDto,
+    @Headers('idempotency-key') key: string | undefined,
+    @Req() req: Request,
+  ) {
+    return this.sessionsService.create(dto, key, (req.user as PolicyUser).id);
   }
 
   @Get()

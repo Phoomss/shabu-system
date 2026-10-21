@@ -1,0 +1,23 @@
+
+> frontend@0.1.0 build
+> next build
+
+▲ Next.js 16.2.1 (Turbopack)
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Turbopack build encountered 1 warnings:
+[next]/internal/font/google/inter_5972bc34.module.css
+Error while requesting resource
+There was an issue establishing a connection while requesting https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap
+
+
+
+> Build error occurred
+Error: Turbopack build failed with 1 errors:
+[next]/internal/font/google/inter_5972bc34.module.css
+next/font: error:
+Failed to fetch `Inter` from Google Fonts.
+
+
+    at ignore-listed frames

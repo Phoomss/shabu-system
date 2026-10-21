@@ -1,12 +1,13 @@
 import {
-  BadRequestException,
+  ServiceUnavailableException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EventsGateway } from 'src/events/events.gateway';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
-import { SessionStatus, TableStatus } from '@prisma/client';
+import { Invoice, Session, Table, Tier } from '@prisma/client';
+import { PAYMENT_READINESS } from './payment-readiness';
 import { IdTransformer, IdPrefix } from 'src/common/utils/id-transformer.util';
 
 @Injectable()
@@ -46,70 +47,12 @@ export class InvoicesService {
     return this.transformResponse(invoice);
   }
 
-  async create(dto: CreateInvoiceDto, staffId: string) {
-    // Decode session ID if it's prefixed
-    const rawSessionId = this.idTransformer.decode(
-      dto.sessionId,
-      IdPrefix.SESSION,
-    );
-
-    // เช็ค session
-    const session = await this.prisma.session.findUnique({
-      where: { id: rawSessionId },
-      include: { table: true },
-    });
-    if (!session)
-      throw new NotFoundException(`Session #${dto.sessionId} not found`);
-    if (session.status !== SessionStatus.ACTIVE) {
-      throw new BadRequestException('Session is not active');
-    }
-
-    const discount = dto.discount ?? 0;
-    const netAmount = dto.totalAmount - discount;
-
-    // create invoice, close session, update table together
-    const [invoice] = await this.prisma.$transaction([
-      this.prisma.invoice.create({
-        data: {
-          sessionId: rawSessionId,
-          totalAmount: dto.totalAmount,
-          discount,
-          netAmount,
-          paymentMethod: dto.paymentMethod,
-          promptPayNumber: dto.promptPayNumber,
-          createdBy: staffId,
-        },
-        include: {
-          session: { include: { table: true, tier: true } },
-          user: { select: { id: true, fullName: true } },
-        },
-      }),
-      this.prisma.session.update({
-        where: { id: rawSessionId },
-        data: { status: SessionStatus.CLOSED },
-      }),
-      this.prisma.table.update({
-        where: { id: session.tableId },
-        data: { status: TableStatus.CLEANING },
-      }),
-    ]);
-
-    // [Socket] noti dashboard owner new amount
-    this.events.emitNewInvoice({
-      invoiceId: invoice.id,
-      netAmount,
-      paymentMethod: dto.paymentMethod,
-      tableNumber: session.table.number,
-      createdAt: invoice.createdAt,
-    });
-
-    // [Socket] noti table status
-    this.events.emitTableStatus(session.tableId, TableStatus.CLEANING);
-
-    // [Socket] noti session clonse
-    this.events.emitSessionStatus(rawSessionId, SessionStatus.CLOSED);
-
-    return this.transformResponse(invoice);
+  create(dto: CreateInvoiceDto, staffId: string): never {
+    this.idTransformer.decode(dto.sessionId, IdPrefix.SESSION);
+    this.idTransformer.decode(staffId, IdPrefix.USER);
+    // Fail closed: no client-controlled amount may create a financial record or release a table.
+    // Implement approved quotes/settlement/idempotency together after the business decisions are signed off.
+    throw new ServiceUnavailableException(PAYMENT_READINESS);
   }
 
   async getTotalRevenue() {
@@ -126,7 +69,9 @@ export class InvoicesService {
   /**
    * Transform invoice response to use prefixed IDs
    */
-  private transformResponse(invoice: any) {
+  private transformResponse<
+    T extends Invoice & { session: Session & { table: Table; tier: Tier } },
+  >(invoice: T) {
     return {
       ...invoice,
       id: this.idTransformer.encode(invoice.id, IdPrefix.INVOICE),

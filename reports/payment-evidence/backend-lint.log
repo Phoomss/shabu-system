@@ -1,0 +1,74 @@
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/invoices/invoices.service.ts
+  30:9   error    Unsafe return of a value of type `any[]`                                @typescript-eslint/no-unsafe-return
+  30:35  error    Unsafe return of a value of type `any`                                  @typescript-eslint/no-unsafe-return
+  46:5   error    Unsafe return of a value of type `any`                                  @typescript-eslint/no-unsafe-return
+  72:5   error    Unsafe return of a value of type `any`                                  @typescript-eslint/no-unsafe-return
+  74:37  warning  Unsafe argument of type `any` assigned to a parameter of type `string`  @typescript-eslint/no-unsafe-argument
+  74:45  error    Unsafe member access .id on an `any` value                              @typescript-eslint/no-unsafe-member-access
+  75:44  warning  Unsafe argument of type `any` assigned to a parameter of type `string`  @typescript-eslint/no-unsafe-argument
+  75:52  error    Unsafe member access .sessionId on an `any` value                       @typescript-eslint/no-unsafe-member-access
+  76:44  warning  Unsafe argument of type `any` assigned to a parameter of type `string`  @typescript-eslint/no-unsafe-argument
+  76:52  error    Unsafe member access .createdBy on an `any` value                       @typescript-eslint/no-unsafe-member-access
+  77:7   error    Unsafe assignment of an `any` value                                     @typescript-eslint/no-unsafe-assignment
+  78:20  error    Unsafe member access .session on an `any` value                         @typescript-eslint/no-unsafe-member-access
+  79:39  warning  Unsafe argument of type `any` assigned to a parameter of type `string`  @typescript-eslint/no-unsafe-argument
+  79:47  error    Unsafe member access .session on an `any` value                         @typescript-eslint/no-unsafe-member-access
+  81:11  warning  Unsafe argument of type `any` assigned to a parameter of type `number`  @typescript-eslint/no-unsafe-argument
+  81:19  error    Unsafe member access .session on an `any` value                         @typescript-eslint/no-unsafe-member-access
+  85:11  warning  Unsafe argument of type `any` assigned to a parameter of type `number`  @typescript-eslint/no-unsafe-argument
+  85:19  error    Unsafe member access .session on an `any` value                         @typescript-eslint/no-unsafe-member-access
+  88:9   error    Unsafe assignment of an `any` value                                     @typescript-eslint/no-unsafe-assignment
+  89:22  error    Unsafe member access .session on an `any` value                         @typescript-eslint/no-unsafe-member-access
+  91:13  warning  Unsafe argument of type `any` assigned to a parameter of type `number`  @typescript-eslint/no-unsafe-argument
+  91:21  error    Unsafe member access .session on an `any` value                         @typescript-eslint/no-unsafe-member-access
+  95:9   error    Unsafe assignment of an `any` value                                     @typescript-eslint/no-unsafe-assignment
+  96:22  error    Unsafe member access .session on an `any` value                         @typescript-eslint/no-unsafe-member-access
+  98:13  warning  Unsafe argument of type `any` assigned to a parameter of type `number`  @typescript-eslint/no-unsafe-argument
+  98:21  error    Unsafe member access .session on an `any` value                         @typescript-eslint/no-unsafe-member-access
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/sessions/sessions.service.ts
+   35:9   error    Unsafe return of a value of type `any[]`                                                                                                                            @typescript-eslint/no-unsafe-return
+   35:35  error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+   48:5   error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+   71:5   error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  189:5   error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  213:5   warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  215:7   warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  217:5   error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  240:9   warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+  249:5   error    Unsafe return of a value of type `any`                                                                                                                              @typescript-eslint/no-unsafe-return
+  251:37  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                              @typescript-eslint/no-unsafe-argument
+  251:45  error    Unsafe member access .id on an `any` value                                                                                                                          @typescript-eslint/no-unsafe-member-access
+  252:45  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                              @typescript-eslint/no-unsafe-argument
+  252:53  error    Unsafe member access .tableId on an `any` value                                                                                                                     @typescript-eslint/no-unsafe-member-access
+  253:44  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                              @typescript-eslint/no-unsafe-argument
+  253:52  error    Unsafe member access .tierId on an `any` value                                                                                                                      @typescript-eslint/no-unsafe-member-access
+  254:7   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
+  255:20  error    Unsafe member access .table on an `any` value                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  256:42  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                              @typescript-eslint/no-unsafe-argument
+  256:50  error    Unsafe member access .table on an `any` value                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  258:7   error    Unsafe assignment of an `any` value                                                                                                                                 @typescript-eslint/no-unsafe-assignment
+  259:20  error    Unsafe member access .tier on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
+  260:42  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                              @typescript-eslint/no-unsafe-argument
+  260:50  error    Unsafe member access .tier on an `any` value                                                                                                                        @typescript-eslint/no-unsafe-member-access
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/settings/payment-settings.dto.ts
+  23:12  error  Unexpected control character(s) in regular expression: \x00, \x1f  no-control-regex
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/settings/settings.service.ts
+  30:9  error  Unexpected control character(s) in regular expression: \x00, \x1f  no-control-regex
+
+/Users/mac/Desktop/workspace/shabu-system/backend/test/payment.e2e-spec.ts
+   68:10  error  Replace `⏎······.post('/invoices')⏎······.auth(authorize(role),·{·type:·'bearer'·})⏎······` with `.post('/invoices').auth(authorize(role),·{·type:·'bearer'·})`  prettier/prettier
+   72:1   error  Delete `··`                                                                                                                                                      prettier/prettier
+   73:1   error  Delete `··`                                                                                                                                                      prettier/prettier
+   74:7   error  Delete `··`                                                                                                                                                      prettier/prettier
+   75:1   error  Delete `··`                                                                                                                                                      prettier/prettier
+   76:7   error  Delete `··`                                                                                                                                                      prettier/prettier
+   77:1   error  Delete `··`                                                                                                                                                      prettier/prettier
+  195:28  error  Unsafe member access .message on an `any` value                                                                                                                  @typescript-eslint/no-unsafe-member-access
+
+✖ 60 problems (44 errors, 16 warnings)
+  7 errors and 0 warnings potentially fixable with the `--fix` option.
+

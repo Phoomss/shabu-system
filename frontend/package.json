@@ -6,6 +6,7 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
+    "test:payment": "node --test test/payment-display.test.mjs",
     "test:workflow": "node --test test/workflow-clients.test.mjs",
     "test:security": "node --test test/security-clients.test.mjs",
     "test:ids": "node --test test/id-contract.test.mjs",

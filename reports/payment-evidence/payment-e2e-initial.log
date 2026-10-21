@@ -1,0 +1,105 @@
+
+> backend@0.0.1 test:payment:e2e
+> jest --runInBand --config test/jest-payment-e2e.json
+
+(node:73045) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL test/payment.e2e-spec.ts (8.426 s)
+  Payment safety foundation; approved checkout remains BLOCKED
+    ✓ readiness route precedes dynamic id and cannot imply PAID or provide a guessed quote (52 ms)
+    ✓ anonymous/wrong permission/discount without explicit grant are denied (89 ms)
+    ✓ tampering totals, excessive discounts, repeated/concurrent checkout cannot write anything while policy is pending (90 ms)
+    ✓ two concurrent opening requests claim one session; database constraint also rejects direct duplicate ACTIVE insertion (74 ms)
+    ✕ same opening key retries concurrently as one resource; different input conflicts without claiming another table (61 ms)
+    ✕ idempotency keys are actor-scoped and key replay never opens a fresh session after closure (19 ms)
+    ✕ session insert failure rolls back table claim and idempotency row, and emits no OCCUPIED (29 ms)
+    ✓ rejects invalid guest count -1 before opening (8 ms)
+    ✓ rejects invalid guest count 2147483648 before opening (6 ms)
+    ✓ rejects invalid guest count 1.5 before opening (18 ms)
+    ✓ expired session cannot order or be overlapped, but approved overdue checkout is still BLOCKED (62 ms)
+    ✓ historical stored decimals are unchanged by current tier price edits; no retrospective repricing (37 ms)
+    ✓ rejects invalid settings input {} (6 ms)
+    ✓ rejects invalid settings input {"promptPayNumber":""} (6 ms)
+    ✓ rejects invalid settings input {"promptPayNumber":42} (5 ms)
+    ✓ rejects invalid settings input {"promptPayNumber":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"} (5 ms)
+    ✓ rejects invalid settings input {"promptPayNumber":"bad\u0000reference"} (5 ms)
+    ✓ settings persist with authenticated updater; explicit null clears config (34 ms)
+    ✓ settings survive actual backend process stop/start; readiness remains disabled (1516 ms)
+
+  ● Payment safety foundation; approved checkout remains BLOCKED › same opening key retries concurrently as one resource; different input conflicts without claiming another table
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 2
+
+      Array [
+    -   201,
+    -   201,
+    +   500,
+    +   500,
+      ]
+
+      234 |       open(tableId, key),
+      235 |     ]);
+    > 236 |     expect(responses.map((res) => res.status)).toEqual([201, 201]);
+          |                                                ^
+      237 |     expect(data<WireSession>(responses[0]).id).toBe(
+      238 |       data<WireSession>(responses[1]).id,
+      239 |     );
+
+      at Object.<anonymous> (test/payment.e2e-spec.ts:236:48)
+
+  ● Payment safety foundation; approved checkout remains BLOCKED › idempotency keys are actor-scoped and key replay never opens a fresh session after closure
+
+    expected 201 "Created", got 500 "Internal Server Error"
+
+      251 |       table = await newTable(),
+      252 |       other = await newTable();
+    > 253 |     const first = data<WireSession>(await open(table, key).expect(201));
+          |                                                            ^
+      254 |     await app.get(SessionsService).updateStatus(first.id, { status: 'CLOSED' });
+      255 |     const replay = data<WireSession>(await open(table, key).expect(201));
+      256 |     expect(replay.id).toBe(first.id);
+
+      at Object.<anonymous> (test/payment.e2e-spec.ts:253:60)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:309:14)
+      at node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (node_modules/supertest/lib/test.js:195:23)
+      at localAssert (node_modules/supertest/lib/test.js:138:14)
+      at node_modules/supertest/lib/test.js:156:7
+      at Test.fn [as callback] (node_modules/superagent/src/node/index.js:904:3)
+      at callback (node_modules/superagent/src/node/index.js:1183:18)
+      at IncomingMessage.fn (node_modules/superagent/src/node/parsers/json.js:19:7)
+
+  ● Payment safety foundation; approved checkout remains BLOCKED › session insert failure rolls back table claim and idempotency row, and emits no OCCUPIED
+
+    expected 201 "Created", got 500 "Internal Server Error"
+
+      286 |       emit.mockRestore();
+      287 |     }
+    > 288 |     await open(tableId, key).expect(201);
+          |                              ^
+      289 |   });
+      290 |   it.each([-1, 2147483648, 1.5])(
+      291 |     'rejects invalid guest count %s before opening',
+
+      at Object.<anonymous> (test/payment.e2e-spec.ts:288:30)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:309:14)
+      at node_modules/supertest/lib/test.js:365:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:342:13)
+      at Test.assert (node_modules/supertest/lib/test.js:195:23)
+      at localAssert (node_modules/supertest/lib/test.js:138:14)
+      at node_modules/supertest/lib/test.js:156:7
+      at Test.fn [as callback] (node_modules/superagent/src/node/index.js:904:3)
+      at callback (node_modules/superagent/src/node/index.js:1183:18)
+      at IncomingMessage.fn (node_modules/superagent/src/node/parsers/json.js:19:7)
+
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 16 passed, 19 total
+Snapshots:   0 total
+Time:        8.605 s
+Ran all test suites.

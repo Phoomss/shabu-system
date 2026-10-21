@@ -1,0 +1,22 @@
+
+> backend@0.0.1 test:payment
+> jest --runInBand --testPathPatterns=payment-safety\.spec\.ts$
+
+(node:74452) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/invoices/payment-safety.spec.ts
+  Payment safety while business policy is unapproved
+    ✓ client amount 0 cannot create an invoice or emit a payment event (8 ms)
+    ✓ client amount 0.01 cannot create an invoice or emit a payment event (1 ms)
+    ✓ client amount 999999 cannot create an invoice or emit a payment event
+    ✓ invalid receiver config is rejected before writing: undefined (1 ms)
+    ✓ invalid receiver config is rejected before writing: "" (1 ms)
+    ✓ invalid receiver config is rejected before writing: "   "
+    ✓ invalid receiver config is rejected before writing: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    ✓ invalid receiver config is rejected before writing: "bad\u0000reference"
+
+Test Suites: 1 passed, 1 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        0.602 s, estimated 1 s
+Ran all test suites matching payment-safety.spec.ts$.

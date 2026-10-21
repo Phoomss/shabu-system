@@ -1,6 +1,4 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional } from 'class-validator';
-import { Type } from 'class-transformer';
 
 // --- Child classes first (to avoid reference errors) ---
 
@@ -48,14 +46,19 @@ export class InvoiceResponse {
   })
   sessionId: string;
 
-  @ApiProperty({ example: 698.0 })
-  totalAmount: number;
+  @ApiProperty({
+    type: String,
+    example: '698',
+    description:
+      'Stored legacy Decimal string; not an approved quote or verified payment.',
+  })
+  totalAmount: string;
 
-  @ApiProperty({ example: 50.0 })
-  discount: number;
+  @ApiProperty({ type: String, example: '50' })
+  discount: string;
 
-  @ApiProperty({ example: 648.0 })
-  netAmount: number;
+  @ApiProperty({ type: String, example: '648' })
+  netAmount: string;
 
   @ApiProperty({ example: 'เงินสด' })
   paymentMethod: string;

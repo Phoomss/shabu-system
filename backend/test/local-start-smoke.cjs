@@ -6,7 +6,7 @@ const net = require('node:net');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '../..');
 const suite = process.env.SHABU_SMOKE_SUITE || 'security';
-if (!['security', 'workflow'].includes(suite))
+if (!['security', 'workflow', 'payment'].includes(suite))
   throw new Error('Unknown smoke suite');
 const artifacts = path.join(root, `reports/${suite}-evidence`);
 fs.mkdirSync(artifacts, { recursive: true });
@@ -15,7 +15,7 @@ if (
   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
   url.hostname !== '127.0.0.1' ||
   url.port !== '55432' ||
-  !/^\/shabu_(?:f04_empty|security|workflow)_\d+$/.test(url.pathname)
+  !/^\/shabu_(?:f04_empty|security|workflow|payment_empty)_\d+$/.test(url.pathname)
 ) {
   throw new Error('Refusing to start against a non-isolated database');
 }

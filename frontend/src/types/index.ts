@@ -129,9 +129,9 @@ export interface Invoice {
   invoiceNumber: number;
   sessionId: string;
   session?: Session;
-  totalAmount: number;
-  discount: number;
-  netAmount: number;
+  totalAmount: string | number;
+  discount: string | number;
+  netAmount: string | number;
   paymentMethod: PaymentMethod;
   promptPayNumber?: string | null;
   createdBy: string;

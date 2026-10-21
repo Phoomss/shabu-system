@@ -1,0 +1,19 @@
+
+> backend@0.0.1 test:payment:proposal
+> jest --runInBand --config test/jest-payment-proposal.json
+
+(node:74511) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/proposals/pricing-policy.proposal.spec.ts
+  UNAPPROVED pricing design fixtures; not checkout acceptance
+    ✓ opening-price hypothesis produces 0.50 exactly (1 ms)
+    ✓ checkout-price hypothesis differs deliberately: 0.80
+    ✓ discount above the authoritative hypothesis is rejected and full discount has zero net (4 ms)
+    ✓ rounding choice is observable and must be approved
+    ✓ synthetic service/tax order uses exact decimals, without declaring actual tax rates
+
+Test Suites: 1 passed, 1 total
+Tests:       5 passed, 5 total
+Snapshots:   0 total
+Time:        0.262 s, estimated 1 s
+Ran all test suites.

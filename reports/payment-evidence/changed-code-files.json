@@ -1,0 +1,38 @@
+{
+  "modified": [
+    "backend/package.json",
+    "backend/prisma/schema.prisma",
+    "backend/src/invoices/dto/create-invoice.dto.ts",
+    "backend/src/invoices/dto/invoice-response.dto.ts",
+    "backend/src/invoices/invoices.controller.ts",
+    "backend/src/invoices/invoices.service.ts",
+    "backend/src/security/policy.ts",
+    "backend/src/sessions/dto/create-session.dto.ts",
+    "backend/src/sessions/dto/session-response.dto.ts",
+    "backend/src/sessions/sessions.controller.ts",
+    "backend/src/sessions/sessions.service.ts",
+    "backend/src/settings/payment-settings.dto.ts",
+    "backend/src/settings/settings.controller.ts",
+    "backend/src/settings/settings.service.ts",
+    "backend/test/id-contract.e2e-spec.ts",
+    "backend/test/local-start-smoke.cjs",
+    "backend/test/security.e2e-spec.ts",
+    "backend/test/workflow.e2e-spec.ts",
+    "frontend/package.json",
+    "frontend/src/app/(dashboard)/invoices/page.tsx",
+    "frontend/src/types/index.ts"
+  ],
+  "added": [
+    "backend/prisma/migrations/20261021110000_payment_safety_foundation/migration.sql",
+    "backend/src/invoices/payment-readiness.ts",
+    "backend/src/invoices/payment-safety.spec.ts",
+    "backend/src/settings/receiver-reference.ts",
+    "backend/test/jest-payment-e2e.json",
+    "backend/test/jest-payment-proposal.json",
+    "backend/test/payment.e2e-spec.ts",
+    "backend/test/proposals/pricing-policy.proposal.spec.ts",
+    "backend/test/verify-payment-migrations.cjs",
+    "frontend/src/lib/payment-display.ts",
+    "frontend/test/payment-display.test.mjs"
+  ]
+}

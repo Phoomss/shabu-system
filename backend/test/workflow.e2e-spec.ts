@@ -23,7 +23,7 @@ if (
   process.env.ALLOW_SHABU_TEST_DB !== '1' ||
   target.hostname !== '127.0.0.1' ||
   target.port !== '55432' ||
-  !/^\/shabu_workflow_\d+$/.test(target.pathname)
+  !/^\/(?:shabu_workflow_\d+|shabu_payment_empty_\d+)$/.test(target.pathname)
 )
   throw new Error('Isolated workflow test DB opt-in required');
 const data = <T>(res: request.Response): T => (res.body as { data: T }).data;
