@@ -78,14 +78,14 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   // [Order] แจ้งครัวเมื่อ order item ถูก void
   emitVoidOrderItem(kitchenId: number, orderItem: any) {
-    this.server.to(`kitchen:${kitchenId}`).emit('kitchen:void_order', orderItem);
+    this.server
+      .to(`kitchen:${kitchenId}`)
+      .emit('kitchen:void_order', orderItem);
   }
 
   // [Order] แจ้ง session เมื่อ order status เปลี่ยน
   emitOrderStatus(sessionId: string, order: any) {
-    this.server
-      .to(`session:${sessionId}`)
-      .emit('order:status_changed', order);
+    this.server.to(`session:${sessionId}`).emit('order:status_changed', order);
   }
 
   // [OrderItem] แจ้ง session เมื่อ item status เปลี่ยน

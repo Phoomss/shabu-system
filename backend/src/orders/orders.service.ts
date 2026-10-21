@@ -33,7 +33,9 @@ export class OrdersService {
   async findAll(sessionId?: string) {
     if (sessionId !== undefined) {
       sessionId = this.idTransformer.decode(sessionId, IdPrefix.SESSION);
-      const session = await this.prisma.session.findUnique({ where: { id: sessionId } });
+      const session = await this.prisma.session.findUnique({
+        where: { id: sessionId },
+      });
       if (!session) throw new NotFoundException('Session not found');
     }
     return this.prisma.order.findMany({
@@ -58,14 +60,19 @@ export class OrdersService {
       ...dto,
       sessionId: this.idTransformer.decode(dto.sessionId, IdPrefix.SESSION),
       items: dto.items.map((item) => ({
-        ...item, menuItemId: this.idTransformer.decode(item.menuItemId, IdPrefix.MENU_ITEM),
+        ...item,
+        menuItemId: this.idTransformer.decode(
+          item.menuItemId,
+          IdPrefix.MENU_ITEM,
+        ),
       })),
     };
     // เช็ค session
     const session = await this.prisma.session.findUnique({
       where: { id: dto.sessionId },
     });
-    if (!session) throw new NotFoundException(`Session #${dto.sessionId} not found`);
+    if (!session)
+      throw new NotFoundException(`Session #${dto.sessionId} not found`);
     if (session.status !== SessionStatus.ACTIVE) {
       throw new BadRequestException('Session is no longer active');
     }
@@ -115,7 +122,10 @@ export class OrdersService {
     }
 
     kitchenGroups.forEach((items, kitchenId) => {
-      console.log(`[Socket] Emitting new order to kitchen ${kitchenId}:`, items);
+      console.log(
+        `[Socket] Emitting new order to kitchen ${kitchenId}:`,
+        items,
+      );
       this.events.emitNewOrderItem(kitchenId, {
         orderId: order.id,
         sessionId: dto.sessionId,
@@ -278,7 +288,11 @@ export class OrdersService {
         data: { status: ItemStatus.VOIDED },
       }),
       this.prisma.voidLog.create({
-        data: { orderItemId: itemId, reason: dto.reason, approvedBy: managerId },
+        data: {
+          orderItemId: itemId,
+          reason: dto.reason,
+          approvedBy: managerId,
+        },
       }),
     ]);
 

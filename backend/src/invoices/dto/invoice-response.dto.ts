@@ -5,7 +5,10 @@ import { Type } from 'class-transformer';
 // --- Child classes first (to avoid reference errors) ---
 
 export class SessionInfo {
-  @ApiProperty({ example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Session ID (prefixed)' })
+  @ApiProperty({
+    example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    description: 'Session ID (prefixed)',
+  })
   id: string;
 
   @ApiProperty({ example: 1, description: 'Session Number (sequential)' })
@@ -23,29 +26,35 @@ export class SessionInfo {
   @ApiProperty({ example: 'Silver' })
   tierName: string;
 
-  @ApiProperty({ example: 399.00 })
+  @ApiProperty({ example: 399.0 })
   tierPrice: number;
 }
 
 // --- Main DTO classes ---
 
 export class InvoiceResponse {
-  @ApiProperty({ example: 'inv_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Invoice ID (prefixed)' })
+  @ApiProperty({
+    example: 'inv_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    description: 'Invoice ID (prefixed)',
+  })
   id: string;
 
   @ApiProperty({ example: 1, description: 'Invoice Number (sequential)' })
   invoiceNumber: number;
 
-  @ApiProperty({ example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Session ID (prefixed)' })
+  @ApiProperty({
+    example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    description: 'Session ID (prefixed)',
+  })
   sessionId: string;
 
-  @ApiProperty({ example: 698.00 })
+  @ApiProperty({ example: 698.0 })
   totalAmount: number;
 
-  @ApiProperty({ example: 50.00 })
+  @ApiProperty({ example: 50.0 })
   discount: number;
 
-  @ApiProperty({ example: 648.00 })
+  @ApiProperty({ example: 648.0 })
   netAmount: number;
 
   @ApiProperty({ example: 'เงินสด' })
@@ -54,7 +63,10 @@ export class InvoiceResponse {
   @ApiPropertyOptional({ example: '0839987275' })
   promptPayNumber?: string;
 
-  @ApiProperty({ example: 'usr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Created by User ID (prefixed)' })
+  @ApiProperty({
+    example: 'usr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    description: 'Created by User ID (prefixed)',
+  })
   createdBy: string;
 
   @ApiProperty({ example: 'John Doe' })

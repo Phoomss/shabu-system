@@ -21,20 +21,24 @@ export class SessionsService {
   ) {}
 
   async findAll() {
-    return this.prisma.session.findMany({
-      include: {
-        table: true,
-        tier: true,
-        _count: { select: { orders: true } },
-      },
-      orderBy: { startTime: 'desc' },
-    }).then(sessions => sessions.map(session => this.transformResponse(session)));
+    return this.prisma.session
+      .findMany({
+        include: {
+          table: true,
+          tier: true,
+          _count: { select: { orders: true } },
+        },
+        orderBy: { startTime: 'desc' },
+      })
+      .then((sessions) =>
+        sessions.map((session) => this.transformResponse(session)),
+      );
   }
 
   async findOne(id: string) {
     // Decode the prefixed ID to raw UUID
     const rawId = this.idTransformer.decode(id, IdPrefix.SESSION);
-    
+
     const session = await this.prisma.session.findUnique({
       where: { id: rawId },
       include: { table: true, tier: true, orders: true },
@@ -77,7 +81,9 @@ export class SessionsService {
     }
 
     // เช็ค tier
-    const tier = await this.prisma.tier.findUnique({ where: { id: dto.tierId } });
+    const tier = await this.prisma.tier.findUnique({
+      where: { id: dto.tierId },
+    });
     if (!tier) throw new NotFoundException(`Tier #${dto.tierId} not found`);
 
     // คำนวณเวลาสิ้นสุด
@@ -112,7 +118,9 @@ export class SessionsService {
 
   async updateStatus(id: string, dto: UpdateSessionStatusDto) {
     const rawId = this.idTransformer.decode(id, IdPrefix.SESSION);
-    const closesTable = dto.status === SessionStatus.CLOSED || dto.status === SessionStatus.EXPIRED;
+    const closesTable =
+      dto.status === SessionStatus.CLOSED ||
+      dto.status === SessionStatus.EXPIRED;
     // Keep records raw until commit; never use a response DTO for DB queries.
     const updated = await this.prisma.$transaction(async (tx) => {
       const session = await tx.session.findUnique({ where: { id: rawId } });
@@ -130,7 +138,8 @@ export class SessionsService {
       });
     });
     this.events.emitSessionStatus(rawId, dto.status);
-    if (closesTable) this.events.emitTableStatus(updated.tableId, TableStatus.CLEANING);
+    if (closesTable)
+      this.events.emitTableStatus(updated.tableId, TableStatus.CLEANING);
 
     return this.transformResponse(updated);
   }

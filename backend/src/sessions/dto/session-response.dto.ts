@@ -26,10 +26,10 @@ export class TierInfo {
   @ApiProperty({ example: 'Silver' })
   name: string;
 
-  @ApiProperty({ example: 399.00 })
+  @ApiProperty({ example: 399.0 })
   priceAdult: number;
 
-  @ApiProperty({ example: 199.00 })
+  @ApiProperty({ example: 199.0 })
   priceChild: number;
 
   @ApiProperty({ example: 90 })
@@ -62,7 +62,10 @@ export class CreateSessionDto {
 }
 
 export class SessionResponse {
-  @ApiProperty({ example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Session ID (prefixed)' })
+  @ApiProperty({
+    example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    description: 'Session ID (prefixed)',
+  })
   id: string;
 
   @ApiProperty({ example: 1, description: 'Session Number (sequential)' })
