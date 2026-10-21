@@ -1,0 +1,556 @@
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/app.module.ts
+  21:1   error  Delete `⏎`  prettier/prettier
+  41:19  error  Insert `,`  prettier/prettier
+  44:25  error  Delete `·`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/auth/auth.controller.ts
+   1:9   error    Replace `·Controller,·Post,·Get,·Body,·Res,·Req,·UseGuards,·HttpCode,·HttpStatus·` with `⏎··Controller,⏎··Post,⏎··Get,⏎··Body,⏎··Res,⏎··Req,⏎··UseGuards,⏎··HttpCode,⏎··HttpStatus,⏎`  prettier/prettier
+   7:61  error    Delete `⏎`                                                                                                                                                                             prettier/prettier
+  25:15  error    Replace `@Body()·dto:·LoginDto,·@Res({·passthrough:·true·})·res:·Response` with `⏎····@Body()·dto:·LoginDto,⏎····@Res({·passthrough:·true·})·res:·Response,⏎··`                        prettier/prettier
+  37:11  error    Unsafe assignment of an `any` value                                                                                                                                                    @typescript-eslint/no-unsafe-assignment
+  38:35  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                                                 @typescript-eslint/no-unsafe-argument
+  38:40  error    Unsafe member access .id on an `any` value                                                                                                                                             @typescript-eslint/no-unsafe-member-access
+  47:17  error    Replace `@Req()·req:·Request,·@Res({·passthrough:·true·})·res:·Response` with `⏎····@Req()·req:·Request,⏎····@Res({·passthrough:·true·})·res:·Response,⏎··`                            prettier/prettier
+  48:11  error    Unsafe assignment of an `any` value                                                                                                                                                    @typescript-eslint/no-unsafe-assignment
+  49:57  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                                                 @typescript-eslint/no-unsafe-argument
+  49:62  error    Unsafe member access .id on an `any` value                                                                                                                                             @typescript-eslint/no-unsafe-member-access
+  49:66  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                                                 @typescript-eslint/no-unsafe-argument
+  49:71  error    Unsafe member access .username on an `any` value                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  59:11  error    Unsafe assignment of an `any` value                                                                                                                                                    @typescript-eslint/no-unsafe-assignment
+  60:35  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                                                 @typescript-eslint/no-unsafe-argument
+  60:40  error    Unsafe member access .id on an `any` value                                                                                                                                             @typescript-eslint/no-unsafe-member-access
+  62:2   error    Insert `⏎`                                                                                                                                                                             prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/auth/auth.module.ts
+  10:13  error  Replace `⏎····PassportModule,⏎····JwtModule.register({}),⏎··` with `PassportModule,·JwtModule.register({})`  prettier/prettier
+  18:27  error  Insert `⏎`                                                                                                   prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/auth/auth.service.ts
+   9:15  error  Replace `private·prisma:·PrismaService,·private·jwtService:·JwtService` with `⏎····private·prisma:·PrismaService,⏎····private·jwtService:·JwtService,⏎··`                                                                          prettier/prettier
+  17:33  error  Insert `⏎·····`                                                                                                                                                                                                                    prettier/prettier
+  28:14  error  Replace `·id:·user.id,·username:·user.username,·fullName:·user.fullName,·role:·user.role.name` with `⏎········id:·user.id,⏎········username:·user.username,⏎········fullName:·user.fullName,⏎········role:·user.role.name,⏎·····`  prettier/prettier
+  33:36  error  Replace `·where:·{·id:·userId·},·data:·{·refreshToken:·null·}` with `⏎······where:·{·id:·userId·},⏎······data:·{·refreshToken:·null·},⏎···`                                                                                        prettier/prettier
+  46:18  error  Replace `·username:·true,·fullName:·true,·avatarUrl:·true,` with `⏎········username:·true,⏎········fullName:·true,⏎········avatarUrl:·true,⏎·······`                                                                               prettier/prettier
+  55:43  error  Replace `·secret:·process.env.JWT_SECRET,·expiresIn:·'15m'` with `⏎········secret:·process.env.JWT_SECRET,⏎········expiresIn:·'15m',⏎·····`                                                                                        prettier/prettier
+  56:43  error  Replace `·secret:·process.env.JWT_REFRESH_SECRET,·expiresIn:·'7d'` with `⏎········secret:·process.env.JWT_REFRESH_SECRET,⏎········expiresIn:·'7d',⏎·····`                                                                          prettier/prettier
+  63:36  error  Replace `·where:·{·id:·userId·},·data:·{·refreshToken:·hashed·}` with `⏎······where:·{·id:·userId·},⏎······data:·{·refreshToken:·hashed·},⏎···`                                                                                    prettier/prettier
+  65:2   error  Insert `⏎`                                                                                                                                                                                                                         prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/auth/dto/login.dto.ts
+   1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`       prettier/prettier
+   2:37  error  Replace `"class-validator"` with `'class-validator'`       prettier/prettier
+   5:1   error  Delete `··`                                                prettier/prettier
+   6:3   error  Delete `··`                                                prettier/prettier
+   7:1   error  Replace `····username:·string` with `··username:·string;`  prettier/prettier
+   9:1   error  Delete `··`                                                prettier/prettier
+  10:1   error  Delete `··`                                                prettier/prettier
+  11:3   error  Delete `··`                                                prettier/prettier
+  12:1   error  Replace `····password:·string` with `··password:·string;`  prettier/prettier
+  13:2   error  Insert `⏎`                                                 prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/auth/guards/jwt.guard.ts
+  1:28  error  Replace `"@nestjs/common"` with `'@nestjs/common'`      prettier/prettier
+  2:27  error  Replace `"@nestjs/passport"` with `'@nestjs/passport'`  prettier/prettier
+  5:49  error  Replace `·}` with `}⏎`                                  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/auth/guards/wt-refresh.guard.ts
+  1:28  error  Replace `"@nestjs/common"` with `'@nestjs/common'`      prettier/prettier
+  2:27  error  Replace `"@nestjs/passport"` with `'@nestjs/passport'`  prettier/prettier
+  5:64  error  Replace `·}` with `}⏎`                                  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/auth/strategies/jwt-refresh.strategy.ts
+  10:58  error    Replace `Strategy,·'jwt-refresh'` with `⏎··Strategy,⏎··'jwt-refresh',⏎`                           prettier/prettier
+  17:27  error    Unsafe return of a value of type `any`                                                            @typescript-eslint/no-unsafe-return
+  25:11  error    Unsafe assignment of an `any` value                                                               @typescript-eslint/no-unsafe-assignment
+  31:55  error    Insert `⏎·····`                                                                                   prettier/prettier
+  33:42  warning  Unsafe argument of type `any` assigned to a parameter of type `string | Buffer<ArrayBufferLike>`  @typescript-eslint/no-unsafe-argument
+  38:2   error    Insert `⏎`                                                                                        prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/auth/strategies/jwt.strategy.ts
+  28:2  error  Insert `⏎`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/categories/categories.controller.ts
+   1:9   error  Replace `·Controller,·Get,·Post,·Body,·Patch,·Param,·Delete,·UseGuards·` with `⏎··Controller,⏎··Get,⏎··Post,⏎··Body,⏎··Patch,⏎··Param,⏎··Delete,⏎··UseGuards,⏎`            prettier/prettier
+  36:10  error  Replace `@Param('id',·ParseIntPipe)·id:·number,·@Body()·dto:·UpdateCategoryDto` with `⏎····@Param('id',·ParseIntPipe)·id:·number,⏎····@Body()·dto:·UpdateCategoryDto,⏎··`  prettier/prettier
+  45:2   error  Insert `⏎`                                                                                                                                                                 prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/categories/categories.service.ts
+   1:9   error  Replace `·ConflictException,·Injectable,·NotFoundException·` with `⏎··ConflictException,⏎··Injectable,⏎··NotFoundException,⏎`  prettier/prettier
+   1:10  error  'ConflictException' is defined but never used                                                                                  @typescript-eslint/no-unused-vars
+  22:55  error  Delete `·`                                                                                                                     prettier/prettier
+  34:2   error  Insert `⏎`                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/categories/dto/create-category.dto.ts
+   1:50  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`  prettier/prettier
+   2:56  error  Replace `"class-validator"` with `'class-validator'`  prettier/prettier
+  14:2   error  Insert `⏎`                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/common/all-exceptions.filter.ts
+  26:11  error  Unsafe assignment of an `any` value                                                                                                           @typescript-eslint/no-unsafe-assignment
+  29:12  error  Replace `exceptionResponse·as·any).message·??·'Internal·server·error'` with `(exceptionResponse·as·any).message·??·'Internal·server·error')`  prettier/prettier
+  29:38  error  Unsafe member access .message on an `any` value                                                                                               @typescript-eslint/no-unsafe-member-access
+  33:7   error  Unsafe assignment of an `any` value                                                                                                           @typescript-eslint/no-unsafe-assignment
+  37:2   error  Insert `⏎`                                                                                                                                    prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/common/response.interceptor.ts
+  17:64  error  Replace `T,·ApiResponse<T>` with `⏎··T,⏎··ApiResponse<T>⏎`                                                               prettier/prettier
+  18:13  error  Replace `context:·ExecutionContext,·next:·CallHandler` with `⏎····context:·ExecutionContext,⏎····next:·CallHandler,⏎··`  prettier/prettier
+  23:9   error  Unsafe assignment of an `any` value                                                                                      @typescript-eslint/no-unsafe-assignment
+  27:2   error  Insert `⏎`                                                                                                               prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/common/utils/id-transformer.util.ts
+    5:3   error  Delete `·`                                    prettier/prettier
+    8:3   error  Delete `·`                                    prettier/prettier
+   41:1   error  Delete `····`                                 prettier/prettier
+   44:1   error  Delete `····`                                 prettier/prettier
+   48:1   error  Delete `····`                                 prettier/prettier
+   59:1   error  Delete `····`                                 prettier/prettier
+   62:1   error  Delete `····`                                 prettier/prettier
+   81:11  error  'encoded' is assigned a value but never used  @typescript-eslint/no-unused-vars
+   82:1   error  Delete `····`                                 prettier/prettier
+   85:1   error  Delete `····`                                 prettier/prettier
+  109:1   error  Delete `····`                                 prettier/prettier
+  113:1   error  Delete `····`                                 prettier/prettier
+  146:1   error  Delete `····`                                 prettier/prettier
+  148:1   error  Delete `····`                                 prettier/prettier
+  154:1   error  Delete `····`                                 prettier/prettier
+  162:22  error  Insert `⏎·····`                               prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/events/events.gateway.ts
+   34:5   warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   46:5   warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator  @typescript-eslint/no-floating-promises
+   72:16  error    Replace `.to(`kitchen:${kitchenId}`)` with `⏎······.to(`kitchen:${kitchenId}`)⏎······`                                                                              prettier/prettier
+   77:16  error    Replace `⏎······.to(`session:${sessionId}`)⏎······` with `.to(`session:${sessionId}`)`                                                                              prettier/prettier
+  128:2   error    Insert `⏎`                                                                                                                                                          prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/events/events.module.ts
+  9:29  error  Insert `⏎`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/ingredients/dto/adjust-stock.dto.ts
+   1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`      prettier/prettier
+   2:36  error  Replace `"class-validator"` with `'class-validator'`      prettier/prettier
+   3:22  error  Replace `"class-transformer"` with `'class-transformer'`  prettier/prettier
+  14:2   error  Insert `⏎`                                                prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/ingredients/dto/create-ingredient.dto.ts
+   1:50  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`                                                                                                                                           prettier/prettier
+   2:9   error  Replace `·IsString,·IsNumber,·IsOptional,·IsUrl,·Min,·MinLength·}·from·"class-validator"` with `⏎··IsString,⏎··IsNumber,⏎··IsOptional,⏎··IsUrl,⏎··Min,⏎··MinLength,⏎}·from·'class-validator'`  prettier/prettier
+   3:22  error  Replace `"class-transformer"` with `'class-transformer'`                                                                                                                                       prettier/prettier
+  25:2   error  Insert `⏎`                                                                                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/ingredients/ingredients.controller.ts
+   1:9   error  Replace `·Controller,·Get,·Post,·Body,·Patch,·Param,·Delete,·UseGuards,·ParseIntPipe·` with `⏎··Controller,⏎··Get,⏎··Post,⏎··Body,⏎··Patch,⏎··Param,⏎··Delete,⏎··UseGuards,⏎··ParseIntPipe,⏎`  prettier/prettier
+  36:10  error  Replace `@Param('id',·ParseIntPipe)·id:·number,·@Body()·dto:·UpdateIngredientDto` with `⏎····@Param('id',·ParseIntPipe)·id:·number,⏎····@Body()·dto:·UpdateIngredientDto,⏎··`                  prettier/prettier
+  42:15  error  Replace `@Param('id',·ParseIntPipe)·id:·number,·@Body()·dto:·AdjustStockDto` with `⏎····@Param('id',·ParseIntPipe)·id:·number,⏎····@Body()·dto:·AdjustStockDto,⏎··`                            prettier/prettier
+  51:2   error  Insert `⏎`                                                                                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/ingredients/ingredients.module.ts
+   8:32  error  Insert `,`  prettier/prettier
+  10:33  error  Delete `·`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/ingredients/ingredients.service.ts
+   1:9  error  Replace `·Injectable,·NotFoundException,·BadRequestException·` with `⏎··Injectable,⏎··NotFoundException,⏎··BadRequestException,⏎`  prettier/prettier
+  75:2  error  Insert `⏎`                                                                                                                         prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/invoices/dto/create-invoice.dto.ts
+   2:47  error  'IsUUID' is defined but never used                                                                                                                                                                                                 @typescript-eslint/no-unused-vars
+   6:17  error  Replace `·example:·'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',·description:·'Session·ID·(prefixed·or·raw·UUID)'` with `⏎····example:·'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',⏎····description:·'Session·ID·(prefixed·or·raw·UUID)',⏎·`  prettier/prettier
+  10:31  error  Delete `0`                                                                                                                                                                                                                         prettier/prettier
+  27:25  error  Replace `·example:·'08XXXXXXXX',·description:·'เบอร์โทรศัพท์·PromptPay·(สำหรับ·QR_CODE)'` with `⏎····example:·'08XXXXXXXX',⏎····description:·'เบอร์โทรศัพท์·PromptPay·(สำหรับ·QR_CODE)',⏎·`                                        prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/invoices/dto/invoice-response.dto.ts
+   2:10  error  'IsString' is defined but never used                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   2:20  error  'IsNumber' is defined but never used                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   2:30  error  'IsOptional' is defined but never used                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   3:10  error  'Type' is defined but never used                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   8:17  error  Replace `·example:·'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',·description:·'Session·ID·(prefixed)'` with `⏎····example:·'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',⏎····description:·'Session·ID·(prefixed)',⏎·`                  prettier/prettier
+  26:32  error  Delete `0`                                                                                                                                                                                                                 prettier/prettier
+  33:17  error  Replace `·example:·'inv_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',·description:·'Invoice·ID·(prefixed)'` with `⏎····example:·'inv_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',⏎····description:·'Invoice·ID·(prefixed)',⏎·`                  prettier/prettier
+  39:17  error  Replace `·example:·'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',·description:·'Session·ID·(prefixed)'` with `⏎····example:·'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',⏎····description:·'Session·ID·(prefixed)',⏎·`                  prettier/prettier
+  42:31  error  Delete `0`                                                                                                                                                                                                                 prettier/prettier
+  45:30  error  Delete `0`                                                                                                                                                                                                                 prettier/prettier
+  48:32  error  Delete `0`                                                                                                                                                                                                                 prettier/prettier
+  57:17  error  Replace `·example:·'usr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',·description:·'Created·by·User·ID·(prefixed)'` with `⏎····example:·'usr_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',⏎····description:·'Created·by·User·ID·(prefixed)',⏎·`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/invoices/invoices.controller.ts
+   1:9   error    Replace `·Controller,·Get,·Post,·Body,·Param,·UseGuards,·Req·` with `⏎··Controller,⏎··Get,⏎··Post,⏎··Body,⏎··Param,⏎··UseGuards,⏎··Req,⏎`  prettier/prettier
+   2:9   error    Replace `·ApiTags,·ApiOperation,·ApiBearerAuth,·ApiResponse·` with `⏎··ApiTags,⏎··ApiOperation,⏎··ApiBearerAuth,⏎··ApiResponse,⏎`          prettier/prettier
+  20:11  error    Unsafe assignment of an `any` value                                                                                                        @typescript-eslint/no-unsafe-assignment
+  21:45  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                     @typescript-eslint/no-unsafe-argument
+  21:50  error    Unsafe member access .id on an `any` value                                                                                                 @typescript-eslint/no-unsafe-member-access
+  43:2   error    Insert `⏎`                                                                                                                                 prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/invoices/invoices.module.ts
+  10:30  error  Replace `·}` with `}⏎`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/invoices/invoices.service.ts
+    1:9   error    Replace `·BadRequestException,·Injectable,·NotFoundException·` with `⏎··BadRequestException,⏎··Injectable,⏎··NotFoundException,⏎`                                                                                prettier/prettier
+   14:6   error    Delete `·`                                                                                                                                                                                                       prettier/prettier
+   17:31  error    Insert `⏎······`                                                                                                                                                                                                 prettier/prettier
+   18:7   error    Insert `··`                                                                                                                                                                                                      prettier/prettier
+   19:1   error    Insert `··`                                                                                                                                                                                                      prettier/prettier
+   20:1   error    Replace `········` with `··········`                                                                                                                                                                             prettier/prettier
+   21:7   error    Insert `··`                                                                                                                                                                                                      prettier/prettier
+   22:1   error    Insert `··`                                                                                                                                                                                                      prettier/prettier
+   23:1   error    Replace `····}).then(invoices·=>·invoices.map(invoice·=>·this.transformResponse(invoice))` with `······})⏎······.then((invoices)·=>⏎········invoices.map((invoice)·=>·this.transformResponse(invoice)),⏎······`  prettier/prettier
+   23:25  error    Unsafe return of a value of type `any[]`                                                                                                                                                                         @typescript-eslint/no-unsafe-return
+   23:49  error    Unsafe return of a value of type `any`                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+   29:1   error    Delete `····`                                                                                                                                                                                                    prettier/prettier
+   38:5   error    Unsafe return of a value of type `any`                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+   44:1   error    Delete `····`                                                                                                                                                                                                    prettier/prettier
+   50:18  error    Insert `⏎·····`                                                                                                                                                                                                  prettier/prettier
+  100:5   error    Unsafe return of a value of type `any`                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  118:5   error    Unsafe return of a value of type `any`                                                                                                                                                                           @typescript-eslint/no-unsafe-return
+  120:37  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                                                                           @typescript-eslint/no-unsafe-argument
+  120:45  error    Unsafe member access .id on an `any` value                                                                                                                                                                       @typescript-eslint/no-unsafe-member-access
+  121:44  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                                                                           @typescript-eslint/no-unsafe-argument
+  121:52  error    Unsafe member access .sessionId on an `any` value                                                                                                                                                                @typescript-eslint/no-unsafe-member-access
+  122:44  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                                                                           @typescript-eslint/no-unsafe-argument
+  122:52  error    Unsafe member access .createdBy on an `any` value                                                                                                                                                                @typescript-eslint/no-unsafe-member-access
+  123:7   error    Unsafe assignment of an `any` value                                                                                                                                                                              @typescript-eslint/no-unsafe-assignment
+  124:20  error    Unsafe member access .session on an `any` value                                                                                                                                                                  @typescript-eslint/no-unsafe-member-access
+  125:39  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                                                                           @typescript-eslint/no-unsafe-argument
+  125:47  error    Unsafe member access .session on an `any` value                                                                                                                                                                  @typescript-eslint/no-unsafe-member-access
+  126:47  error    Replace `invoice.session.tableId,·IdPrefix.TABLE` with `⏎··········invoice.session.tableId,⏎··········IdPrefix.TABLE,⏎········`                                                                                  prettier/prettier
+  126:47  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                                                                           @typescript-eslint/no-unsafe-argument
+  126:55  error    Unsafe member access .session on an `any` value                                                                                                                                                                  @typescript-eslint/no-unsafe-member-access
+  127:46  error    Replace `invoice.session.tierId,·IdPrefix.TIER` with `⏎··········invoice.session.tierId,⏎··········IdPrefix.TIER,⏎········`                                                                                      prettier/prettier
+  127:46  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                                                                           @typescript-eslint/no-unsafe-argument
+  127:54  error    Unsafe member access .session on an `any` value                                                                                                                                                                  @typescript-eslint/no-unsafe-member-access
+  128:9   error    Unsafe assignment of an `any` value                                                                                                                                                                              @typescript-eslint/no-unsafe-assignment
+  129:22  error    Unsafe member access .session on an `any` value                                                                                                                                                                  @typescript-eslint/no-unsafe-member-access
+  130:44  error    Replace `invoice.session.table.id,·IdPrefix.TABLE` with `⏎············invoice.session.table.id,⏎············IdPrefix.TABLE,⏎··········`                                                                          prettier/prettier
+  130:44  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                                                                           @typescript-eslint/no-unsafe-argument
+  130:52  error    Unsafe member access .session on an `any` value                                                                                                                                                                  @typescript-eslint/no-unsafe-member-access
+  132:9   error    Unsafe assignment of an `any` value                                                                                                                                                                              @typescript-eslint/no-unsafe-assignment
+  133:22  error    Unsafe member access .session on an `any` value                                                                                                                                                                  @typescript-eslint/no-unsafe-member-access
+  134:44  error    Replace `invoice.session.tier.id,·IdPrefix.TIER` with `⏎············invoice.session.tier.id,⏎············IdPrefix.TIER,⏎··········`                                                                              prettier/prettier
+  134:44  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                                                                           @typescript-eslint/no-unsafe-argument
+  134:52  error    Unsafe member access .session on an `any` value                                                                                                                                                                  @typescript-eslint/no-unsafe-member-access
+  139:2   error    Insert `⏎`                                                                                                                                                                                                       prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/kitchens/dto/create-kitchen.dto.ts
+  1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`  prettier/prettier
+  2:37  error  Replace `"class-validator"` with `'class-validator'`  prettier/prettier
+  5:1   error  Replace `····` with `··`                              prettier/prettier
+  6:3   error  Delete `··`                                           prettier/prettier
+  7:1   error  Delete `··`                                           prettier/prettier
+  8:3   error  Delete `··`                                           prettier/prettier
+  9:2   error  Insert `⏎`                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/kitchens/kitchens.controller.ts
+   1:9  error  Replace `·Controller,·Get,·Post,·Body,·Patch,·Param,·Delete,·UseGuards·` with `⏎··Controller,⏎··Get,⏎··Post,⏎··Body,⏎··Patch,⏎··Param,⏎··Delete,⏎··UseGuards,⏎`  prettier/prettier
+  14:3  error  Replace `·constructor(private·readonly·kitchensService:·KitchensService)·{·` with `constructor(private·readonly·kitchensService:·KitchensService)·{`             prettier/prettier
+  15:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  16:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  17:3  error  Delete `··`                                                                                                                                                      prettier/prettier
+  18:3  error  Delete `··`                                                                                                                                                      prettier/prettier
+  19:1  error  Replace `······` with `····`                                                                                                                                     prettier/prettier
+  20:3  error  Delete `··`                                                                                                                                                      prettier/prettier
+  21:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  22:1  error  Replace `····` with `··`                                                                                                                                         prettier/prettier
+  23:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  24:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  25:5  error  Delete `··`                                                                                                                                                      prettier/prettier
+  26:3  error  Delete `··`                                                                                                                                                      prettier/prettier
+  27:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  28:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  29:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  30:3  error  Delete `··`                                                                                                                                                      prettier/prettier
+  31:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  32:3  error  Delete `··`                                                                                                                                                      prettier/prettier
+  33:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  34:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  35:3  error  Delete `··`                                                                                                                                                      prettier/prettier
+  36:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  37:1  error  Replace `······` with `····`                                                                                                                                     prettier/prettier
+  38:3  error  Delete `··`                                                                                                                                                      prettier/prettier
+  39:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  40:3  error  Delete `··`                                                                                                                                                      prettier/prettier
+  41:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  42:1  error  Replace `····` with `··`                                                                                                                                         prettier/prettier
+  43:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+  44:1  error  Delete `··`                                                                                                                                                      prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/kitchens/kitchens.service.ts
+   1:9   error  Replace `·ConflictException,·Injectable,·NotFoundException·` with `⏎··ConflictException,⏎··Injectable,⏎··NotFoundException,⏎`  prettier/prettier
+   9:47  error  Delete `·`                                                                                                                     prettier/prettier
+  12:49  error  Insert `;`                                                                                                                     prettier/prettier
+  17:20  error  Insert `,`                                                                                                                     prettier/prettier
+  18:7   error  Insert `;`                                                                                                                     prettier/prettier
+  19:74  error  Insert `;`                                                                                                                     prettier/prettier
+  21:19  error  Insert `;`                                                                                                                     prettier/prettier
+  25:67  error  Replace `·where:·{·name:·dto.name·}·})` with `⏎······where:·{·name:·dto.name·},⏎····});`                                       prettier/prettier
+  26:69  error  Insert `;`                                                                                                                     prettier/prettier
+  28:60  error  Insert `;`                                                                                                                     prettier/prettier
+  32:27  error  Insert `;`                                                                                                                     prettier/prettier
+  35:69  error  Replace `·where:·{·name:·dto.name·}·})` with `⏎········where:·{·name:·dto.name·},⏎······});`                                   prettier/prettier
+  37:59  error  Insert `;`                                                                                                                     prettier/prettier
+  43:16  error  Insert `,`                                                                                                                     prettier/prettier
+  44:7   error  Insert `;`                                                                                                                     prettier/prettier
+  48:27  error  Insert `;`                                                                                                                     prettier/prettier
+  50:64  error  Insert `;`                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/kitchens/kitechens.controller.spec.ts
+  14:5   error    Unsafe assignment of an error typed value                                                                                     @typescript-eslint/no-unsafe-assignment
+  14:50  warning  Unsafe argument of type error typed assigned to a parameter of type `string | symbol | Function | Type<KitechensController>`  @typescript-eslint/no-unsafe-argument
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/main.ts
+  21:26  error    Insert `;`                                                                                                                                                                     prettier/prettier
+  23:22  error    Insert `⏎····`                                                                                                                                                                 prettier/prettier
+  24:5   error    Insert `··`                                                                                                                                                                    prettier/prettier
+  25:1   error    Replace `····` with `······`                                                                                                                                                   prettier/prettier
+  26:5   error    Insert `··`                                                                                                                                                                    prettier/prettier
+  27:3   error    Replace `})` with `··}),⏎··`                                                                                                                                                   prettier/prettier
+  51:15  error    Replace ``Application·is·running·on:·http://localhost:${process.env.PORT·??·3000}`` with `⏎····`Application·is·running·on:·http://localhost:${process.env.PORT·??·3000}`,⏎··`  prettier/prettier
+  52:15  error    Replace ``Swagger·docs:·http://localhost:${process.env.PORT·??·3000}/api-docs`` with `⏎····`Swagger·docs:·http://localhost:${process.env.PORT·??·3000}/api-docs`,⏎··`          prettier/prettier
+  54:1   warning  Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator             @typescript-eslint/no-floating-promises
+  54:13  error    Insert `⏎`                                                                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/menu-item/dto/create-menu-item.dto.ts
+   1:50  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`                                                                                                                                                                     prettier/prettier
+   2:9   error  Replace `·IsString,·IsInt,·IsOptional,·IsUrl,·IsBoolean,·IsArray,·MinLength·}·from·"class-validator"` with `⏎··IsString,⏎··IsInt,⏎··IsOptional,⏎··IsUrl,⏎··IsBoolean,⏎··IsArray,⏎··MinLength,⏎}·from·'class-validator'`  prettier/prettier
+  28:25  error  Replace `·example:·[1,·2],·description:·'Tier·IDs·ที่สามารถสั่งได้'` with `⏎····example:·[1,·2],⏎····description:·'Tier·IDs·ที่สามารถสั่งได้',⏎·`                                                                        prettier/prettier
+  33:2   error  Insert `⏎`                                                                                                                                                                                                               prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/menu-item/menu-item.controller.ts
+   1:9  error  Replace `·Controller,·Get,·Post,·Body,·Patch,·Param,·Delete,·UseGuards,·ParseIntPipe·` with `⏎··Controller,⏎··Get,⏎··Post,⏎··Body,⏎··Patch,⏎··Param,⏎··Delete,⏎··UseGuards,⏎··ParseIntPipe,⏎`  prettier/prettier
+  66:2  error  Insert `⏎`                                                                                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/menu-item/menu-item.module.ts
+   8:29  error  Insert `,`  prettier/prettier
+  10:30  error  Delete `·`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/menu-item/menu-item.service.ts
+  22:6  error  Delete `·`  prettier/prettier
+  95:2  error  Insert `⏎`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/orders/dto/create-order.dto.ts
+   1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`      prettier/prettier
+   2:63  error  Replace `"class-validator"` with `'class-validator'`      prettier/prettier
+   3:22  error  Replace `"class-transformer"` with `'class-transformer'`  prettier/prettier
+  26:2   error  Insert `⏎`                                                prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/orders/dto/update-item-status.dto.ts
+  1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`  prettier/prettier
+  2:24  error  Replace `"class-validator"` with `'class-validator'`  prettier/prettier
+  3:28  error  Replace `"@prisma/client"` with `'@prisma/client'`    prettier/prettier
+  9:2   error  Insert `⏎`                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/orders/dto/update-order-status.dto.ts
+  1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`  prettier/prettier
+  2:24  error  Replace `"class-validator"` with `'class-validator'`  prettier/prettier
+  3:29  error  Replace `"@prisma/client"` with `'@prisma/client'`    prettier/prettier
+  9:2   error  Insert `⏎`                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/orders/dto/void-item.dto.ts
+  1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`  prettier/prettier
+  2:37  error  Replace `"class-validator"` with `'class-validator'`  prettier/prettier
+  9:2   error  Insert `⏎`                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/orders/orders.controller.ts
+   93:11  error    Unsafe assignment of an `any` value                                     @typescript-eslint/no-unsafe-assignment
+   94:53  warning  Unsafe argument of type `any` assigned to a parameter of type `string`  @typescript-eslint/no-unsafe-argument
+   94:58  error    Unsafe member access .id on an `any` value                              @typescript-eslint/no-unsafe-member-access
+  104:2   error    Insert `⏎`                                                              prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/orders/orders.module.ts
+   8:27  error  Insert `,`  prettier/prettier
+  10:28  error  Delete `·`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/orders/orders.service.ts
+   53:18  error  Insert `⏎·····`                                                                                                                                                                          prettier/prettier
+  103:19  error  Replace ``[Socket]·Emitting·new·order·to·kitchen·${kitchenId}:`,·items` with `⏎········`[Socket]·Emitting·new·order·to·kitchen·${kitchenId}:`,⏎········items,⏎······`                    prettier/prettier
+  262:16  error  Replace `·orderItemId:·itemId,·reason:·dto.reason,·approvedBy:·managerId` with `⏎··········orderItemId:·itemId,⏎··········reason:·dto.reason,⏎··········approvedBy:·managerId,⏎·······`  prettier/prettier
+  305:2   error  Insert `⏎`                                                                                                                                                                               prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/prisma/prisma.module.ts
+  4:11  error  Delete `·`  prettier/prettier
+  9:29  error  Insert `⏎`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/prisma/prisma.service.ts
+   6:27  error  Replace `·extends·PrismaClient·implements·OnModuleInit,·OnModuleDestroy·` with `⏎··extends·PrismaClient⏎··implements·OnModuleInit,·OnModuleDestroy⏎`  prettier/prettier
+   8:35  error  Replace `·connectionString:·process.env.DATABASE_URL` with `⏎······connectionString:·process.env.DATABASE_URL,⏎···`                                   prettier/prettier
+  19:2   error  Insert `⏎`                                                                                                                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/role/dto/create-role.dto.ts
+  10:2  error  Insert `⏎`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/role/role.controller.ts
+   1:9  error  Replace `·Controller,·Get,·Post,·Body,·Patch,·Param,·Delete·` with `⏎··Controller,⏎··Get,⏎··Post,⏎··Body,⏎··Patch,⏎··Param,⏎··Delete,⏎`  prettier/prettier
+  51:2  error  Insert `⏎`                                                                                                                               prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/role/role.service.ts
+   1:9   error  Replace `·ConflictException,·Injectable,·NotFoundException·` with `⏎··ConflictException,⏎··Injectable,⏎··NotFoundException,⏎`  prettier/prettier
+  26:57  error  Replace `·where:·{·name:·dto.name·}` with `⏎······where:·{·name:·dto.name·},⏎···`                                              prettier/prettier
+  41:59  error  Replace `·where:·{·name:·dto.name·}` with `⏎········where:·{·name:·dto.name·},⏎·····`                                          prettier/prettier
+  58:2   error  Insert `⏎`                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/sessions/dto/create-session.dto.ts
+   1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`  prettier/prettier
+   2:23  error  Replace `"class-validator"` with `'class-validator'`  prettier/prettier
+  20:2   error  Insert `⏎`                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/sessions/dto/session-response.dto.ts
+   2:17  error  'IsString' is defined but never used                                                                                                                                                                       @typescript-eslint/no-unused-vars
+   2:27  error  'IsOptional' is defined but never used                                                                                                                                                                     @typescript-eslint/no-unused-vars
+   2:39  error  'IsEnum' is defined but never used                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   3:10  error  'Type' is defined but never used                                                                                                                                                                           @typescript-eslint/no-unused-vars
+  29:32  error  Delete `0`                                                                                                                                                                                                 prettier/prettier
+  32:31  error  Delete `0`                                                                                                                                                                                                 prettier/prettier
+  65:17  error  Replace `·example:·'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',·description:·'Session·ID·(prefixed)'` with `⏎····example:·'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',⏎····description:·'Session·ID·(prefixed)',⏎·`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/sessions/dto/update-session-status.dto.ts
+  1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`  prettier/prettier
+  2:24  error  Replace `"class-validator"` with `'class-validator'`  prettier/prettier
+  3:31  error  Replace `"@prisma/client"` with `'@prisma/client'`    prettier/prettier
+  9:2   error  Insert `⏎`                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/sessions/sessions.controller.ts
+   1:9  error  Replace `·Controller,·Get,·Post,·Body,·Patch,·Param,·UseGuards·` with `⏎··Controller,⏎··Get,⏎··Post,⏎··Body,⏎··Patch,⏎··Param,⏎··UseGuards,⏎`  prettier/prettier
+   2:9  error  Replace `·ApiTags,·ApiOperation,·ApiBearerAuth,·ApiResponse·` with `⏎··ApiTags,⏎··ApiOperation,⏎··ApiBearerAuth,⏎··ApiResponse,⏎`              prettier/prettier
+  55:2  error  Insert `⏎`                                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/sessions/sessions.module.ts
+   8:29  error  Insert `,`  prettier/prettier
+  10:30  error  Delete `·`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/sessions/sessions.service.ts
+   24:31  error    Insert `⏎······`                                                                                                                                                                                         prettier/prettier
+   25:7   error    Insert `··`                                                                                                                                                                                              prettier/prettier
+   26:1   error    Insert `··`                                                                                                                                                                                              prettier/prettier
+   27:9   error    Insert `··`                                                                                                                                                                                              prettier/prettier
+   28:1   error    Insert `··`                                                                                                                                                                                              prettier/prettier
+   29:1   error    Insert `··`                                                                                                                                                                                              prettier/prettier
+   30:7   error    Insert `··`                                                                                                                                                                                              prettier/prettier
+   31:5   error    Replace `}).then(sessions·=>·sessions.map(session·=>·this.transformResponse(session))` with `··})⏎······.then((sessions)·=>⏎········sessions.map((session)·=>·this.transformResponse(session)),⏎······`  prettier/prettier
+   31:25  error    Unsafe return of a value of type `any[]`                                                                                                                                                                 @typescript-eslint/no-unsafe-return
+   31:49  error    Unsafe return of a value of type `any`                                                                                                                                                                   @typescript-eslint/no-unsafe-return
+   37:1   error    Delete `····`                                                                                                                                                                                            prettier/prettier
+   43:5   error    Unsafe return of a value of type `any`                                                                                                                                                                   @typescript-eslint/no-unsafe-return
+   66:5   error    Unsafe return of a value of type `any`                                                                                                                                                                   @typescript-eslint/no-unsafe-return
+   80:53  error    Replace `·where:·{·id:·dto.tierId·}` with `⏎······where:·{·id:·dto.tierId·},⏎···`                                                                                                                        prettier/prettier
+  110:5   error    Unsafe return of a value of type `any`                                                                                                                                                                   @typescript-eslint/no-unsafe-return
+  116:1   error    Delete `····`                                                                                                                                                                                            prettier/prettier
+  117:11  error    Unsafe assignment of an `any` value                                                                                                                                                                      @typescript-eslint/no-unsafe-assignment
+  129:9   error    Replace `dto.status·===·SessionStatus.CLOSED·||·dto.status·===·SessionStatus.EXPIRED` with `⏎······dto.status·===·SessionStatus.CLOSED·||⏎······dto.status·===·SessionStatus.EXPIRED⏎····`               prettier/prettier
+  131:18  error    Unsafe assignment of an `any` value                                                                                                                                                                      @typescript-eslint/no-unsafe-assignment
+  131:30  error    Unsafe member access .tableId on an `any` value                                                                                                                                                          @typescript-eslint/no-unsafe-member-access
+  136:35  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                                                                   @typescript-eslint/no-unsafe-argument
+  136:43  error    Unsafe member access .tableId on an `any` value                                                                                                                                                          @typescript-eslint/no-unsafe-member-access
+  139:5   error    Unsafe return of a value of type `any`                                                                                                                                                                   @typescript-eslint/no-unsafe-return
+  172:5   error    Unsafe return of a value of type `any`                                                                                                                                                                   @typescript-eslint/no-unsafe-return
+  174:37  warning  Unsafe argument of type `any` assigned to a parameter of type `string`                                                                                                                                   @typescript-eslint/no-unsafe-argument
+  174:45  error    Unsafe member access .id on an `any` value                                                                                                                                                               @typescript-eslint/no-unsafe-member-access
+  175:45  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                                                                   @typescript-eslint/no-unsafe-argument
+  175:53  error    Unsafe member access .tableId on an `any` value                                                                                                                                                          @typescript-eslint/no-unsafe-member-access
+  176:44  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                                                                   @typescript-eslint/no-unsafe-argument
+  176:52  error    Unsafe member access .tierId on an `any` value                                                                                                                                                           @typescript-eslint/no-unsafe-member-access
+  177:7   error    Unsafe assignment of an `any` value                                                                                                                                                                      @typescript-eslint/no-unsafe-assignment
+  178:20  error    Unsafe member access .table on an `any` value                                                                                                                                                            @typescript-eslint/no-unsafe-member-access
+  179:42  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                                                                   @typescript-eslint/no-unsafe-argument
+  179:50  error    Unsafe member access .table on an `any` value                                                                                                                                                            @typescript-eslint/no-unsafe-member-access
+  181:7   error    Unsafe assignment of an `any` value                                                                                                                                                                      @typescript-eslint/no-unsafe-assignment
+  182:20  error    Unsafe member access .tier on an `any` value                                                                                                                                                             @typescript-eslint/no-unsafe-member-access
+  183:42  warning  Unsafe argument of type `any` assigned to a parameter of type `number`                                                                                                                                   @typescript-eslint/no-unsafe-argument
+  183:50  error    Unsafe member access .tier on an `any` value                                                                                                                                                             @typescript-eslint/no-unsafe-member-access
+  187:2   error    Insert `⏎`                                                                                                                                                                                               prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/settings/settings.controller.ts
+  33:25  error  Replace `@Body()·dto:·PaymentSettings` with `⏎····@Body()·dto:·PaymentSettings,⏎··`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/settings/settings.service.ts
+   1:22  error  'NotFoundException' is defined but never used                   @typescript-eslint/no-unused-vars
+  14:3   error  Async method 'getPaymentSettings' has no 'await' expression     @typescript-eslint/require-await
+  20:3   error  Async method 'updatePaymentSettings' has no 'await' expression  @typescript-eslint/require-await
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/tables/dto/create-table.dto.ts
+   1:50  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`  prettier/prettier
+   2:46  error  Replace `"class-validator"` with `'class-validator'`  prettier/prettier
+   3:29  error  Replace `"@prisma/client"` with `'@prisma/client'`    prettier/prettier
+  19:2   error  Insert `⏎`                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/tables/dto/update-table-status.dto.ts
+  1:29  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`  prettier/prettier
+  2:29  error  Replace `"@prisma/client"` with `'@prisma/client'`    prettier/prettier
+  3:24  error  Replace `"class-validator"` with `'class-validator'`  prettier/prettier
+  6:1   error  Delete `··`                                           prettier/prettier
+  7:1   error  Replace `····` with `··`                              prettier/prettier
+  8:1   error  Delete `··`                                           prettier/prettier
+  9:2   error  Insert `⏎`                                            prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/tables/tables.controller.ts
+   1:9  error  Replace `·Controller,·Get,·Post,·Body,·Patch,·Param,·Delete,·UseGuards,·ParseIntPipe·` with `⏎··Controller,⏎··Get,⏎··Post,⏎··Body,⏎··Patch,⏎··Param,⏎··Delete,⏎··UseGuards,⏎··ParseIntPipe,⏎`  prettier/prettier
+  54:2  error  Insert `⏎`                                                                                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/tables/tables.module.ts
+   8:27  error  Insert `,`  prettier/prettier
+  10:28  error  Delete `·`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/tables/tables.service.ts
+   1:9  error  Replace `·ConflictException,·Injectable,·NotFoundException·` with `⏎··ConflictException,⏎··Injectable,⏎··NotFoundException,⏎`  prettier/prettier
+  70:2  error  Insert `⏎`                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/tiers/dto/create-tier.dto.ts
+   1:50  error  Replace `"@nestjs/swagger"` with `'@nestjs/swagger'`                                                                                                                                           prettier/prettier
+   2:9   error  Replace `·IsInt,·IsNumber,·IsOptional,·IsString,·Min,·MinLength·}·from·"class-validator"` with `⏎··IsInt,⏎··IsNumber,⏎··IsOptional,⏎··IsString,⏎··Min,⏎··MinLength,⏎}·from·'class-validator'`  prettier/prettier
+   3:22  error  Replace `"class-transformer"` with `'class-transformer'`                                                                                                                                       prettier/prettier
+  11:32  error  Delete `0`                                                                                                                                                                                     prettier/prettier
+  16:31  error  Delete `0`                                                                                                                                                                                     prettier/prettier
+  26:2   error  Insert `⏎`                                                                                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/tiers/tiers.controller.ts
+   1:9  error  Replace `·Controller,·Get,·Post,·Body,·Patch,·Param,·Delete,·UseGuards,·ParseIntPipe·` with `⏎··Controller,⏎··Get,⏎··Post,⏎··Body,⏎··Patch,⏎··Param,⏎··Delete,⏎··UseGuards,⏎··ParseIntPipe,⏎`  prettier/prettier
+  44:2  error  Insert `⏎`                                                                                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/tiers/tiers.service.ts
+   1:9   error  Replace `·ConflictException,·Injectable,·NotFoundException·` with `⏎··ConflictException,⏎··Injectable,⏎··NotFoundException,⏎`  prettier/prettier
+  22:57  error  Replace `·where:·{·name:·dto.name·}` with `⏎······where:·{·name:·dto.name·},⏎···`                                              prettier/prettier
+  32:59  error  Replace `·where:·{·name:·dto.name·}` with `⏎········where:·{·name:·dto.name·},⏎·····`                                          prettier/prettier
+  45:2   error  Insert `⏎`                                                                                                                     prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/user/dto/create-user.dto.ts
+  27:2  error  Insert `⏎`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/user/dto/update-user.dto.ts
+   2:9  error  Replace `·IsString,·IsInt,·IsOptional,·IsUrl,·IsBoolean,·MinLength·` with `⏎··IsString,⏎··IsInt,⏎··IsOptional,⏎··IsUrl,⏎··IsBoolean,⏎··MinLength,⏎`  prettier/prettier
+  30:2  error  Insert `⏎`                                                                                                                                           prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/user/user.controller.spec.ts
+  14:5   error    Unsafe assignment of an error typed value                                                                                @typescript-eslint/no-unsafe-assignment
+  14:45  warning  Unsafe argument of type error typed assigned to a parameter of type `string | symbol | Function | Type<UserController>`  @typescript-eslint/no-unsafe-argument
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/user/user.controller.ts
+  67:2  error  Insert `⏎`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/user/user.module.ts
+  10:28  error  Insert `⏎`  prettier/prettier
+
+/Users/mac/Desktop/workspace/shabu-system/backend/src/user/user.service.ts
+   1:9   error  Replace `·ConflictException,·Injectable,·NotFoundException·` with `⏎··ConflictException,⏎··Injectable,⏎··NotFoundException,⏎`  prettier/prettier
+   9:47  error  Delete `·`                                                                                                                     prettier/prettier
+  19:51  error  Insert `,`                                                                                                                     prettier/prettier
+  20:8   error  Insert `,`                                                                                                                     prettier/prettier
+  21:7   error  Insert `;`                                                                                                                     prettier/prettier
+  33:51  error  Insert `,`                                                                                                                     prettier/prettier
+  34:8   error  Insert `,`                                                                                                                     prettier/prettier
+  35:7   error  Insert `;`                                                                                                                     prettier/prettier
+  37:68  error  Insert `;`                                                                                                                     prettier/prettier
+  38:16  error  Insert `;`                                                                                                                     prettier/prettier
+  43:40  error  Insert `,`                                                                                                                     prettier/prettier
+  44:7   error  Insert `;`                                                                                                                     prettier/prettier
+  45:73  error  Insert `;`                                                                                                                     prettier/prettier
+  47:61  error  Insert `;`                                                                                                                     prettier/prettier
+  69:27  error  Insert `;`                                                                                                                     prettier/prettier
+  71:33  error  Insert `;`                                                                                                                     prettier/prettier
+  74:12  error  Unsafe member access .passwordHash on an `any` value                                                                           @typescript-eslint/no-unsafe-member-access
+  74:62  error  Insert `;`                                                                                                                     prettier/prettier
+  75:19  error  Unsafe member access .password on an `any` value                                                                               @typescript-eslint/no-unsafe-member-access
+  75:27  error  Insert `;`                                                                                                                     prettier/prettier
+  80:7   error  Unsafe assignment of an `any` value                                                                                            @typescript-eslint/no-unsafe-assignment
+  89:7   error  Insert `;`                                                                                                                     prettier/prettier
+
+✖ 412 problems (386 errors, 26 warnings)
+  311 errors and 0 warnings potentially fixable with the `--fix` option.
+

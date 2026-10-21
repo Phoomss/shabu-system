@@ -1,0 +1,1075 @@
+
+> backend@0.0.1 test
+> jest --runInBand
+
+FAIL src/ingredients/ingredients.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'ingredients/ingredients.service.ts'
+
+    Require stack:
+      ingredients/ingredients.service.ts
+      ingredients/ingredients.controller.ts
+      ingredients/ingredients.controller.spec.ts
+
+      1 | import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateIngredientDto } from './dto/create-ingredient.dto';
+      5 | import { UpdateIngredientDto } from './dto/update-ingredient.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (ingredients/ingredients.service.ts:2:1)
+      at Object.<anonymous> (ingredients/ingredients.controller.ts:3:1)
+      at Object.<anonymous> (ingredients/ingredients.controller.spec.ts:2:1)
+
+FAIL src/categories/categories.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'categories/categories.service.ts'
+
+    Require stack:
+      categories/categories.service.ts
+      categories/categories.controller.ts
+      categories/categories.controller.spec.ts
+
+      2 | import { CreateCategoryDto } from './dto/create-category.dto';
+      3 | import { UpdateCategoryDto } from './dto/update-category.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Category } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (categories/categories.service.ts:4:1)
+      at Object.<anonymous> (categories/categories.controller.ts:4:1)
+      at Object.<anonymous> (categories/categories.controller.spec.ts:2:1)
+
+FAIL src/kitchens/kitechens.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module './kitechens.controller' from 'kitchens/kitechens.controller.spec.ts'
+
+      1 | import { Test, TestingModule } from '@nestjs/testing';
+    > 2 | import { KitechensController } from './kitechens.controller';
+        | ^
+      3 | import { KitechensService } from './kitechens.service';
+      4 |
+      5 | describe('KitechensController', () => {
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (kitchens/kitechens.controller.spec.ts:2:1)
+
+FAIL src/menu-item/menu-item.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'menu-item/menu-item.service.ts'
+
+    Require stack:
+      menu-item/menu-item.service.ts
+      menu-item/menu-item.controller.ts
+      menu-item/menu-item.controller.spec.ts
+
+      1 | import { Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+      5 | import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (menu-item/menu-item.service.ts:2:1)
+      at Object.<anonymous> (menu-item/menu-item.controller.ts:3:1)
+      at Object.<anonymous> (menu-item/menu-item.controller.spec.ts:2:1)
+
+FAIL src/sessions/sessions.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'sessions/sessions.service.ts'
+
+    Require stack:
+      sessions/sessions.service.ts
+      sessions/sessions.controller.ts
+      sessions/sessions.controller.spec.ts
+
+      4 |   NotFoundException,
+      5 | } from '@nestjs/common';
+    > 6 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      7 | import { EventsGateway } from 'src/events/events.gateway';
+      8 | import { CreateSessionDto } from './dto/create-session.dto';
+      9 | import { UpdateSessionStatusDto } from './dto/update-session-status.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (sessions/sessions.service.ts:6:1)
+      at Object.<anonymous> (sessions/sessions.controller.ts:3:1)
+      at Object.<anonymous> (sessions/sessions.controller.spec.ts:2:1)
+
+FAIL src/kitchens/kitchens.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/auth/guards/jwt.guard' from 'kitchens/kitchens.controller.ts'
+
+    Require stack:
+      kitchens/kitchens.controller.ts
+      kitchens/kitchens.controller.spec.ts
+
+      1 | import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+      2 | import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+    > 3 | import { JwtGuard } from 'src/auth/guards/jwt.guard';
+        | ^
+      4 | import { CreateKitchenDto } from './dto/create-kitchen.dto';
+      5 | import { UpdateKitchenDto } from './dto/update-kitchen.dto';
+      6 | import { KitchensService } from './kitchens.service';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (kitchens/kitchens.controller.ts:3:1)
+      at Object.<anonymous> (kitchens/kitchens.controller.spec.ts:2:1)
+
+FAIL src/invoices/invoices.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'invoices/invoices.service.ts'
+
+    Require stack:
+      invoices/invoices.service.ts
+      invoices/invoices.controller.ts
+      invoices/invoices.controller.spec.ts
+
+      1 | import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateInvoiceDto } from './dto/create-invoice.dto';
+      5 | import { SessionStatus, TableStatus } from '@prisma/client';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (invoices/invoices.service.ts:2:1)
+      at Object.<anonymous> (invoices/invoices.controller.ts:4:1)
+      at Object.<anonymous> (invoices/invoices.controller.spec.ts:2:1)
+
+FAIL src/tables/tables.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'tables/tables.service.ts'
+
+    Require stack:
+      tables/tables.service.ts
+      tables/tables.controller.ts
+      tables/tables.controller.spec.ts
+
+      1 | import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateTableDto } from './dto/create-table.dto';
+      5 | import { UpdateTableDto } from './dto/update-table.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (tables/tables.service.ts:2:1)
+      at Object.<anonymous> (tables/tables.controller.ts:3:1)
+      at Object.<anonymous> (tables/tables.controller.spec.ts:2:1)
+
+FAIL src/orders/orders.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'orders/orders.service.ts'
+
+    Require stack:
+      orders/orders.service.ts
+      orders/orders.controller.ts
+      orders/orders.controller.spec.ts
+
+      4 |   NotFoundException,
+      5 | } from '@nestjs/common';
+    > 6 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      7 | import { EventsGateway } from 'src/events/events.gateway';
+      8 | import { CreateOrderDto } from './dto/create-order.dto';
+      9 | import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (orders/orders.service.ts:6:1)
+      at Object.<anonymous> (orders/orders.controller.ts:20:1)
+      at Object.<anonymous> (orders/orders.controller.spec.ts:2:1)
+
+FAIL src/tiers/tiers.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'tiers/tiers.service.ts'
+
+    Require stack:
+      tiers/tiers.service.ts
+      tiers/tiers.controller.ts
+      tiers/tiers.controller.spec.ts
+
+      2 | import { CreateTierDto } from './dto/create-tier.dto';
+      3 | import { UpdateTierDto } from './dto/update-tier.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Tier } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (tiers/tiers.service.ts:4:1)
+      at Object.<anonymous> (tiers/tiers.controller.ts:3:1)
+      at Object.<anonymous> (tiers/tiers.controller.spec.ts:2:1)
+
+FAIL src/role/role.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'role/role.service.ts'
+
+    Require stack:
+      role/role.service.ts
+      role/role.controller.ts
+      role/role.controller.spec.ts
+
+      2 | import { CreateRoleDto } from './dto/create-role.dto';
+      3 | import { UpdateRoleDto } from './dto/update-role.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Role } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (role/role.service.ts:4:1)
+      at Object.<anonymous> (role/role.controller.ts:3:1)
+      at Object.<anonymous> (role/role.controller.spec.ts:2:1)
+
+FAIL src/user/user.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/auth/guards/jwt.guard' from 'user/user.controller.ts'
+
+    Require stack:
+      user/user.controller.ts
+      user/user.controller.spec.ts
+
+      17 | import { CreateUserDto } from './dto/create-user.dto';
+      18 | import { UpdateUserDto } from './dto/update-user.dto';
+    > 19 | import { JwtGuard } from 'src/auth/guards/jwt.guard';
+         | ^
+      20 | import { UsersService } from './user.service';
+      21 |
+      22 | @ApiTags('users')
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (user/user.controller.ts:19:1)
+      at Object.<anonymous> (user/user.controller.spec.ts:2:1)
+
+FAIL src/auth/auth.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'auth/auth.service.ts'
+
+    Require stack:
+      auth/auth.service.ts
+      auth/auth.controller.ts
+      auth/auth.controller.spec.ts
+
+      1 | import { Injectable, UnauthorizedException } from '@nestjs/common';
+      2 | import { JwtService } from '@nestjs/jwt';
+    > 3 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      4 | import { LoginDto } from './dto/login.dto';
+      5 | import * as bcrypt from 'bcrypt';
+      6 |
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (auth/auth.service.ts:3:1)
+      at Object.<anonymous> (auth/auth.controller.ts:4:1)
+      at Object.<anonymous> (auth/auth.controller.spec.ts:2:1)
+
+FAIL src/ingredients/ingredients.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'ingredients/ingredients.service.ts'
+
+    Require stack:
+      ingredients/ingredients.service.ts
+      ingredients/ingredients.service.spec.ts
+
+      1 | import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateIngredientDto } from './dto/create-ingredient.dto';
+      5 | import { UpdateIngredientDto } from './dto/update-ingredient.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (ingredients/ingredients.service.ts:2:1)
+      at Object.<anonymous> (ingredients/ingredients.service.spec.ts:2:1)
+
+FAIL src/categories/categories.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'categories/categories.service.ts'
+
+    Require stack:
+      categories/categories.service.ts
+      categories/categories.service.spec.ts
+
+      2 | import { CreateCategoryDto } from './dto/create-category.dto';
+      3 | import { UpdateCategoryDto } from './dto/update-category.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Category } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (categories/categories.service.ts:4:1)
+      at Object.<anonymous> (categories/categories.service.spec.ts:2:1)
+
+FAIL src/menu-item/menu-item.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'menu-item/menu-item.service.ts'
+
+    Require stack:
+      menu-item/menu-item.service.ts
+      menu-item/menu-item.service.spec.ts
+
+      1 | import { Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+      5 | import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (menu-item/menu-item.service.ts:2:1)
+      at Object.<anonymous> (menu-item/menu-item.service.spec.ts:2:1)
+
+FAIL src/sessions/sessions.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'sessions/sessions.service.ts'
+
+    Require stack:
+      sessions/sessions.service.ts
+      sessions/sessions.service.spec.ts
+
+      4 |   NotFoundException,
+      5 | } from '@nestjs/common';
+    > 6 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      7 | import { EventsGateway } from 'src/events/events.gateway';
+      8 | import { CreateSessionDto } from './dto/create-session.dto';
+      9 | import { UpdateSessionStatusDto } from './dto/update-session-status.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (sessions/sessions.service.ts:6:1)
+      at Object.<anonymous> (sessions/sessions.service.spec.ts:2:1)
+
+FAIL src/kitchens/kitchens.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'kitchens/kitchens.service.ts'
+
+    Require stack:
+      kitchens/kitchens.service.ts
+      kitchens/kitchens.service.spec.ts
+
+      2 | import { CreateKitchenDto } from './dto/create-kitchen.dto';
+      3 | import { UpdateKitchenDto } from './dto/update-kitchen.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { KitchenSection } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (kitchens/kitchens.service.ts:4:1)
+      at Object.<anonymous> (kitchens/kitchens.service.spec.ts:2:1)
+
+FAIL src/invoices/invoices.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'invoices/invoices.service.ts'
+
+    Require stack:
+      invoices/invoices.service.ts
+      invoices/invoices.service.spec.ts
+
+      1 | import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateInvoiceDto } from './dto/create-invoice.dto';
+      5 | import { SessionStatus, TableStatus } from '@prisma/client';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (invoices/invoices.service.ts:2:1)
+      at Object.<anonymous> (invoices/invoices.service.spec.ts:2:1)
+
+FAIL src/tables/tables.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'tables/tables.service.ts'
+
+    Require stack:
+      tables/tables.service.ts
+      tables/tables.service.spec.ts
+
+      1 | import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateTableDto } from './dto/create-table.dto';
+      5 | import { UpdateTableDto } from './dto/update-table.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (tables/tables.service.ts:2:1)
+      at Object.<anonymous> (tables/tables.service.spec.ts:2:1)
+
+FAIL src/orders/orders.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'orders/orders.service.ts'
+
+    Require stack:
+      orders/orders.service.ts
+      orders/orders.service.spec.ts
+
+      4 |   NotFoundException,
+      5 | } from '@nestjs/common';
+    > 6 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      7 | import { EventsGateway } from 'src/events/events.gateway';
+      8 | import { CreateOrderDto } from './dto/create-order.dto';
+      9 | import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (orders/orders.service.ts:6:1)
+      at Object.<anonymous> (orders/orders.service.spec.ts:2:1)
+
+FAIL src/tiers/tiers.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'tiers/tiers.service.ts'
+
+    Require stack:
+      tiers/tiers.service.ts
+      tiers/tiers.service.spec.ts
+
+      2 | import { CreateTierDto } from './dto/create-tier.dto';
+      3 | import { UpdateTierDto } from './dto/update-tier.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Tier } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (tiers/tiers.service.ts:4:1)
+      at Object.<anonymous> (tiers/tiers.service.spec.ts:2:1)
+
+FAIL src/user/user.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'user/user.service.ts'
+
+    Require stack:
+      user/user.service.ts
+      user/user.service.spec.ts
+
+      2 | import { CreateUserDto } from './dto/create-user.dto';
+      3 | import { UpdateUserDto } from './dto/update-user.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import * as bcrypt from 'bcrypt';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (user/user.service.ts:4:1)
+      at Object.<anonymous> (user/user.service.spec.ts:2:1)
+
+FAIL src/role/role.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'role/role.service.ts'
+
+    Require stack:
+      role/role.service.ts
+      role/role.service.spec.ts
+
+      2 | import { CreateRoleDto } from './dto/create-role.dto';
+      3 | import { UpdateRoleDto } from './dto/update-role.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Role } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (role/role.service.ts:4:1)
+      at Object.<anonymous> (role/role.service.spec.ts:2:1)
+
+FAIL src/auth/auth.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'auth/auth.service.ts'
+
+    Require stack:
+      auth/auth.service.ts
+      auth/auth.service.spec.ts
+
+      1 | import { Injectable, UnauthorizedException } from '@nestjs/common';
+      2 | import { JwtService } from '@nestjs/jwt';
+    > 3 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      4 | import { LoginDto } from './dto/login.dto';
+      5 | import * as bcrypt from 'bcrypt';
+      6 |
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (auth/auth.service.ts:3:1)
+      at Object.<anonymous> (auth/auth.service.spec.ts:2:1)
+
+Summary of all failing tests
+FAIL ingredients/ingredients.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'ingredients/ingredients.service.ts'
+
+    Require stack:
+      ingredients/ingredients.service.ts
+      ingredients/ingredients.controller.ts
+      ingredients/ingredients.controller.spec.ts
+
+      1 | import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateIngredientDto } from './dto/create-ingredient.dto';
+      5 | import { UpdateIngredientDto } from './dto/update-ingredient.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (ingredients/ingredients.service.ts:2:1)
+      at Object.<anonymous> (ingredients/ingredients.controller.ts:3:1)
+      at Object.<anonymous> (ingredients/ingredients.controller.spec.ts:2:1)
+
+FAIL categories/categories.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'categories/categories.service.ts'
+
+    Require stack:
+      categories/categories.service.ts
+      categories/categories.controller.ts
+      categories/categories.controller.spec.ts
+
+      2 | import { CreateCategoryDto } from './dto/create-category.dto';
+      3 | import { UpdateCategoryDto } from './dto/update-category.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Category } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (categories/categories.service.ts:4:1)
+      at Object.<anonymous> (categories/categories.controller.ts:4:1)
+      at Object.<anonymous> (categories/categories.controller.spec.ts:2:1)
+
+FAIL kitchens/kitechens.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module './kitechens.controller' from 'kitchens/kitechens.controller.spec.ts'
+
+      1 | import { Test, TestingModule } from '@nestjs/testing';
+    > 2 | import { KitechensController } from './kitechens.controller';
+        | ^
+      3 | import { KitechensService } from './kitechens.service';
+      4 |
+      5 | describe('KitechensController', () => {
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (kitchens/kitechens.controller.spec.ts:2:1)
+
+FAIL menu-item/menu-item.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'menu-item/menu-item.service.ts'
+
+    Require stack:
+      menu-item/menu-item.service.ts
+      menu-item/menu-item.controller.ts
+      menu-item/menu-item.controller.spec.ts
+
+      1 | import { Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+      5 | import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (menu-item/menu-item.service.ts:2:1)
+      at Object.<anonymous> (menu-item/menu-item.controller.ts:3:1)
+      at Object.<anonymous> (menu-item/menu-item.controller.spec.ts:2:1)
+
+FAIL sessions/sessions.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'sessions/sessions.service.ts'
+
+    Require stack:
+      sessions/sessions.service.ts
+      sessions/sessions.controller.ts
+      sessions/sessions.controller.spec.ts
+
+      4 |   NotFoundException,
+      5 | } from '@nestjs/common';
+    > 6 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      7 | import { EventsGateway } from 'src/events/events.gateway';
+      8 | import { CreateSessionDto } from './dto/create-session.dto';
+      9 | import { UpdateSessionStatusDto } from './dto/update-session-status.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (sessions/sessions.service.ts:6:1)
+      at Object.<anonymous> (sessions/sessions.controller.ts:3:1)
+      at Object.<anonymous> (sessions/sessions.controller.spec.ts:2:1)
+
+FAIL kitchens/kitchens.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/auth/guards/jwt.guard' from 'kitchens/kitchens.controller.ts'
+
+    Require stack:
+      kitchens/kitchens.controller.ts
+      kitchens/kitchens.controller.spec.ts
+
+      1 | import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+      2 | import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+    > 3 | import { JwtGuard } from 'src/auth/guards/jwt.guard';
+        | ^
+      4 | import { CreateKitchenDto } from './dto/create-kitchen.dto';
+      5 | import { UpdateKitchenDto } from './dto/update-kitchen.dto';
+      6 | import { KitchensService } from './kitchens.service';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (kitchens/kitchens.controller.ts:3:1)
+      at Object.<anonymous> (kitchens/kitchens.controller.spec.ts:2:1)
+
+FAIL invoices/invoices.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'invoices/invoices.service.ts'
+
+    Require stack:
+      invoices/invoices.service.ts
+      invoices/invoices.controller.ts
+      invoices/invoices.controller.spec.ts
+
+      1 | import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateInvoiceDto } from './dto/create-invoice.dto';
+      5 | import { SessionStatus, TableStatus } from '@prisma/client';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (invoices/invoices.service.ts:2:1)
+      at Object.<anonymous> (invoices/invoices.controller.ts:4:1)
+      at Object.<anonymous> (invoices/invoices.controller.spec.ts:2:1)
+
+FAIL tables/tables.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'tables/tables.service.ts'
+
+    Require stack:
+      tables/tables.service.ts
+      tables/tables.controller.ts
+      tables/tables.controller.spec.ts
+
+      1 | import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateTableDto } from './dto/create-table.dto';
+      5 | import { UpdateTableDto } from './dto/update-table.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (tables/tables.service.ts:2:1)
+      at Object.<anonymous> (tables/tables.controller.ts:3:1)
+      at Object.<anonymous> (tables/tables.controller.spec.ts:2:1)
+
+FAIL orders/orders.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'orders/orders.service.ts'
+
+    Require stack:
+      orders/orders.service.ts
+      orders/orders.controller.ts
+      orders/orders.controller.spec.ts
+
+      4 |   NotFoundException,
+      5 | } from '@nestjs/common';
+    > 6 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      7 | import { EventsGateway } from 'src/events/events.gateway';
+      8 | import { CreateOrderDto } from './dto/create-order.dto';
+      9 | import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (orders/orders.service.ts:6:1)
+      at Object.<anonymous> (orders/orders.controller.ts:20:1)
+      at Object.<anonymous> (orders/orders.controller.spec.ts:2:1)
+
+FAIL tiers/tiers.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'tiers/tiers.service.ts'
+
+    Require stack:
+      tiers/tiers.service.ts
+      tiers/tiers.controller.ts
+      tiers/tiers.controller.spec.ts
+
+      2 | import { CreateTierDto } from './dto/create-tier.dto';
+      3 | import { UpdateTierDto } from './dto/update-tier.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Tier } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (tiers/tiers.service.ts:4:1)
+      at Object.<anonymous> (tiers/tiers.controller.ts:3:1)
+      at Object.<anonymous> (tiers/tiers.controller.spec.ts:2:1)
+
+FAIL role/role.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'role/role.service.ts'
+
+    Require stack:
+      role/role.service.ts
+      role/role.controller.ts
+      role/role.controller.spec.ts
+
+      2 | import { CreateRoleDto } from './dto/create-role.dto';
+      3 | import { UpdateRoleDto } from './dto/update-role.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Role } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (role/role.service.ts:4:1)
+      at Object.<anonymous> (role/role.controller.ts:3:1)
+      at Object.<anonymous> (role/role.controller.spec.ts:2:1)
+
+FAIL user/user.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/auth/guards/jwt.guard' from 'user/user.controller.ts'
+
+    Require stack:
+      user/user.controller.ts
+      user/user.controller.spec.ts
+
+      17 | import { CreateUserDto } from './dto/create-user.dto';
+      18 | import { UpdateUserDto } from './dto/update-user.dto';
+    > 19 | import { JwtGuard } from 'src/auth/guards/jwt.guard';
+         | ^
+      20 | import { UsersService } from './user.service';
+      21 |
+      22 | @ApiTags('users')
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (user/user.controller.ts:19:1)
+      at Object.<anonymous> (user/user.controller.spec.ts:2:1)
+
+FAIL auth/auth.controller.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'auth/auth.service.ts'
+
+    Require stack:
+      auth/auth.service.ts
+      auth/auth.controller.ts
+      auth/auth.controller.spec.ts
+
+      1 | import { Injectable, UnauthorizedException } from '@nestjs/common';
+      2 | import { JwtService } from '@nestjs/jwt';
+    > 3 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      4 | import { LoginDto } from './dto/login.dto';
+      5 | import * as bcrypt from 'bcrypt';
+      6 |
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (auth/auth.service.ts:3:1)
+      at Object.<anonymous> (auth/auth.controller.ts:4:1)
+      at Object.<anonymous> (auth/auth.controller.spec.ts:2:1)
+
+FAIL ingredients/ingredients.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'ingredients/ingredients.service.ts'
+
+    Require stack:
+      ingredients/ingredients.service.ts
+      ingredients/ingredients.service.spec.ts
+
+      1 | import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateIngredientDto } from './dto/create-ingredient.dto';
+      5 | import { UpdateIngredientDto } from './dto/update-ingredient.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (ingredients/ingredients.service.ts:2:1)
+      at Object.<anonymous> (ingredients/ingredients.service.spec.ts:2:1)
+
+FAIL categories/categories.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'categories/categories.service.ts'
+
+    Require stack:
+      categories/categories.service.ts
+      categories/categories.service.spec.ts
+
+      2 | import { CreateCategoryDto } from './dto/create-category.dto';
+      3 | import { UpdateCategoryDto } from './dto/update-category.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Category } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (categories/categories.service.ts:4:1)
+      at Object.<anonymous> (categories/categories.service.spec.ts:2:1)
+
+FAIL menu-item/menu-item.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'menu-item/menu-item.service.ts'
+
+    Require stack:
+      menu-item/menu-item.service.ts
+      menu-item/menu-item.service.spec.ts
+
+      1 | import { Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateMenuItemDto } from './dto/create-menu-item.dto';
+      5 | import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (menu-item/menu-item.service.ts:2:1)
+      at Object.<anonymous> (menu-item/menu-item.service.spec.ts:2:1)
+
+FAIL sessions/sessions.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'sessions/sessions.service.ts'
+
+    Require stack:
+      sessions/sessions.service.ts
+      sessions/sessions.service.spec.ts
+
+      4 |   NotFoundException,
+      5 | } from '@nestjs/common';
+    > 6 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      7 | import { EventsGateway } from 'src/events/events.gateway';
+      8 | import { CreateSessionDto } from './dto/create-session.dto';
+      9 | import { UpdateSessionStatusDto } from './dto/update-session-status.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (sessions/sessions.service.ts:6:1)
+      at Object.<anonymous> (sessions/sessions.service.spec.ts:2:1)
+
+FAIL kitchens/kitchens.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'kitchens/kitchens.service.ts'
+
+    Require stack:
+      kitchens/kitchens.service.ts
+      kitchens/kitchens.service.spec.ts
+
+      2 | import { CreateKitchenDto } from './dto/create-kitchen.dto';
+      3 | import { UpdateKitchenDto } from './dto/update-kitchen.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { KitchenSection } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (kitchens/kitchens.service.ts:4:1)
+      at Object.<anonymous> (kitchens/kitchens.service.spec.ts:2:1)
+
+FAIL invoices/invoices.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'invoices/invoices.service.ts'
+
+    Require stack:
+      invoices/invoices.service.ts
+      invoices/invoices.service.spec.ts
+
+      1 | import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateInvoiceDto } from './dto/create-invoice.dto';
+      5 | import { SessionStatus, TableStatus } from '@prisma/client';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (invoices/invoices.service.ts:2:1)
+      at Object.<anonymous> (invoices/invoices.service.spec.ts:2:1)
+
+FAIL tables/tables.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'tables/tables.service.ts'
+
+    Require stack:
+      tables/tables.service.ts
+      tables/tables.service.spec.ts
+
+      1 | import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+    > 2 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      3 | import { EventsGateway } from 'src/events/events.gateway';
+      4 | import { CreateTableDto } from './dto/create-table.dto';
+      5 | import { UpdateTableDto } from './dto/update-table.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (tables/tables.service.ts:2:1)
+      at Object.<anonymous> (tables/tables.service.spec.ts:2:1)
+
+FAIL orders/orders.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'orders/orders.service.ts'
+
+    Require stack:
+      orders/orders.service.ts
+      orders/orders.service.spec.ts
+
+      4 |   NotFoundException,
+      5 | } from '@nestjs/common';
+    > 6 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      7 | import { EventsGateway } from 'src/events/events.gateway';
+      8 | import { CreateOrderDto } from './dto/create-order.dto';
+      9 | import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (orders/orders.service.ts:6:1)
+      at Object.<anonymous> (orders/orders.service.spec.ts:2:1)
+
+FAIL tiers/tiers.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'tiers/tiers.service.ts'
+
+    Require stack:
+      tiers/tiers.service.ts
+      tiers/tiers.service.spec.ts
+
+      2 | import { CreateTierDto } from './dto/create-tier.dto';
+      3 | import { UpdateTierDto } from './dto/update-tier.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Tier } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (tiers/tiers.service.ts:4:1)
+      at Object.<anonymous> (tiers/tiers.service.spec.ts:2:1)
+
+FAIL user/user.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'user/user.service.ts'
+
+    Require stack:
+      user/user.service.ts
+      user/user.service.spec.ts
+
+      2 | import { CreateUserDto } from './dto/create-user.dto';
+      3 | import { UpdateUserDto } from './dto/update-user.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import * as bcrypt from 'bcrypt';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (user/user.service.ts:4:1)
+      at Object.<anonymous> (user/user.service.spec.ts:2:1)
+
+FAIL role/role.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'role/role.service.ts'
+
+    Require stack:
+      role/role.service.ts
+      role/role.service.spec.ts
+
+      2 | import { CreateRoleDto } from './dto/create-role.dto';
+      3 | import { UpdateRoleDto } from './dto/update-role.dto';
+    > 4 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      5 | import { Role } from '@prisma/client';
+      6 |
+      7 | @Injectable()
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (role/role.service.ts:4:1)
+      at Object.<anonymous> (role/role.service.spec.ts:2:1)
+
+FAIL auth/auth.service.spec.ts
+  ● Test suite failed to run
+
+    Cannot find module 'src/prisma/prisma.service' from 'auth/auth.service.ts'
+
+    Require stack:
+      auth/auth.service.ts
+      auth/auth.service.spec.ts
+
+      1 | import { Injectable, UnauthorizedException } from '@nestjs/common';
+      2 | import { JwtService } from '@nestjs/jwt';
+    > 3 | import { PrismaService } from 'src/prisma/prisma.service';
+        | ^
+      4 | import { LoginDto } from './dto/login.dto';
+      5 | import * as bcrypt from 'bcrypt';
+      6 |
+
+      at Resolver._throwModNotFoundError (../node_modules/jest-resolve/build/index.js:863:11)
+      at Object.<anonymous> (auth/auth.service.ts:3:1)
+      at Object.<anonymous> (auth/auth.service.spec.ts:2:1)
+
+
+Test Suites: 25 failed, 25 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        3.373 s
+Ran all test suites.
+(node:49387) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
