@@ -323,7 +323,14 @@ async function main() {
 
   const ingredients: any[] = [];
   for (const ingData of ingredientsData) {
-    const ing = await prisma.ingredient.create({ data: ingData });
+    const ing = await prisma.ingredient.create({ data: {
+      ...ingData,
+      movements: { create: {
+        reference: 'opening', type: 'OPENING', reason: 'Seed initial balance',
+        quantity: ingData.currentStock, unit: ingData.unit,
+        balanceAfter: ingData.currentStock, actorId: users[0].id,
+      } },
+    } });
     ingredients.push(ing);
   }
   

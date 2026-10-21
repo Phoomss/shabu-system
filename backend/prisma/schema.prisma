@@ -64,6 +64,7 @@ model User {
   voidedLogs   VoidLog[]
   paymentSettings PaymentSettings[]
   sessionOpenRequests SessionOpenRequest[]
+  stockMovements StockMovement[]
 }
 
 // --- 2. กลุ่มตั้งค่าเมนูและการแยกแผนกครัว (Menu & Kitchen Configuration) ---
@@ -206,8 +207,10 @@ model Ingredient {
   name         String
   unit         String
   currentStock Decimal // [Socket] แจ้งเตือน Admin/Owner ทันทีเมื่อ Stock ต่ำกว่าจุดวิกฤต
+  reorderThreshold Decimal? // null = not configured; absolute quantity in ingredient unit
   imageUrl     String?
   recipes      Recipe[]
+  movements    StockMovement[]
 }
 
 /// สูตรอาหาร กำหนดว่าเมนู 1 จาน ใช้ชิ้นส่วนวัตถุดิบอะไรบ้างและปริมาณเท่าไหร่
@@ -215,10 +218,38 @@ model Recipe {
   menuItemId   String
   ingredientId Int
   quantityUsed Decimal
+  quantityUnit String? // Explicit verified recipe unit; legacy recipes remain unverified
   menuItem     MenuItem   @relation(fields: [menuItemId], references: [id])
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
 
   @@id([menuItemId, ingredientId])
+}
+
+enum StockMovementType {
+  OPENING
+  ADJUSTMENT
+  DEDUCTION
+  RESTORATION
+}
+
+model StockMovement {
+  id String @id @default(uuid())
+  sequence Int @unique @default(autoincrement())
+  ingredientId Int
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Restrict)
+  reference String
+  type StockMovementType
+  reason String
+  quantity Decimal // signed delta in unit; never overwrite history
+  unit String
+  balanceAfter Decimal
+  actorId String?
+  actor User? @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  occurredAt DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([ingredientId, reference])
+  @@index([ingredientId, createdAt])
 }
 
 /// ข้อมูลใบชำระเงินและสรุปยอดหลังจากลูกค้าทานเสร็จ

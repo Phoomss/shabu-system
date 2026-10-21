@@ -1,0 +1,15 @@
+
+> backend@0.0.1 test:inventory
+> jest --runInBand --testPathPatterns=ingredients/.*\.spec\.ts$
+
+(node:3029) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/ingredients/ingredients.controller.spec.ts
+PASS src/ingredients/ingredients.service.spec.ts
+PASS src/ingredients/recipe-stock-plan.spec.ts
+
+Test Suites: 3 passed, 3 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        0.95 s, estimated 1 s
+Ran all test suites matching ingredients/.*.spec.ts$.

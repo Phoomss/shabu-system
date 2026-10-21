@@ -22,7 +22,7 @@ export interface Table {
   status: TableStatus;
 }
 
-export type TableStatus = 'AVAILABLE' | 'OCCUPIED' | 'RESERVED' | 'CLEANING';
+export type TableStatus = "AVAILABLE" | "OCCUPIED" | "RESERVED" | "CLEANING";
 
 export interface Session {
   id: string;
@@ -39,7 +39,7 @@ export interface Session {
   status: SessionStatus;
 }
 
-export type SessionStatus = 'ACTIVE' | 'CLOSED' | 'EXPIRED';
+export type SessionStatus = "ACTIVE" | "CLOSED" | "EXPIRED";
 
 // Menu & Kitchen Configuration
 export interface KitchenSection {
@@ -90,7 +90,7 @@ export interface Order {
   items: OrderItem[];
 }
 
-export type OrderStatus = 'PENDING' | 'CONFIRMED' | 'CANCELLED';
+export type OrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
 
 export interface OrderItem {
   id: string;
@@ -104,7 +104,7 @@ export interface OrderItem {
   status: OrderItemStatus;
 }
 
-export type OrderItemStatus = 'PENDING' | 'PREPARING' | 'SERVED' | 'VOIDED';
+export type OrderItemStatus = "PENDING" | "PREPARING" | "SERVED" | "VOIDED";
 
 // Inventory & Finance
 export interface Ingredient {
@@ -112,6 +112,7 @@ export interface Ingredient {
   name: string;
   unit: string;
   currentStock: number;
+  reorderThreshold: number | null;
   imageUrl?: string;
   recipes?: Recipe[];
 }
@@ -138,7 +139,8 @@ export interface Invoice {
   createdAt: string;
 }
 
-export type PaymentMethod = 'CASH' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'QR_CODE' | 'BANK_TRANSFER';
+export type PaymentMethod =
+  "CASH" | "CREDIT_CARD" | "DEBIT_CARD" | "QR_CODE" | "BANK_TRANSFER";
 
 export interface VoidLog {
   id: number;
@@ -188,21 +190,56 @@ export interface CartItem extends MenuItem {
 // Socket Events Types
 export interface SocketEvents {
   // Client -> Server
-  'kitchen:join': { kitchenId: number };
-  'session:join': { sessionId: string };
-  
+  "kitchen:join": { kitchenId: number };
+  "session:join": { sessionId: string };
+
   // Server -> Client
-  'menu:availability_changed': { menuItemId: string; isAvailable: boolean; name: string };
-  'kitchen:new_order': { orderId: string; sessionId: string; items: OrderItem[] };
-  'kitchen:void_order': { orderItemId: string; orderId: string; reason: string };
-  'kitchen:item_status_changed': { orderItemId: string; orderId: string; menuItem: Pick<MenuItem, 'id' | 'name'>; kitchen: KitchenSection; status: OrderItemStatus };
-  'order:status_changed': Order;
-  'order:item_status_changed': { orderItemId: string; orderId: string; menuItem?: Pick<MenuItem, 'id' | 'name'>; kitchen?: KitchenSection; status: OrderItemStatus };
-  'table:status_changed': { tableId: number; status: TableStatus };
-  'session:status_changed': { sessionId: string; status: SessionStatus };
-  'session:time_warning': { sessionId: string; minutesLeft: number };
-  'ingredient:low_stock': { ingredientId: number; name: string; currentStock: number; unit: string; isEmpty: boolean };
-  'invoice:new': { invoiceId: string; netAmount: number; paymentMethod: PaymentMethod; tableNumber: string };
+  "menu:availability_changed": {
+    menuItemId: string;
+    isAvailable: boolean;
+    name: string;
+  };
+  "kitchen:new_order": {
+    orderId: string;
+    sessionId: string;
+    items: OrderItem[];
+  };
+  "kitchen:void_order": {
+    orderItemId: string;
+    orderId: string;
+    reason: string;
+  };
+  "kitchen:item_status_changed": {
+    orderItemId: string;
+    orderId: string;
+    menuItem: Pick<MenuItem, "id" | "name">;
+    kitchen: KitchenSection;
+    status: OrderItemStatus;
+  };
+  "order:status_changed": Order;
+  "order:item_status_changed": {
+    orderItemId: string;
+    orderId: string;
+    menuItem?: Pick<MenuItem, "id" | "name">;
+    kitchen?: KitchenSection;
+    status: OrderItemStatus;
+  };
+  "table:status_changed": { tableId: number; status: TableStatus };
+  "session:status_changed": { sessionId: string; status: SessionStatus };
+  "session:time_warning": { sessionId: string; minutesLeft: number };
+  "ingredient:low_stock": {
+    ingredientId: number;
+    name: string;
+    currentStock: number;
+    unit: string;
+    isEmpty: boolean;
+  };
+  "invoice:new": {
+    invoiceId: string;
+    netAmount: number;
+    paymentMethod: PaymentMethod;
+    tableNumber: string;
+  };
 }
 
 // Form DTOs
@@ -217,7 +254,7 @@ export interface CreateOrderDto {
 }
 
 export interface UpdateOrderItemStatusDto {
-  status: 'PREPARING' | 'SERVED';
+  status: "PREPARING" | "SERVED";
 }
 
 export interface VoidOrderItemDto {
@@ -243,11 +280,14 @@ export interface CreateIngredientDto {
   name: string;
   unit: string;
   currentStock: number;
+  reorderThreshold?: number | null;
   imageUrl?: string;
 }
 
 export interface UpdateIngredientStockDto {
-  currentStock: number;
+  amount: number;
+  reason: string;
+  reference: string;
 }
 
 export interface CreateMenuItemDto {

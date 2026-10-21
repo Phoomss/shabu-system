@@ -1,6 +1,13 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsString, IsNumber, IsOptional, IsUrl, Min, MinLength } from "class-validator";
-import { Type } from "class-transformer";
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsUrl,
+  Min,
+  MinLength,
+} from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateIngredientDto {
   @ApiProperty({ example: 'เนื้อวัว' })
@@ -17,6 +24,16 @@ export class CreateIngredientDto {
   @Min(0)
   @Type(() => Number)
   currentStock: number;
+
+  @ApiPropertyOptional({
+    description:
+      'Absolute low stock threshold in ingredient unit; null disables alerts',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  reorderThreshold?: number | null;
 
   @ApiPropertyOptional({ example: 'https://example.com/image.jpg' })
   @IsOptional()

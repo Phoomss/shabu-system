@@ -1,0 +1,39 @@
+
+> backend@0.0.1 test:workflow
+> jest --runInBand --testPathPatterns=order-rules\.spec\.ts$
+
+(node:3077) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/orders/order-rules.spec.ts
+  Explicit workflow transitions
+    ✓ PENDING -> PENDING (5 ms)
+    ✓ PENDING -> PREPARING
+    ✓ PENDING -> SERVED (1 ms)
+    ✓ PENDING -> VOIDED
+    ✓ PREPARING -> PENDING
+    ✓ PREPARING -> PREPARING (1 ms)
+    ✓ PREPARING -> SERVED
+    ✓ PREPARING -> VOIDED
+    ✓ SERVED -> PENDING
+    ✓ SERVED -> PREPARING (1 ms)
+    ✓ SERVED -> SERVED
+    ✓ SERVED -> VOIDED
+    ✓ VOIDED -> PENDING
+    ✓ VOIDED -> PREPARING (1 ms)
+    ✓ VOIDED -> SERVED
+    ✓ VOIDED -> VOIDED
+    ✓ order PENDING -> PENDING
+    ✓ order PENDING -> CONFIRMED
+    ✓ order PENDING -> CANCELLED (1 ms)
+    ✓ order CONFIRMED -> PENDING
+    ✓ order CONFIRMED -> CONFIRMED
+    ✓ order CONFIRMED -> CANCELLED
+    ✓ order CANCELLED -> PENDING (1 ms)
+    ✓ order CANCELLED -> CONFIRMED
+    ✓ order CANCELLED -> CANCELLED
+
+Test Suites: 1 passed, 1 total
+Tests:       25 passed, 25 total
+Snapshots:   0 total
+Time:        0.29 s, estimated 1 s
+Ran all test suites matching order-rules.spec.ts$.

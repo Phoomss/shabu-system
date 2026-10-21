@@ -1,0 +1,4 @@
+src/kitchens/kitechens.controller.spec.ts(2,37): error TS2307: Cannot find module './kitechens.controller' or its corresponding type declarations.
+src/kitchens/kitechens.controller.spec.ts(3,34): error TS2307: Cannot find module './kitechens.service' or its corresponding type declarations.
+src/user/user.controller.spec.ts(2,10): error TS2724: '"./user.controller"' has no exported member named 'UserController'. Did you mean 'UsersController'?
+src/user/user.controller.spec.ts(3,10): error TS2724: '"./user.service"' has no exported member named 'UserService'. Did you mean 'UsersService'?

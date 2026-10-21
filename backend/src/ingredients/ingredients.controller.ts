@@ -1,5 +1,16 @@
 import { EmployeeResource } from '../security/access.decorators';
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
+  Req,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { IngredientsService } from './ingredients.service';
 import { CreateIngredientDto } from './dto/create-ingredient.dto';
@@ -17,8 +28,11 @@ export class IngredientsController {
 
   @Post()
   @ApiOperation({ summary: 'Create ingredient' })
-  create(@Body() dto: CreateIngredientDto) {
-    return this.ingredientsService.create(dto);
+  create(
+    @Body() dto: CreateIngredientDto,
+    @Req() req: { user: { id: string } },
+  ) {
+    return this.ingredientsService.create(dto, req.user.id);
   }
 
   @Get()
@@ -35,14 +49,31 @@ export class IngredientsController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update ingredient' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateIngredientDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateIngredientDto,
+  ) {
     return this.ingredientsService.update(id, dto);
   }
 
   @Patch(':id/stock')
   @ApiOperation({ summary: 'Adjust stock [Socket]' })
-  adjustStock(@Param('id', ParseIntPipe) id: number, @Body() dto: AdjustStockDto) {
-    return this.ingredientsService.adjustStock(id, dto);
+  adjustStock(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: AdjustStockDto,
+    @Req() req: { user: { id: string } },
+  ) {
+    return this.ingredientsService.adjustStock(id, dto, req.user.id);
+  }
+
+  @Get(':id/movements')
+  movements(@Param('id', ParseIntPipe) id: number) {
+    return this.ingredientsService.movements(id);
+  }
+
+  @Get(':id/reconciliation')
+  reconcile(@Param('id', ParseIntPipe) id: number) {
+    return this.ingredientsService.reconcile(id);
   }
 
   @Delete(':id')

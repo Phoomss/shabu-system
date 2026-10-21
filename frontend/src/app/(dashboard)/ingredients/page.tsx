@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuthStore } from "@/stores/authStore";
+import { useEffect, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import api from "@/lib/api";
 import { toast } from "sonner";
@@ -35,38 +34,48 @@ import {
   Search,
   Utensils,
 } from "lucide-react";
-import { Socket } from "socket.io-client";
-import type { Ingredient, Recipe } from "@/types";
+import type { Ingredient } from "@/types";
 import Image from "next/image";
+import { isAxiosError } from "axios";
+
+const errorMessage = (error: unknown, fallback: string) =>
+  isAxiosError<{ message?: string }>(error)
+    ? error.response?.data?.message || fallback
+    : fallback;
 
 export default function IngredientsPage() {
-  const { user } = useAuthStore();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isStockOpen, setIsStockOpen] = useState(false);
-  const [selectedIngredient, setSelectedIngredient] = useState<Ingredient | null>(null);
+  const [selectedIngredient, setSelectedIngredient] =
+    useState<Ingredient | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     unit: "",
     currentStock: 0,
+    reorderThreshold: "",
     imageUrl: "",
   });
   const [stockValue, setStockValue] = useState(0);
   const [stockReason, setStockReason] = useState("");
+  const stockRequest = useRef<{ signature: string; reference: string } | null>(
+    null,
+  );
+  const [isSavingStock, setIsSavingStock] = useState(false);
 
   useEffect(() => {
     fetchData();
 
     const s = getSocket();
-    setSocket(s);
 
     s.on("ingredient:low_stock", (data) => {
       console.log("Low stock alert:", data);
       fetchData();
-      toast.warning(`${data.name} ใกล้หมด! คงเหลือ: ${data.currentStock} ${data.unit}`);
+      toast.warning(
+        `${data.name} ใกล้หมด! คงเหลือ: ${data.currentStock} ${data.unit}`,
+      );
     });
 
     return () => {
@@ -86,14 +95,26 @@ export default function IngredientsPage() {
 
   const handleCreate = async () => {
     try {
-      await api.post("/ingredients", formData);
+      await api.post("/ingredients", {
+        ...formData,
+        reorderThreshold:
+          formData.reorderThreshold === ""
+            ? null
+            : Number(formData.reorderThreshold),
+      });
       toast.success("สร้างวัตถุดิบสำเร็จ");
       setIsCreateOpen(false);
-      setFormData({ name: "", unit: "", currentStock: 0, imageUrl: "" });
+      setFormData({
+        name: "",
+        unit: "",
+        currentStock: 0,
+        reorderThreshold: "",
+        imageUrl: "",
+      });
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to create ingredient:", error);
-      toast.error(error.response?.data?.message || "ไม่สามารถสร้างได้");
+      toast.error(errorMessage(error, "ไม่สามารถสร้างได้"));
     }
   };
 
@@ -101,42 +122,66 @@ export default function IngredientsPage() {
     if (!selectedIngredient) return;
 
     try {
-      await api.patch(`/ingredients/${selectedIngredient.id}`, formData);
+      await api.patch(`/ingredients/${selectedIngredient.id}`, {
+        name: formData.name,
+        imageUrl: formData.imageUrl || undefined,
+        reorderThreshold:
+          formData.reorderThreshold === ""
+            ? null
+            : Number(formData.reorderThreshold),
+      });
       toast.success("อัปเดตวัตถุดิบสำเร็จ");
       setIsEditOpen(false);
-      setFormData({ name: "", unit: "", currentStock: 0, imageUrl: "" });
+      setFormData({
+        name: "",
+        unit: "",
+        currentStock: 0,
+        reorderThreshold: "",
+        imageUrl: "",
+      });
       setSelectedIngredient(null);
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to update ingredient:", error);
-      toast.error(error.response?.data?.message || "ไม่สามารถอัปเดตได้");
+      toast.error(errorMessage(error, "ไม่สามารถอัปเดตได้"));
     }
   };
 
   const handleUpdateStock = async () => {
-    if (!selectedIngredient) return;
-    if (!stockReason) {
+    if (!selectedIngredient || isSavingStock) return;
+    if (!stockReason.trim()) {
       toast.error("กรุณากรอกเหตุผล");
       return;
     }
 
     try {
-      // Calculate the difference (amount to adjust)
-      const amount = stockValue - selectedIngredient.currentStock;
-      
+      setIsSavingStock(true);
+      const amount = stockValue;
+      const signature = JSON.stringify([
+        selectedIngredient.id,
+        amount,
+        stockReason.trim(),
+      ]);
+      if (stockRequest.current?.signature !== signature)
+        stockRequest.current = { signature, reference: crypto.randomUUID() };
+
       await api.patch(`/ingredients/${selectedIngredient.id}/stock`, {
         amount,
-        reason: stockReason,
+        reason: stockReason.trim(),
+        reference: stockRequest.current.reference,
       });
       toast.success("อัปเดตสต็อกสำเร็จ");
+      stockRequest.current = null;
       setIsStockOpen(false);
       setStockValue(0);
       setStockReason("");
       setSelectedIngredient(null);
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to update stock:", error);
-      toast.error(error.response?.data?.message || "ไม่สามารถอัปเดตได้");
+      toast.error(errorMessage(error, "ไม่สามารถอัปเดตได้"));
+    } finally {
+      setIsSavingStock(false);
     }
   };
 
@@ -147,9 +192,9 @@ export default function IngredientsPage() {
       await api.delete(`/ingredients/${id}`);
       toast.success("ลบวัตถุดิบสำเร็จ");
       fetchData();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Failed to delete ingredient:", error);
-      toast.error(error.response?.data?.message || "ไม่สามารถลบได้");
+      toast.error(errorMessage(error, "ไม่สามารถลบได้"));
     }
   };
 
@@ -159,6 +204,10 @@ export default function IngredientsPage() {
       name: ingredient.name,
       unit: ingredient.unit,
       currentStock: ingredient.currentStock,
+      reorderThreshold:
+        ingredient.reorderThreshold == null
+          ? ""
+          : String(ingredient.reorderThreshold),
       imageUrl: ingredient.imageUrl || "",
     });
     setIsEditOpen(true);
@@ -166,18 +215,20 @@ export default function IngredientsPage() {
 
   const openStock = (ingredient: Ingredient) => {
     setSelectedIngredient(ingredient);
-    setStockValue(ingredient.currentStock);
+    setStockValue(0);
+    setStockReason("");
+    stockRequest.current = null;
     setIsStockOpen(true);
   };
 
   const filteredIngredients = ingredients.filter((ing) =>
-    ing.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ing.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const lowStockThreshold = 20;
-  const lowStockCount = ingredients.filter(
-    (ing) => ing.currentStock < lowStockThreshold
-  ).length;
+  const isLowStock = (ing: Ingredient) =>
+    ing.reorderThreshold != null &&
+    Number(ing.currentStock) <= Number(ing.reorderThreshold);
+  const lowStockCount = ingredients.filter((ing) => isLowStock(ing)).length;
 
   return (
     <div className="h-[calc(100vh-8rem)] flex flex-col gap-4">
@@ -225,9 +276,28 @@ export default function IngredientsPage() {
                   type="number"
                   value={formData.currentStock}
                   onChange={(e) =>
-                    setFormData({ ...formData, currentStock: Number(e.target.value) })
+                    setFormData({
+                      ...formData,
+                      currentStock: Number(e.target.value),
+                    })
                   }
                   placeholder="0"
+                />
+              </div>
+              <div>
+                <Label>จุดสั่งซื้อเพิ่ม (หน่วยเดียวกับสต็อก)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={formData.reorderThreshold}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      reorderThreshold: e.target.value,
+                    })
+                  }
+                  placeholder="เว้นว่าง = ยังไม่ตั้งค่า"
                 />
               </div>
               <div>
@@ -261,7 +331,9 @@ export default function IngredientsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">วัตถุดิบทั้งหมด</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              วัตถุดิบทั้งหมด
+            </CardTitle>
             <Package className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
@@ -274,7 +346,9 @@ export default function IngredientsPage() {
             <AlertTriangle className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{lowStockCount}</div>
+            <div className="text-2xl font-bold text-red-600">
+              {lowStockCount}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -284,7 +358,11 @@ export default function IngredientsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {ingredients.length - lowStockCount}
+              {
+                ingredients.filter(
+                  (ing) => ing.reorderThreshold != null && !isLowStock(ing),
+                ).length
+              }
             </div>
           </CardContent>
         </Card>
@@ -315,6 +393,7 @@ export default function IngredientsPage() {
                 <TableHead>ชื่อ</TableHead>
                 <TableHead>หน่วยนับ</TableHead>
                 <TableHead>สต็อกปัจจุบัน</TableHead>
+                <TableHead>จุดสั่งซื้อเพิ่ม</TableHead>
                 <TableHead>สถานะ</TableHead>
                 <TableHead>จัดการ</TableHead>
               </TableRow>
@@ -322,7 +401,10 @@ export default function IngredientsPage() {
             <TableBody>
               {filteredIngredients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                  <TableCell
+                    colSpan={7}
+                    className="text-center py-8 text-gray-500"
+                  >
                     ไม่พบวัตถุดิบ
                   </TableCell>
                 </TableRow>
@@ -350,19 +432,24 @@ export default function IngredientsPage() {
                     <TableCell>
                       <span
                         className={
-                          ing.currentStock < lowStockThreshold
-                            ? "text-red-600 font-bold"
-                            : ""
+                          isLowStock(ing) ? "text-red-600 font-bold" : ""
                         }
                       >
                         {ing.currentStock}
                       </span>
                     </TableCell>
                     <TableCell>
-                      {ing.currentStock < lowStockThreshold ? (
+                      {ing.reorderThreshold ?? "ยังไม่ตั้งค่า"}
+                    </TableCell>
+                    <TableCell>
+                      {isLowStock(ing) ? (
                         <Badge variant="destructive" className="gap-1">
                           <AlertTriangle className="h-3 w-3" />
                           ใกล้หมด
+                        </Badge>
+                      ) : ing.reorderThreshold == null ? (
+                        <Badge variant="secondary">
+                          ยังไม่ตั้งจุดแจ้งเตือน
                         </Badge>
                       ) : (
                         <Badge variant="success">เพียงพอ</Badge>
@@ -420,10 +507,24 @@ export default function IngredientsPage() {
             <div>
               <Label>หน่วยนับ</Label>
               <Input
+                disabled
                 value={formData.unit}
                 onChange={(e) =>
                   setFormData({ ...formData, unit: e.target.value })
                 }
+              />
+            </div>
+            <div>
+              <Label>จุดสั่งซื้อเพิ่ม (หน่วยเดียวกับสต็อก)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="any"
+                value={formData.reorderThreshold}
+                onChange={(e) =>
+                  setFormData({ ...formData, reorderThreshold: e.target.value })
+                }
+                placeholder="เว้นว่าง = ยังไม่ตั้งค่า"
               />
             </div>
             <div>
@@ -471,16 +572,18 @@ export default function IngredientsPage() {
               />
             </div>
             <div>
-              <Label>สต็อกใหม่</Label>
+              <Label>จำนวนเพิ่ม/ลด (ลดใช้ค่าติดลบ)</Label>
               <Input
                 type="number"
                 value={stockValue}
                 onChange={(e) => setStockValue(Number(e.target.value))}
-                placeholder="ระบุสต็อกใหม่"
+                placeholder="เช่น 500 หรือ -100"
               />
             </div>
             <div>
-              <Label>เหตุผล <span className="text-red-500">*</span></Label>
+              <Label>
+                เหตุผล <span className="text-red-500">*</span>
+              </Label>
               <Input
                 type="text"
                 value={stockReason}
@@ -488,13 +591,6 @@ export default function IngredientsPage() {
                 placeholder="เช่น รับของเข้าคลัง, นับสต็อก, วัตถุดิบหมดอายุ"
               />
             </div>
-            {stockValue !== (selectedIngredient?.currentStock || 0) && (
-              <div className="text-sm text-gray-500">
-                ปรับเปลี่ยน: <span className={stockValue > (selectedIngredient?.currentStock || 0) ? "text-green-600 font-bold" : "text-red-600 font-bold"}>
-                  {stockValue > (selectedIngredient?.currentStock || 0) ? "+" : ""}{stockValue - (selectedIngredient?.currentStock || 0)} {selectedIngredient?.unit}
-                </span>
-              </div>
-            )}
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -503,7 +599,11 @@ export default function IngredientsPage() {
               >
                 ยกเลิก
               </Button>
-              <Button className="flex-1" onClick={handleUpdateStock}>
+              <Button
+                className="flex-1"
+                disabled={isSavingStock || stockValue === 0}
+                onClick={handleUpdateStock}
+              >
                 บันทึก
               </Button>
             </div>

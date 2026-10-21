@@ -1,0 +1,24 @@
+
+> backend@0.0.1 test:inventory:e2e
+> jest --runInBand --config test/jest-inventory-e2e.json
+
+(node:3843) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/inventory.e2e-spec.ts
+  F14 real PostgreSQL transactions and ledger
+    ✓ parallel unique adjustments have no lost updates and reconcile exactly (152 ms)
+    ✓ parallel duplicate event/retry adjusts once and mismatched reuse conflicts (84 ms)
+    ✓ parallel insufficient stock permits only one debit with no failed ledger row (13 ms)
+    ✓ ledger insert failure rolls back balance and emits nothing (13 ms)
+    ✓ uses stored threshold including equality, ignores previous ratio and replay (25 ms)
+    ✓ prevents balance/unit bypass, history deletion and ledger mutation (17 ms)
+    ✓ mixed concurrent credits/debits preserve each recorded balance (59 ms)
+    ✓ confirmation and audited void do not apply unapproved recipe stock policy (51 ms)
+    ✓ parallel HTTP requests preserve stock and validate the new event contract (154 ms)
+    ✓ preserves full database precision without rounding balances at 20 digits (10 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        1.646 s, estimated 2 s
+Ran all test suites.
