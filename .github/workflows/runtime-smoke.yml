@@ -1,0 +1,52 @@
+name: Runtime smoke (isolated only)
+on:
+  pull_request:
+    paths: ["backend/**", "frontend/**", "scripts/**", "docker-compose.yml", ".github/workflows/**"]
+  push:
+    branches: [main, develop]
+    paths: ["backend/**", "frontend/**", "scripts/**", "docker-compose.yml", ".github/workflows/**"]
+permissions:
+  contents: read
+jobs:
+  fresh-install-and-runtime:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: shabu_test
+          POSTGRES_PASSWORD: isolated_ci_only
+          POSTGRES_DB: shabu_test
+        ports: ["55432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U shabu_test -d shabu_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      ALLOW_SHABU_TEST_DB: "1"
+      SHABU_TEST_ADMIN_URL: postgresql://shabu_test:isolated_ci_only@127.0.0.1:55432/shabu_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+      - run: npm ci --prefix backend
+      - run: npm ci --prefix frontend
+      - run: npm run prisma:generate --prefix backend
+      - name: Fresh source copy, locked install, migrate, build, start, HTTP and LAN socket
+        run: node scripts/verify-fresh.cjs
+      - name: Task 02 authorization regression against a new DB
+        run: node scripts/verify-security.cjs
+      - name: Compose build/readiness/HTTP against a new project and volume
+        run: node scripts/verify-compose.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: runtime-evidence
+          path: |
+            reports/lifecycle-evidence/*.log
+            reports/lifecycle-evidence/fresh-commands*.json
+          # test-environment/compose-environment include ephemeral secrets and are never uploaded.

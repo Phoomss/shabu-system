@@ -8,3 +8,8 @@ README.md
 Dockerfile
 docker-compose.yml
 .github
+
+.env*
+!.env.example
+coverage
+*.log

@@ -1,0 +1,3 @@
+PASS backend-ci.yml: parsed YAML, PR trigger, read-only permission, no branch mutations/webhook
+PASS frontend-ci.yml: parsed YAML, PR trigger, read-only permission, no branch mutations/webhook
+PASS runtime-smoke.yml: parsed YAML, PR trigger, read-only permission, no branch mutations/webhook

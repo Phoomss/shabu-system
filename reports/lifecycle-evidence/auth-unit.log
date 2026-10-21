@@ -1,0 +1,18 @@
+✔ Zustand uses one JSON envelope; legacy accessToken/cookie copies are removed; cached user is revalidated (83.256417ms)
+✔ eight simultaneous 401s use one refresh; a late old-token 401 reuses the new token (26.789875ms)
+✔ expired refresh invalidates everyone once; no infinite retry or redirect from customer/login errors (25.99025ms)
+✔ second 401 stops after one retry; 403 does not trigger staff refresh (33.819125ms)
+✔ hydrate /auth/me is single-flight and restores user after expired access refresh (16.658042ms)
+✔ logout/session invalidation cannot be undone by delayed refresh or /auth/me (32.9145ms)
+✔ logout waits for rotation then revokes server session; clears locally even on network failure (28.100083ms)
+✔ transient errors keep credentials and let hydration retry; no cached user grants UI access (13.228042ms)
+✔ blank browser endpoint config follows LAN host and QR origin; explicit build values win (30.40375ms)
+✔ an explicit local logout survives reload even when the server cookie could not be revoked (25.463333ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 710.930541

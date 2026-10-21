@@ -1,0 +1,14 @@
+RUN docker compose config --quiet (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose up --build -d (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose ps --all (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose ps --all (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose ps --all (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose ps --all (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose ps --all (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose ps --all (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose ps --all (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose ps --all (isolated project shabu-lifecycle-1792592840774)
+RUN docker compose exec -T backend node -e const fs=require('node:fs');for(const p of ['dist/main.js','prisma.config.ts','prisma/schema.prisma','tsconfig.json'])if(!fs.existsSync(p))process.exit(1);console.log('PASS runner artifact and Prisma configuration present') (isolated project shabu-lifecycle-1792592840774)
+PASS Compose build, DB -> migrate -> backend -> frontend readiness, HTTP health/login/QR, anonymous 401 and LAN CORS. No seed executed.
+RUN docker compose stop (isolated project shabu-lifecycle-1792592840774)
+Stopped only the test project. Test containers and database volume retained.

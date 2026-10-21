@@ -1,0 +1,43 @@
+{
+  "stage": "/var/folders/ss/vccctpfj2mv5w57zd463j8yw0000gn/T/shabu-lifecycle-KPr7R0",
+  "database": "shabu_lifecycle_1792592061336",
+  "lanHost": "192.168.1.87",
+  "commands": [
+    {
+      "directory": "backend",
+      "command": "npm ci",
+      "exit": 0,
+      "log": "fresh-backend-install.log"
+    },
+    {
+      "directory": "backend",
+      "command": "npm run prisma:generate",
+      "exit": 0,
+      "log": "fresh-generate.log"
+    },
+    {
+      "directory": "backend",
+      "command": "npm run migrate:deploy",
+      "exit": 0,
+      "log": "fresh-migrate.log"
+    },
+    {
+      "directory": "backend",
+      "command": "npm run build",
+      "exit": 0,
+      "log": "fresh-backend-build.log"
+    },
+    {
+      "directory": "frontend",
+      "command": "npm ci",
+      "exit": 0,
+      "log": "fresh-frontend-install.log"
+    },
+    {
+      "directory": "frontend",
+      "command": "npm run build",
+      "exit": 1,
+      "log": "fresh-frontend-build.log"
+    }
+  ]
+}

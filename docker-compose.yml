@@ -1,49 +1,64 @@
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: shabu-postgres
-    restart: always
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-shabu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in a private env file}
       POSTGRES_DB: ${POSTGRES_DB:-shabu_db}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
-  backend:
-    build:
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  migrate:
+    build: &backend-build
       context: ./backend
-      dockerfile: Dockerfile
-    container_name: shabu-backend
-    restart: always
+    image: shabu-backend:local
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-shabu_db}?schema=public
+      DATABASE_URL: ${DATABASE_URL:?Set a URL targeting postgres:5432 inside Compose}
+    command: ["npm", "run", "migrate:deploy"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+  backend:
+    build: *backend-build
+    image: shabu-backend:local
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
       PORT: 3000
-      JWT_SECRET: ${JWT_SECRET:-your_secret_key}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-your_refresh_secret_key}
-      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:3001,http://127.0.0.1:3001}"
+      NODE_ENV: ${APP_NODE_ENV:-production}
+      JWT_SECRET: ${JWT_SECRET:?Set a private signing key}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?Set a different private signing key}
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set exact browser origins including LAN origin if used}
       STAFF_PERMISSION_GRANTS: "${STAFF_PERMISSION_GRANTS:-}"
       KITCHEN_USER_ASSIGNMENTS: "${KITCHEN_USER_ASSIGNMENTS:-}"
       CUSTOMER_JWT_SECRET: "${CUSTOMER_JWT_SECRET:-}"
     ports:
-      - "3000:3000"
+      - "${BACKEND_PORT:-3000}:3000"
     depends_on:
-      - postgres
-
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    container_name: shabu-frontend
-    restart: always
-    environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000
+      args:
+        NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-}"
+        NEXT_PUBLIC_SOCKET_URL: "${NEXT_PUBLIC_SOCKET_URL:-}"
+        NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL:-}"
+    restart: unless-stopped
     ports:
-      - "3001:3000"
+      - "${FRONTEND_PORT:-3001}:3000"
     depends_on:
-      - backend
-
+      backend:
+        condition: service_healthy
 volumes:
   postgres_data:

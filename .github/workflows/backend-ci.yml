@@ -1,73 +1,70 @@
 name: Backend CI
-
 on:
-  push:
-    branches:
-      - "feature/*"
+  pull_request:
     paths:
-      - "backend/**"
-
+      [
+        "backend/**",
+        "scripts/**",
+        "docker-compose.yml",
+        ".github/workflows/backend-ci.yml",
+      ]
+  push:
+    branches: [main, develop, "feature/**"]
+    paths:
+      [
+        "backend/**",
+        "scripts/**",
+        "docker-compose.yml",
+        ".github/workflows/backend-ci.yml",
+      ]
 permissions:
-  contents: write
-
+  contents: read
 jobs:
-  backend-ci:
+  verify:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: backend
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          fetch-depth: 0
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run tests
-        run: npm test
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run prisma:generate
+      - name: Lint (read only)
+        id: lint
+        continue-on-error: true
+        run: npm run lint
+      - name: Security, workflow, IDs, payment, inventory regressions
+        id: regressions
+        continue-on-error: true
+        run: npm run test:regression
+      - name: Full unit suite (includes existing scaffold failures)
+        id: unit
+        continue-on-error: true
+        run: npm test -- --runInBand
+      - run: npm run build
+      - name: Verify artifact
+        run: test -f dist/main.js
+      - name: Enforce every quality gate
+        if: always()
+        env:
+          LINT: ${{ steps.lint.outcome }}
+          REGRESSIONS: ${{ steps.regressions.outcome }}
+          UNIT: ${{ steps.unit.outcome }}
+        run: test "$LINT" = success && test "$REGRESSIONS" = success && test "$UNIT" = success
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
           context: backend
           push: false
-          tags: shabu-backend:latest
+          tags: shabu-backend:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      # 🔥 ถ้า test ผ่าน → ค่อย merge
-      - name: Merge to develop
-        run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
-
-          git fetch origin
-
-          git checkout develop
-          git pull origin develop
-
-          git merge origin/${GITHUB_REF_NAME}
-
-          git push origin develop
-
-      - name: Delete feature branch
-        run: |
-          git push origin --delete ${GITHUB_REF_NAME}
-
-      - name: Notify Discord
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"content\": \"✅ Backend: ${GITHUB_REF_NAME} merged into develop and deleted\"}" \
-          ${{ secrets.DISCORD_WEBHOOK }}

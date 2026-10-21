@@ -30,10 +30,12 @@ if (
     { env: { ...process.env, DATABASE_URL: url.toString() }, stdio: 'inherit' },
   );
   if (result.status !== 0) throw new Error('Test migration failed');
-  const out = path.resolve(
-    __dirname,
-    '../../reports/security-evidence/test-database.json',
-  );
+  const out =
+    process.env.SHABU_TEST_METADATA_FILE ||
+    path.resolve(
+      __dirname,
+      '../../reports/security-evidence/test-database.json',
+    );
   fs.writeFileSync(out, JSON.stringify({ url: url.toString() }, null, 2));
   console.log(
     'Created isolated security test DB; no existing database was changed.',

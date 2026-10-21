@@ -1,0 +1,362 @@
+ Image shabu-lifecycle-1792592840774-frontend Building 
+ Image shabu-backend:local Building 
+ Image shabu-backend:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.79kB done
+#1 DONE 0.0s
+
+#2 [backend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.06kB done
+#2 DONE 0.0s
+
+#3 [frontend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 2.08kB done
+#3 DONE 0.0s
+
+#4 [auth] library/node:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#5 [migrate internal] load metadata for docker.io/library/node:22-alpine
+#5 DONE 1.9s
+
+#6 [frontend internal] load .dockerignore
+#6 transferring context: 187B done
+#6 DONE 0.0s
+
+#7 [backend internal] load .dockerignore
+#7 transferring context: 179B done
+#7 DONE 0.0s
+
+#8 [backend builder 1/9] FROM docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+#8 resolve docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 done
+#8 DONE 0.0s
+
+#9 [frontend internal] load build context
+#9 transferring context: 449.04kB 0.0s done
+#9 DONE 0.0s
+
+#10 [migrate internal] load build context
+#10 transferring context: 452.92kB 0.0s done
+#10 DONE 0.0s
+
+#11 [frontend deps 1/4] RUN apk add --no-cache libc6-compat
+#11 CACHED
+
+#12 [frontend deps 2/4] WORKDIR /app
+#12 CACHED
+
+#13 [migrate builder 2/9] WORKDIR /app
+#13 CACHED
+
+#14 [frontend deps 3/4] COPY package.json package-lock.json ./
+#14 DONE 0.1s
+
+#15 [migrate builder 3/9] COPY package.json package-lock.json ./
+#15 DONE 0.1s
+
+#16 [backend builder 4/9] COPY prisma ./prisma
+#16 DONE 0.0s
+
+#17 [migrate builder 5/9] COPY prisma.config.ts ./
+#17 DONE 0.0s
+
+#18 [backend builder 6/9] RUN npm ci
+#18 1.644 npm warn ERESOLVE overriding peer dependency
+#18 1.645 npm warn While resolving: @nestjs/mapped-types@2.1.0
+#18 1.645 npm warn Found: class-validator@0.15.1
+#18 1.645 npm warn node_modules/class-validator
+#18 1.645 npm warn   class-validator@"^0.15.1" from the root project
+#18 1.645 npm warn   2 more (@nestjs/common, @nestjs/swagger)
+#18 1.645 npm warn
+#18 1.645 npm warn Could not resolve dependency:
+#18 1.645 npm warn peerOptional class-validator@"^0.13.0 || ^0.14.0" from @nestjs/mapped-types@2.1.0
+#18 1.645 npm warn node_modules/@nestjs/swagger/node_modules/@nestjs/mapped-types
+#18 1.645 npm warn   @nestjs/mapped-types@"2.1.0" from @nestjs/swagger@11.2.6
+#18 1.645 npm warn   node_modules/@nestjs/swagger
+#18 1.645 npm warn
+#18 1.645 npm warn Conflicting peer dependency: class-validator@0.14.4
+#18 1.645 npm warn node_modules/class-validator
+#18 1.645 npm warn   peerOptional class-validator@"^0.13.0 || ^0.14.0" from @nestjs/mapped-types@2.1.0
+#18 1.645 npm warn   node_modules/@nestjs/swagger/node_modules/@nestjs/mapped-types
+#18 1.645 npm warn     @nestjs/mapped-types@"2.1.0" from @nestjs/swagger@11.2.6
+#18 1.645 npm warn     node_modules/@nestjs/swagger
+#18 9.408 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#18 ...
+
+#19 [frontend deps 4/4] RUN npm ci
+#19 5.235 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#19 ...
+
+#18 [backend builder 6/9] RUN npm ci
+#18 22.42 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#18 27.48 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#18 27.54 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#18 28.29 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#18 ...
+
+#19 [frontend deps 4/4] RUN npm ci
+#19 49.96 
+#19 49.96 added 716 packages, and audited 717 packages in 50s
+#19 49.96 
+#19 49.96 239 packages are looking for funding
+#19 49.96   run `npm fund` for details
+#19 50.30 
+#19 50.30 37 vulnerabilities (2 low, 8 moderate, 25 high, 2 critical)
+#19 50.30 
+#19 50.30 To address issues that do not require attention, run:
+#19 50.30   npm audit fix
+#19 50.30 
+#19 50.30 To address all issues (including breaking changes), run:
+#19 50.30   npm audit fix --force
+#19 50.30 
+#19 50.30 Run `npm audit` for details.
+#19 50.30 npm notice
+#19 50.30 npm notice New major version of npm available! 10.9.9 -> 12.2.0
+#19 50.30 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+#19 50.30 npm notice To update run: npm install -g npm@12.2.0
+#19 50.30 npm notice
+#19 DONE 51.1s
+
+#18 [backend builder 6/9] RUN npm ci
+#18 ...
+
+#20 [frontend builder 2/4] COPY --from=deps /app/node_modules ./node_modules
+#20 CACHED
+
+#21 [frontend builder 3/4] COPY . .
+#21 DONE 0.1s
+
+#18 [backend builder 6/9] RUN npm ci
+#18 ...
+
+#22 [frontend builder 4/4] RUN npm run build
+#22 0.698 
+#22 0.698 > frontend@0.1.0 build
+#22 0.698 > next build
+#22 0.698 
+#22 ...
+
+#18 [migrate builder 6/9] RUN npm ci
+#18 58.61 
+#18 58.61 added 870 packages, and audited 871 packages in 58s
+#18 58.61 
+#18 58.61 159 packages are looking for funding
+#18 58.61   run `npm fund` for details
+#18 58.97 
+#18 58.97 78 vulnerabilities (2 low, 20 moderate, 54 high, 2 critical)
+#18 58.97 
+#18 58.97 To address all issues, run:
+#18 58.97   npm audit fix
+#18 58.97 
+#18 58.97 Run `npm audit` for details.
+#18 58.98 npm notice
+#18 58.98 npm notice New major version of npm available! 10.9.9 -> 12.2.0
+#18 58.98 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+#18 58.98 npm notice To update run: npm install -g npm@12.2.0
+#18 58.98 npm notice
+#18 DONE 59.4s
+
+#23 [backend builder 7/9] RUN npm run prisma:generate
+#23 1.317 
+#23 1.317 > backend@0.0.1 prisma:generate
+#23 1.317 > prisma generate
+#23 1.317 
+#23 3.394 Loaded Prisma config from prisma.config.ts.
+#23 3.394 
+#23 3.684 Prisma schema loaded from prisma/schema.prisma.
+#23 4.476 
+#23 4.476 ✔ Generated Prisma Client (v7.4.2) to ./node_modules/@prisma/client in 633ms
+#23 4.476 
+#23 4.476 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#23 4.476 
+#23 4.476 
+#23 DONE 4.8s
+
+#24 [backend builder 8/9] COPY . .
+#24 DONE 0.5s
+
+#25 [migrate builder 9/9] RUN npm run build && test -f dist/main.js
+#25 0.615 
+#25 0.615 > backend@0.0.1 build
+#25 0.615 > nest build
+#25 0.615 
+#25 ...
+
+#22 [frontend builder 4/4] RUN npm run build
+#22 1.802 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#22 1.802 This information is used to shape Next.js' roadmap and prioritize features.
+#22 1.802 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#22 1.802 https://nextjs.org/telemetry
+#22 1.802 
+#22 1.825 ▲ Next.js 16.2.1 (Turbopack)
+#22 1.826 
+#22 1.867 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+#22 1.956   Creating an optimized production build ...
+#22 9.392 ✓ Compiled successfully in 7.2s
+#22 9.461   Running TypeScript ...
+#22 ...
+
+#25 [backend builder 9/9] RUN npm run build && test -f dist/main.js
+#25 DONE 11.3s
+
+#22 [frontend builder 4/4] RUN npm run build
+#22 24.24   Finished TypeScript in 14.8s ...
+#22 24.28   Collecting page data using 7 workers ...
+#22 26.29   Generating static pages using 7 workers (0/20) ...
+#22 26.93   Generating static pages using 7 workers (5/20) 
+#22 27.18   Generating static pages using 7 workers (10/20) 
+#22 27.18   Generating static pages using 7 workers (15/20) 
+#22 27.33 ✓ Generating static pages using 7 workers (20/20) in 1040ms
+#22 27.35   Finalizing page optimization ...
+#22 27.97 
+#22 27.98 Route (app)
+#22 27.98 ┌ ○ /
+#22 27.98 ├ ○ /_not-found
+#22 27.98 ├ ○ /categories
+#22 27.98 ├ ○ /dashboard
+#22 27.98 ├ ○ /ingredients
+#22 27.98 ├ ○ /invoices
+#22 27.98 ├ ○ /kds
+#22 27.98 ├ ○ /kitchen-sections
+#22 27.98 ├ ○ /login
+#22 27.98 ├ ○ /menus
+#22 27.98 ├ ƒ /order/[token]
+#22 27.98 ├ ○ /orders
+#22 27.98 ├ ○ /pos
+#22 27.98 ├ ○ /roles
+#22 27.98 ├ ○ /sessions
+#22 27.98 ├ ○ /tables
+#22 27.98 ├ ○ /tiers
+#22 27.98 ├ ○ /users
+#22 27.98 └ ○ /void-logs
+#22 27.98 
+#22 27.98 
+#22 27.98 ƒ Proxy (Middleware)
+#22 27.98 
+#22 27.98 ○  (Static)   prerendered as static content
+#22 27.98 ƒ  (Dynamic)  server-rendered on demand
+#22 27.98 
+#22 28.13 npm notice
+#22 28.13 npm notice New major version of npm available! 10.9.9 -> 12.2.0
+#22 28.13 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+#22 28.13 npm notice To update run: npm install -g npm@12.2.0
+#22 28.13 npm notice
+#22 DONE 28.4s
+
+#26 [frontend runner 5/8] RUN mkdir .next
+#26 CACHED
+
+#27 [frontend runner 2/8] RUN addgroup --system --gid 1001 nodejs
+#27 CACHED
+
+#28 [frontend runner 3/8] RUN adduser --system --uid 1001 nextjs
+#28 CACHED
+
+#29 [frontend runner 4/8] COPY --from=builder /app/public ./public
+#29 CACHED
+
+#30 [frontend runner 6/8] RUN chown nextjs:nodejs .next
+#30 CACHED
+
+#31 [frontend runner 7/8] COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+#31 DONE 0.5s
+
+#32 [frontend runner 8/8] COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+#32 DONE 0.1s
+
+#33 [frontend] exporting to image
+#33 exporting layers
+#33 exporting layers 2.2s done
+#33 exporting manifest sha256:fd33ad32d257424a08bccd57789200690f024d4e9764033258e78390bb075c02 0.0s done
+#33 exporting config sha256:8f0e01ca6622165b8c9334f56e54f24aa217b1f7d36c172e69af1bd458c799a1 done
+#33 exporting attestation manifest sha256:e13ed3c74e767be5b3e19b06cffa81dbc16c99dfc37557829f9858415920f929 0.0s done
+#33 exporting manifest list sha256:dbaa6845614f889238dee3050aab38525efca19ca505e42ed801b7f1ccd19606 done
+#33 naming to docker.io/library/shabu-lifecycle-1792592840774-frontend:latest done
+#33 unpacking to docker.io/library/shabu-lifecycle-1792592840774-frontend:latest
+#33 unpacking to docker.io/library/shabu-lifecycle-1792592840774-frontend:latest 0.7s done
+#33 DONE 3.0s
+
+#34 [frontend] resolving provenance for metadata file
+#34 DONE 0.0s
+
+#35 [migrate runner 3/9] COPY --from=builder /app/dist ./dist
+#35 CACHED
+
+#36 [migrate runner 4/9] COPY --from=builder /app/node_modules ./node_modules
+#36 CACHED
+
+#35 [backend runner 3/9] COPY --from=builder /app/dist ./dist
+#35 CACHED
+
+#37 [backend runner 5/9] COPY --from=builder /app/package.json /app/package-lock.json ./
+#37 DONE 0.2s
+
+#38 [backend runner 6/9] COPY --from=builder /app/prisma ./prisma
+#38 DONE 0.0s
+
+#39 [migrate runner 7/9] COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+#39 DONE 0.0s
+
+#40 [backend runner 8/9] COPY --from=builder /app/tsconfig.json ./tsconfig.json
+#40 DONE 0.0s
+
+#41 [backend runner 9/9] COPY --from=builder /app/register-paths.cjs ./register-paths.cjs
+#41 DONE 0.0s
+
+#42 [backend] exporting to image
+#42 exporting layers 0.1s done
+#42 exporting manifest sha256:85a3a81318d715eb0a23f3bee4ebdc488c26143cd33b7fdf7e4d57d2b4a1a53c done
+#42 exporting config sha256:f7cee6132697a1875a54be664bb9b43698228a348c782263219b985b6eac164f done
+#42 exporting attestation manifest sha256:d389cb6a496ec76c9a70231e833b9212d66d917fcc680294049203e4a2067fa1 0.0s done
+#42 exporting manifest list sha256:6d1e957a2db1d308878b31f93b1a82c31a35de2451c8cf7b3cd660ff6b7ff487
+#42 exporting manifest list sha256:6d1e957a2db1d308878b31f93b1a82c31a35de2451c8cf7b3cd660ff6b7ff487 done
+#42 naming to docker.io/library/shabu-backend:local done
+#42 unpacking to docker.io/library/shabu-backend:local 0.0s done
+#42 DONE 0.2s
+
+#43 [migrate] exporting to image
+#43 exporting layers 0.1s done
+#43 exporting manifest sha256:37da0678eb42424cb57e8d978e47a7c5082a8df4655244b04c88097e6ea935ea done
+#43 exporting config sha256:f6a5a409c7350b23eaaadcb2362d4d0c4a68cab83fe6789b447d24171d62382c done
+#43 exporting attestation manifest sha256:3a410054cf80db5d06a058be345547a6bd3675d21ad34b8dd03ce9addbc91636 0.0s done
+#43 exporting manifest list sha256:1aa40a2a42d37a7cb32223bbacc5887f1567524c98d258e47328b92e6e057b4d done
+#43 naming to docker.io/library/shabu-backend:local done
+#43 unpacking to docker.io/library/shabu-backend:local 0.0s done
+#43 DONE 0.2s
+
+#44 [backend] resolving provenance for metadata file
+#44 DONE 0.0s
+
+#45 [migrate] resolving provenance for metadata file
+#45 DONE 0.0s
+ Image shabu-backend:local Built 
+ Image shabu-backend:local Built 
+ Image shabu-lifecycle-1792592840774-frontend Built 
+ Network shabu-lifecycle-1792592840774_default Creating 
+ Network shabu-lifecycle-1792592840774_default Created 
+ Volume shabu-lifecycle-1792592840774_postgres_data Creating 
+ Volume shabu-lifecycle-1792592840774_postgres_data Created 
+ Container shabu-lifecycle-1792592840774-postgres-1 Creating 
+ Container shabu-lifecycle-1792592840774-postgres-1 Created 
+ Container shabu-lifecycle-1792592840774-migrate-1 Creating 
+ Container shabu-lifecycle-1792592840774-migrate-1 Created 
+ Container shabu-lifecycle-1792592840774-backend-1 Creating 
+ Container shabu-lifecycle-1792592840774-backend-1 Created 
+ Container shabu-lifecycle-1792592840774-frontend-1 Creating 
+ Container shabu-lifecycle-1792592840774-frontend-1 Created 
+ Container shabu-lifecycle-1792592840774-postgres-1 Starting 
+ Container shabu-lifecycle-1792592840774-postgres-1 Started 
+ Container shabu-lifecycle-1792592840774-postgres-1 Waiting 
+ Container shabu-lifecycle-1792592840774-postgres-1 Healthy 
+ Container shabu-lifecycle-1792592840774-migrate-1 Starting 
+ Container shabu-lifecycle-1792592840774-migrate-1 Started 
+ Container shabu-lifecycle-1792592840774-migrate-1 Waiting 
+ Container shabu-lifecycle-1792592840774-postgres-1 Waiting 
+ Container shabu-lifecycle-1792592840774-postgres-1 Healthy 
+ Container shabu-lifecycle-1792592840774-migrate-1 Exited 
+ Container shabu-lifecycle-1792592840774-backend-1 Starting 
+ Container shabu-lifecycle-1792592840774-backend-1 Started 
+ Container shabu-lifecycle-1792592840774-backend-1 Waiting 
+ Container shabu-lifecycle-1792592840774-backend-1 Healthy 
+ Container shabu-lifecycle-1792592840774-frontend-1 Starting 
+ Container shabu-lifecycle-1792592840774-frontend-1 Started 

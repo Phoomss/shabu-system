@@ -1,0 +1,71 @@
+
+> frontend@0.1.0 test:security
+> node --test test/security-clients.test.mjs
+
+✖ QR exchange does not send staff cookies; customer client sends only its scoped bearer (62.714625ms)
+✖ customer sockets are isolated and never carry the staff token (21.821ms)
+✖ staff reconnect handshake retrieves the current access token, not a cached login token (18.051375ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 393.553625
+
+✖ failing tests:
+
+test at test/security-clients.test.mjs:46:1
+✖ QR exchange does not send staff cookies; customer client sends only its scoped bearer (62.714625ms)
+  file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:35
+          throw new Error(`Unexpected dependency ${id}`);
+          ^
+  
+  Error: Unexpected dependency @/stores/authStore
+      at require (file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:35:15)
+      at evalmachine.<anonymous>:60:19
+      at Script.runInContext (node:vm:149:12)
+      at Script.runInNewContext (node:vm:154:17)
+      at Object.runInNewContext (node:vm:310:38)
+      at Object.load (file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:30:8)
+      at TestContext.<anonymous> (file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:47:48)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1201:25)
+      at Test.start (node:internal/test_runner/test:1096:17)
+
+test at test/security-clients.test.mjs:57:1
+✖ customer sockets are isolated and never carry the staff token (21.821ms)
+  file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:35
+          throw new Error(`Unexpected dependency ${id}`);
+          ^
+  
+  Error: Unexpected dependency @/stores/authStore
+      at require (file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:35:15)
+      at evalmachine.<anonymous>:60:19
+      at Script.runInContext (node:vm:149:12)
+      at Script.runInNewContext (node:vm:154:17)
+      at Object.runInNewContext (node:vm:310:38)
+      at load (file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:30:8)
+      at require (file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:34:41)
+      at evalmachine.<anonymous>:9:29
+      at Script.runInContext (node:vm:149:12)
+      at Script.runInNewContext (node:vm:154:17)
+
+test at test/security-clients.test.mjs:67:1
+✖ staff reconnect handshake retrieves the current access token, not a cached login token (18.051375ms)
+  file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:35
+          throw new Error(`Unexpected dependency ${id}`);
+          ^
+  
+  Error: Unexpected dependency @/stores/authStore
+      at require (file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:35:15)
+      at evalmachine.<anonymous>:60:19
+      at Script.runInContext (node:vm:149:12)
+      at Script.runInNewContext (node:vm:154:17)
+      at Object.runInNewContext (node:vm:310:38)
+      at load (file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:30:8)
+      at require (file:///Users/mac/Desktop/workspace/shabu-system/frontend/test/security-clients.test.mjs:34:41)
+      at evalmachine.<anonymous>:9:29
+      at Script.runInContext (node:vm:149:12)
+      at Script.runInNewContext (node:vm:154:17)

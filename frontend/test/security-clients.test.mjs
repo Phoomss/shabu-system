@@ -31,11 +31,13 @@ function setup() {
       exports, require(id) {
         if (id === 'axios') return axios;
         if (id === 'socket.io-client') return { io };
+        if (id === '@/stores/authStore') return { useAuthStore: { getState: () => ({ accessToken: staffToken, revision: 1 }), subscribe() {} } };
         if (id.startsWith('./')) return load(id.slice(2));
         throw new Error(`Unexpected dependency ${id}`);
       },
       process: { env: { NEXT_PUBLIC_API_URL: 'http://localhost:3000', NEXT_PUBLIC_SOCKET_URL: 'http://localhost:3000' } },
-      localStorage: { getItem: () => staffToken },
+      URL,
+      window: { location: { origin: "http://localhost:3001" } },
       console: { log() {}, error() {} },
     });
     cache[name] = exports; return exports;
@@ -47,11 +49,12 @@ test('QR exchange does not send staff cookies; customer client sends only its sc
   const context = setup(); const api = context.load('api');
   api.createCustomerApi('customer-A'); api.createCustomerApi('customer-B');
   assert.equal(context.creations[0].config.withCredentials, true);
-  assert.equal(context.creations[1].config.withCredentials, false);
+  assert.equal(context.creations[1].config.withCredentials, true);
   assert.equal(context.creations[2].config.withCredentials, false);
-  assert.equal(context.creations[2].config.headers.Authorization, 'Bearer customer-A');
-  assert.equal(context.creations[3].config.headers.Authorization, 'Bearer customer-B');
-  assert.equal(context.creations[2].handlers.request.length, 0); // never uses staff localStorage interceptor
+  assert.equal(context.creations[2].config.withCredentials, false);
+  assert.equal(context.creations[3].config.headers.Authorization, 'Bearer customer-A');
+  assert.equal(context.creations[4].config.headers.Authorization, 'Bearer customer-B');
+  assert.equal(context.creations[3].handlers.request.length, 0); // never uses staff localStorage interceptor
 });
 
 test('customer sockets are isolated and never carry the staff token', () => {

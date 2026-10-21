@@ -1,7 +1,9 @@
+import StaffAuth from "@/components/providers/StaffAuth";
+
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <StaffAuth>{children}</StaffAuth>;
 }

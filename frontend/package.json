@@ -6,6 +6,8 @@
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
+    "test": "node --test test/*.test.mjs",
+    "test:auth": "node --test test/auth-lifecycle.test.mjs",
     "test:payment": "node --test test/payment-display.test.mjs",
     "test:workflow": "node --test test/workflow-clients.test.mjs",
     "test:security": "node --test test/security-clients.test.mjs",
@@ -44,5 +46,8 @@
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=22.12.0"
   }
 }

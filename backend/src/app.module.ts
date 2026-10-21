@@ -1,3 +1,4 @@
+import { HealthController } from './health.controller';
 import { SecurityModule } from './security/security.module';
 import { CustomerModule } from './customer/customer.module';
 import { Module } from '@nestjs/common';
@@ -21,6 +22,7 @@ import { SettingsModule } from './settings/settings.module';
 import { IdTransformerModule } from './common/id-transformer.module';
 
 @Module({
+  controllers: [HealthController],
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),

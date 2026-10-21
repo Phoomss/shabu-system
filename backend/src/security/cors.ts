@@ -1,7 +1,11 @@
-export function allowedOrigin(origin?: string): boolean {
-  if (!origin) return true; // Non-browser clients still need credentials.
+export function validateCorsOrigins(): string[] {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !process.env.CORS_ORIGINS?.trim()
+  )
+    throw new Error('CORS_ORIGINS is required in production');
   const origins = (
-    process.env.CORS_ORIGINS || 'http://localhost:3001,http://127.0.0.1:3001'
+    process.env.CORS_ORIGINS ?? 'http://localhost:3001,http://127.0.0.1:3001'
   )
     .split(',')
     .map((value) => value.trim());
@@ -10,7 +14,11 @@ export function allowedOrigin(origin?: string): boolean {
     if (!['http:', 'https:'].includes(url.protocol) || url.origin !== value)
       throw new Error('CORS_ORIGINS must contain exact HTTP(S) origins');
   }
-  return origins.includes(origin);
+  return origins;
+}
+export function allowedOrigin(origin?: string): boolean {
+  const origins = validateCorsOrigins();
+  return !origin || origins.includes(origin); // Non-browser clients still need credentials.
 }
 export const corsOptions = {
   origin: (

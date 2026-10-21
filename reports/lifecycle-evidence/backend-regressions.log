@@ -1,0 +1,24 @@
+
+> backend@0.0.1 test:regression
+> jest --runInBand --testPathPatterns="(id-transformer|sessions-id|orders-id|events-id|security/.*|order-rules|payment-safety|ingredients/.*|health.controller)\.spec\.ts$"
+
+(node:9279) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/security/cors.spec.ts
+PASS src/health.controller.spec.ts
+PASS src/ingredients/ingredients.controller.spec.ts
+PASS src/security/policy.spec.ts
+PASS src/ingredients/ingredients.service.spec.ts
+PASS src/events/events-id.spec.ts
+PASS src/sessions/sessions-id.spec.ts
+PASS src/invoices/payment-safety.spec.ts
+PASS src/orders/orders-id.spec.ts
+PASS src/ingredients/recipe-stock-plan.spec.ts
+PASS src/common/utils/id-transformer.spec.ts
+PASS src/orders/order-rules.spec.ts
+
+Test Suites: 12 passed, 12 total
+Tests:       83 passed, 83 total
+Snapshots:   0 total
+Time:        3.233 s
+Ran all test suites matching (id-transformer|sessions-id|orders-id|events-id|security/.*|order-rules|payment-safety|ingredients/.*|health.controller)\.spec\.ts$.

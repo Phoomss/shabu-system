@@ -1,23 +1,30 @@
-'use client';
-import { useState } from 'react';
-import { useMutation } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import { QRCodeSVG } from 'qrcode.react';
-import api from '@/lib/api';
-import { Table, Tier } from '@/types';
+"use client";
+import { appUrl } from "@/lib/endpoints";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { QRCodeSVG } from "qrcode.react";
+import api from "@/lib/api";
+import { Table, Tier } from "@/types";
 import {
-  Dialog, DialogContent, DialogHeader,
-  DialogTitle, DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, Clock, QrCode } from 'lucide-react';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Users, Clock, QrCode } from "lucide-react";
 
 interface Props {
   table: Table;
@@ -26,8 +33,13 @@ interface Props {
   onSuccess: () => void;
 }
 
-export default function OpenTableModal({ table, tiers, onClose, onSuccess }: Props) {
-  const [tierId, setTierId] = useState<string>('');
+export default function OpenTableModal({
+  table,
+  tiers,
+  onClose,
+  onSuccess,
+}: Props) {
+  const [tierId, setTierId] = useState<string>("");
   const [adultCount, setAdultCount] = useState(2);
   const [childCount, setChildCount] = useState(0);
   const [qrToken, setQrToken] = useState<string | null>(null);
@@ -35,12 +47,13 @@ export default function OpenTableModal({ table, tiers, onClose, onSuccess }: Pro
   const selectedTier = tiers.find((t) => t.id === Number(tierId));
 
   const totalPrice = selectedTier
-    ? selectedTier.priceAdult * adultCount + selectedTier.priceChild * childCount
+    ? selectedTier.priceAdult * adultCount +
+      selectedTier.priceChild * childCount
     : 0;
 
   const { mutate: openTable, isPending } = useMutation({
     mutationFn: async () => {
-      const res = await api.post('/sessions', {
+      const res = await api.post("/sessions", {
         tableId: table.id,
         tierId: Number(tierId),
         adultCount,
@@ -53,7 +66,7 @@ export default function OpenTableModal({ table, tiers, onClose, onSuccess }: Pro
       toast.success(`เปิดโต๊ะ ${table.number} สำเร็จ`);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message ?? 'เปิดโต๊ะไม่สำเร็จ');
+      toast.error(error.response?.data?.message ?? "เปิดโต๊ะไม่สำเร็จ");
     },
   });
 
@@ -136,17 +149,23 @@ export default function OpenTableModal({ table, tiers, onClose, onSuccess }: Pro
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">ผู้ใหญ่ {adultCount} คน</span>
-                  <span>฿{(selectedTier.priceAdult * adultCount).toLocaleString()}</span>
+                  <span>
+                    ฿{(selectedTier.priceAdult * adultCount).toLocaleString()}
+                  </span>
                 </div>
                 {childCount > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">เด็ก {childCount} คน</span>
-                    <span>฿{(selectedTier.priceChild * childCount).toLocaleString()}</span>
+                    <span>
+                      ฿{(selectedTier.priceChild * childCount).toLocaleString()}
+                    </span>
                   </div>
                 )}
                 <div className="border-t pt-2 flex justify-between font-bold">
                   <span>รวม</span>
-                  <span className="text-red-600">฿{totalPrice.toLocaleString()}</span>
+                  <span className="text-red-600">
+                    ฿{totalPrice.toLocaleString()}
+                  </span>
                 </div>
               </div>
             )}
@@ -157,7 +176,7 @@ export default function OpenTableModal({ table, tiers, onClose, onSuccess }: Pro
             <p className="text-sm text-gray-500">สแกน QR เพื่อสั่งอาหาร</p>
             <div className="bg-white p-4 rounded-xl border-2 border-gray-100 shadow-sm">
               <QRCodeSVG
-                value={`${process.env.NEXT_PUBLIC_APP_URL}/order/${qrToken}`}
+                value={`${appUrl()}/order/${qrToken}`}
                 size={200}
                 level="H"
               />
@@ -171,16 +190,24 @@ export default function OpenTableModal({ table, tiers, onClose, onSuccess }: Pro
         <DialogFooter>
           {!qrToken ? (
             <>
-              <Button variant="outline" onClick={onClose}>ยกเลิก</Button>
+              <Button variant="outline" onClick={onClose}>
+                ยกเลิก
+              </Button>
               <Button
                 className="bg-red-600 hover:bg-red-700"
                 disabled={!tierId || adultCount < 1 || isPending}
                 onClick={() => openTable()}
               >
                 {isPending ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />กำลังเปิดโต๊ะ...</>
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    กำลังเปิดโต๊ะ...
+                  </>
                 ) : (
-                  <><QrCode size={16} className="mr-2" />เปิดโต๊ะ</>
+                  <>
+                    <QrCode size={16} className="mr-2" />
+                    เปิดโต๊ะ
+                  </>
                 )}
               </Button>
             </>

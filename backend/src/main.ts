@@ -1,4 +1,4 @@
-import { corsOptions } from './security/cors';
+import { corsOptions, validateCorsOrigins } from './security/cors';
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -11,6 +11,7 @@ import cookieParser from 'cookie-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  validateCorsOrigins();
   // CORS Configuration
   app.enableCors(corsOptions);
 
@@ -49,7 +50,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3000, '0.0.0.0');
   console.log(
     `Application is running on: http://localhost:${process.env.PORT ?? 3000}`,
   );
@@ -57,4 +58,4 @@ async function bootstrap() {
     `Swagger docs: http://localhost:${process.env.PORT ?? 3000}/api-docs`,
   );
 }
-bootstrap();
+void bootstrap();

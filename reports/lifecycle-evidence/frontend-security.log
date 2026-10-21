@@ -1,0 +1,11 @@
+✔ QR exchange does not send staff cookies; customer client sends only its scoped bearer (61.60675ms)
+✔ customer sockets are isolated and never carry the staff token (24.378667ms)
+✔ staff reconnect handshake retrieves the current access token, not a cached login token (19.256375ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 358.281667

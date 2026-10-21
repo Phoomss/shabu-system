@@ -1,17 +1,10 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse } from "next/server";
 
-const PUBLIC_ROUTES = ['/login'];
-
-export function middleware(request: NextRequest) {
-    const { pathname } = request.nextUrl;
-    
-    const isPublic = PUBLIC_ROUTES.some((r) => pathname.startsWith(r));
-
-    // อนุญาตทุก route ชั่วคราว - จะใช้ client-side auth check แทน
-    return NextResponse.next();
+// StaffAuth validates /auth/me after hydration. No JS-readable cookie is trusted here.
+// Backend guards and socket authorization enforce access; this pass-through is UX only.
+export function middleware() {
+  return NextResponse.next();
 }
-
 export const config = {
-    matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

@@ -1,64 +1,50 @@
-name: Frontend CI (Next.js)
-
+name: Frontend CI
 on:
+  pull_request:
+    paths: ["frontend/**", ".github/workflows/frontend-ci.yml"]
   push:
-    branches:
-      - "feature/*"
-      - develop
-    paths:
-      - "frontend/**"
-
+    branches: [main, develop, "feature/**"]
+    paths: ["frontend/**", ".github/workflows/frontend-ci.yml"]
+permissions:
+  contents: read
 jobs:
-  frontend-ci:
+  verify:
     runs-on: ubuntu-latest
-
     defaults:
       run:
         working-directory: frontend
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: "npm"
-
-      - name: Install dependencies
-        run: npm install
-
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
       - name: Lint
+        id: lint
+        continue-on-error: true
         run: npm run lint
-
-      - name: Build Next.js
-        run: npm run build
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v5
+      - name: All client regression tests
+        id: unit
+        continue-on-error: true
+        run: npm test
+      - run: npm run build
+      - name: Enforce every quality gate
+        if: always()
+        env:
+          LINT: ${{ steps.lint.outcome }}
+          UNIT: ${{ steps.unit.outcome }}
+        run: test "$LINT" = success && test "$UNIT" = success
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
         with:
           context: frontend
           push: false
-          tags: shabu-frontend:latest
+          tags: shabu-frontend:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      #  แจ้งเตือนเมื่อสำเร็จ
-      - name: Notify Discord (Success)
-        if: success()
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"content\": \"✅ Frontend: ${GITHUB_REF_NAME} build success\"}" \
-          ${{ secrets.DISCORD_WEBHOOK }}
-
-      #  แจ้งเตือนเมื่อ fail
-      - name: Notify Discord (Fail)
-        if: failure()
-        run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"content\": \"❌ Frontend: ${GITHUB_REF_NAME} build failed\"}" \
-          ${{ secrets.DISCORD_WEBHOOK }}

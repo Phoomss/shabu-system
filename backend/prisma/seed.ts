@@ -4,6 +4,8 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 
 async function main() {
+  if (process.env.ALLOW_DEMO_SEED !== '1' || process.env.NODE_ENV === 'production')
+    throw new Error('Demo seed requires ALLOW_DEMO_SEED=1 and a non-production environment');
   const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   const prisma = new PrismaClient({ adapter });
 

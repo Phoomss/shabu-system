@@ -1,0 +1,1 @@
+PASS unchanged since base commit: staff/refresh strategies, auth controller/service, access guard, policy, socket identity/revalidation, signing configuration, customer domain/scope/projection. CORS validation intentionally strengthened and regression-tested.

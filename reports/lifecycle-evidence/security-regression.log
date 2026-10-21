@@ -1,0 +1,84 @@
+RUN new isolated DB
+
+> backend@0.0.1 test:security:db
+> node test/create-security-db.cjs
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "shabu_security_1792592968493", schema "public" at "127.0.0.1:55432"
+
+7 migrations found in prisma/migrations
+
+Applying migration `20260307164341_init`
+Applying migration `20260309080936_add_refresh_token`
+Applying migration `20260401050919_add_promptpay_to_invoice`
+Applying migration `20260401053120_add_adult_child_count_to_session`
+Applying migration `20261021070000_add_display_numbers`
+Applying migration `20261021110000_payment_safety_foundation`
+Applying migration `20261021130000_inventory_ledger`
+
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260307164341_init/
+    └─ migration.sql
+  └─ 20260309080936_add_refresh_token/
+    └─ migration.sql
+  └─ 20260401050919_add_promptpay_to_invoice/
+    └─ migration.sql
+  └─ 20260401053120_add_adult_child_count_to_session/
+    └─ migration.sql
+  └─ 20261021070000_add_display_numbers/
+    └─ migration.sql
+  └─ 20261021110000_payment_safety_foundation/
+    └─ migration.sql
+  └─ 20261021130000_inventory_ledger/
+    └─ migration.sql
+
+All migrations have been successfully applied.
+Created isolated security test DB; no existing database was changed.
+RUN task 02 regression
+
+> backend@0.0.1 test:security:e2e
+> jest --runInBand --config test/jest-security-e2e.json
+
+(node:11090) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/security.e2e-spec.ts
+  Security authorization (real HTTP, JWT, PostgreSQL, Socket.IO)
+    ✓ default policy denies OWNER and every unapproved role; self profile still works (36 ms)
+    ✓ anonymous staff endpoint /users returns 401 (1 ms)
+    ✓ anonymous staff endpoint /role returns 401 (1 ms)
+    ✓ anonymous staff endpoint /orders returns 401 (1 ms)
+    ✓ anonymous staff endpoint /sessions returns 401 (1 ms)
+    ✓ anonymous staff endpoint /invoices returns 401 (1 ms)
+    ✓ anonymous staff endpoint /ingredients returns 401 (1 ms)
+    ✓ anonymous staff endpoint /tables returns 401 (1 ms)
+    ✓ anonymous staff endpoint /kitchens returns 401 (1 ms)
+    ✓ anonymous staff endpoint /tiers returns 401 (1 ms)
+    ✓ anonymous staff endpoint /categories returns 401 (1 ms)
+    ✓ anonymous staff endpoint /menu-items returns 401
+    ✓ anonymous staff endpoint /settings/payment returns 401 (1 ms)
+    ✓ configured OWNER can manage users/roles; STAFF/KITCHEN/MANAGER cannot escalate (58 ms)
+    ✓ void/payment settings enforce distinct action permissions with positive and negative cases (78 ms)
+    ✓ QR possession exchanges without staff login; legacy QR URLs work and response is minimal/no-store (16 ms)
+    ✓ sessionId alone or staff token cannot authorize customer access; customer token cannot authorize staff APIs (5 ms)
+    ✓ customer A lists/creates only its own orders and cannot assert table B (45 ms)
+    ✓ rejects tampered signature, expired JWT, wrong audience and wrong signing domain (4 ms)
+    ✓ HTTP kitchen requests require assignment for listing and item updates (29 ms)
+    ✓ Socket handshake rejects anonymous and forged credentials before connection (15 ms)
+    ✓ customer Socket cannot join cross-session/kitchen room but can receive own-session safe events (16 ms)
+    ✓ staff Socket kitchen joins enforce assignment and role action (12 ms)
+    ✓ invoice/stock events reach authorized staff but never customer or ordinary STAFF sockets (13 ms)
+    ✓ Socket reconnect re-authenticates; expired JWT disconnects existing sockets (1879 ms)
+    ✓ closed/expired sessions reject HTTP, Socket handshake and rejoin; legacy QR binding revokes on rotation (77 ms)
+    ✓ inactive staff is revoked on HTTP and on sensitive event delivery for an existing socket (47 ms)
+    ✓ CORS is an explicit origin allowlist for browser HTTP and WebSocket (38 ms)
+    ✓ Swagger marks staff and customer routes with separate bearer schemes (36 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       29 passed, 29 total
+Snapshots:   0 total
+Time:        4.145 s
+Ran all test suites.

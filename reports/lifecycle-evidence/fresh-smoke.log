@@ -1,0 +1,10 @@
+RUN backend: npm ci
+RUN backend: npm run prisma:generate
+RUN backend: npm run migrate:deploy
+RUN backend: npm run build
+RUN frontend: npm ci
+RUN frontend: npm run build
+PASS health/start:prod, login/me, expired access, refresh, logout/revocation, anonymous 401, empty-grant 403, exact CORS.
+PASS QR HTTP + scoped customer API + authorized Socket.IO room over LAN interface.
+Browser/mobile rendering not asserted by this HTTP/socket smoke.
+Stopped only this test child processes; retained temporary checkout and isolated DB.

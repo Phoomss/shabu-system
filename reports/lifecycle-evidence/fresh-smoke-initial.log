@@ -1,0 +1,11 @@
+RUN backend: npm ci
+RUN backend: npm run prisma:generate
+RUN backend: npm run migrate:deploy
+RUN backend: npm run build
+RUN frontend: npm ci
+RUN frontend: npm run build
+frontend npm run build failed; see fresh-frontend-build.log
+
+1 !== 0
+
+Stopped only this test child processes; retained temporary checkout and isolated DB.

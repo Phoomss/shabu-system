@@ -1,0 +1,5 @@
+NAME                                       IMAGE                                    COMMAND                  SERVICE    CREATED          STATUS                      PORTS
+shabu-lifecycle-1792592840774-backend-1    shabu-backend:local                      "docker-entrypoint.s…"   backend    20 seconds ago   Up 11 seconds (healthy)     0.0.0.0:3330->3000/tcp, [::]:3330->3000/tcp
+shabu-lifecycle-1792592840774-frontend-1   shabu-lifecycle-1792592840774-frontend   "docker-entrypoint.s…"   frontend   20 seconds ago   Up 5 seconds (healthy)      0.0.0.0:3331->3000/tcp, [::]:3331->3000/tcp
+shabu-lifecycle-1792592840774-migrate-1    shabu-backend:local                      "docker-entrypoint.s…"   migrate    20 seconds ago   Exited (0) 12 seconds ago   
+shabu-lifecycle-1792592840774-postgres-1   postgres:15-alpine                       "docker-entrypoint.s…"   postgres   21 seconds ago   Up 19 seconds (healthy)     127.0.0.1:55433->5432/tcp

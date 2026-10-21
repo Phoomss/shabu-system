@@ -4,7 +4,9 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import api from "@/lib/api";
+import api, { hydrateAuth, initializeAuth } from "@/lib/api";
+import { isAxiosError } from "axios";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,21 +28,22 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const { setAuth, user } = useAuthStore();
+  const { setAuth, user, status } = useAuthStore();
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
   // ตรวจสอบว่ามี user แล้วให้ redirect (กรณี refresh)
   useEffect(() => {
-    if (user) {
+    if (user && status === "authenticated") {
       const path =
         user.role === "OWNER"
           ? "/dashboard"
           : user.role === "KITCHEN"
             ? "/kds"
             : "/pos";
-      window.location.href = path; // ใช้ window.location แทน router.push
+      router.replace(path);
     }
-  }, [user]);
+  }, [user, status, router]);
 
   const {
     register,
@@ -52,34 +55,19 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginForm) => {
     try {
+      await hydrateAuth();
       const res = await api.post("/auth/login", data);
       const { accessToken, user } = res.data.data;
-
-      console.log("=== LOGIN SUCCESS ===");
-      console.log("User:", user);
-      console.log("User Role:", user.role);
-
       setAuth(user, accessToken);
+      await initializeAuth();
       toast.success(`ยินดีต้อนรับ ${user.fullName}`);
-
-      // redirect ตาม role - ใช้ window.location.replace
-      const redirectPath =
-        user.role === "OWNER"
-          ? "/dashboard"
-          : user.role === "KITCHEN"
-            ? "/kds"
-            : "/pos";
-
-      console.log("=== REDIRECTING ===");
-      console.log("To:", redirectPath);
-
-      // ใช้ setTimeout ให้ Zustand ทัน persist token
-      setTimeout(() => {
-        window.location.replace(redirectPath);
-      }, 500);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login request failed");
-      toast.error(error.response?.data?.message ?? "เข้าสู่ระบบไม่สำเร็จ");
+      toast.error(
+        isAxiosError<{ message: string }>(error)
+          ? (error.response?.data?.message ?? "เข้าสู่ระบบไม่สำเร็จ")
+          : "เข้าสู่ระบบไม่สำเร็จ",
+      );
     }
   };
 

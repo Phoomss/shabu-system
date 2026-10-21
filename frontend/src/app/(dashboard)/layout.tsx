@@ -1,10 +1,10 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/stores/authStore';
-import Link from 'next/link';
-import { cn } from '@/lib/utils';
-import { usePathname } from 'next/navigation';
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/authStore";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   UtensilsCrossed,
@@ -19,102 +19,156 @@ import {
   AlertCircle,
   Clock,
   ShoppingCart,
-  User,
   Menu,
   X,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import api from '@/lib/api';
-import { toast } from 'sonner';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { logoutStaff } from "@/lib/api";
+import StaffAuth from "@/components/providers/StaffAuth";
+import { toast } from "sonner";
 
 const navItems = [
   {
-    category: 'หลัก',
+    category: "หลัก",
     items: [
-      { href: '/pos', label: 'POS', icon: ShoppingCart, roles: ['OWNER', 'MANAGER', 'STAFF'] },
-      { href: '/kds', label: 'ห้องครัว', icon: ChefHat, roles: ['OWNER', 'MANAGER', 'KITCHEN'] },
-      { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['OWNER', 'MANAGER'] },
+      {
+        href: "/pos",
+        label: "POS",
+        icon: ShoppingCart,
+        roles: ["OWNER", "MANAGER", "STAFF"],
+      },
+      {
+        href: "/kds",
+        label: "ห้องครัว",
+        icon: ChefHat,
+        roles: ["OWNER", "MANAGER", "KITCHEN"],
+      },
+      {
+        href: "/dashboard",
+        label: "Dashboard",
+        icon: LayoutDashboard,
+        roles: ["OWNER", "MANAGER"],
+      },
     ],
   },
   {
-    category: 'จัดการ',
+    category: "จัดการ",
     items: [
-      { href: '/tables', label: 'จัดการโต๊ะ', icon: TableProperties, roles: ['OWNER', 'MANAGER', 'STAFF'] },
-      { href: '/sessions', label: 'เซสชัน', icon: Clock, roles: ['OWNER', 'MANAGER', 'STAFF'] },
-      { href: '/orders', label: 'ออเดอร์', icon: ClipboardList, roles: ['OWNER', 'MANAGER', 'STAFF'] },
-      { href: '/invoices', label: 'ใบเสร็จ', icon: FileText, roles: ['OWNER', 'MANAGER'] },
+      {
+        href: "/tables",
+        label: "จัดการโต๊ะ",
+        icon: TableProperties,
+        roles: ["OWNER", "MANAGER", "STAFF"],
+      },
+      {
+        href: "/sessions",
+        label: "เซสชัน",
+        icon: Clock,
+        roles: ["OWNER", "MANAGER", "STAFF"],
+      },
+      {
+        href: "/orders",
+        label: "ออเดอร์",
+        icon: ClipboardList,
+        roles: ["OWNER", "MANAGER", "STAFF"],
+      },
+      {
+        href: "/invoices",
+        label: "ใบเสร็จ",
+        icon: FileText,
+        roles: ["OWNER", "MANAGER"],
+      },
     ],
   },
   {
-    category: 'เมนูและสต็อก',
+    category: "เมนูและสต็อก",
     items: [
-      { href: '/menus', label: 'จัดการเมนู', icon: UtensilsCrossed, roles: ['OWNER', 'MANAGER'] },
-      { href: '/categories', label: 'หมวดหมู่', icon: UtensilsCrossed, roles: ['OWNER', 'MANAGER'] },
-      { href: '/tiers', label: 'ระดับราคา', icon: FileText, roles: ['OWNER', 'MANAGER'] },
-      { href: '/ingredients', label: 'วัตถุดิบ', icon: Package, roles: ['OWNER', 'MANAGER'] },
-      { href: '/kitchen-sections', label: 'ส่วนครัว', icon: ChefHat, roles: ['OWNER', 'MANAGER'] },
+      {
+        href: "/menus",
+        label: "จัดการเมนู",
+        icon: UtensilsCrossed,
+        roles: ["OWNER", "MANAGER"],
+      },
+      {
+        href: "/categories",
+        label: "หมวดหมู่",
+        icon: UtensilsCrossed,
+        roles: ["OWNER", "MANAGER"],
+      },
+      {
+        href: "/tiers",
+        label: "ระดับราคา",
+        icon: FileText,
+        roles: ["OWNER", "MANAGER"],
+      },
+      {
+        href: "/ingredients",
+        label: "วัตถุดิบ",
+        icon: Package,
+        roles: ["OWNER", "MANAGER"],
+      },
+      {
+        href: "/kitchen-sections",
+        label: "ส่วนครัว",
+        icon: ChefHat,
+        roles: ["OWNER", "MANAGER"],
+      },
     ],
   },
   {
-    category: 'ระบบ',
+    category: "ระบบ",
     items: [
-      { href: '/users', label: 'ผู้ใช้', icon: Users, roles: ['OWNER'] },
-      { href: '/roles', label: 'บทบาท', icon: Shield, roles: ['OWNER'] },
-      { href: '/void-logs', label: 'ประวัติยกเลิก', icon: AlertCircle, roles: ['OWNER', 'MANAGER'] },
+      { href: "/users", label: "ผู้ใช้", icon: Users, roles: ["OWNER"] },
+      { href: "/roles", label: "บทบาท", icon: Shield, roles: ["OWNER"] },
+      {
+        href: "/void-logs",
+        label: "ประวัติยกเลิก",
+        icon: AlertCircle,
+        roles: ["OWNER", "MANAGER"],
+      },
     ],
   },
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <StaffAuth required>
+      <DashboardShell>{children}</DashboardShell>
+    </StaffAuth>
+  );
+}
+
+function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { user, accessToken, clearAuth } = useAuthStore();
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  useEffect(() => {
-    const hasToken = !!accessToken || !!localStorage.getItem('accessToken');
-
-    if (!hasToken) {
-      router.push('/login');
-    } else if (!user && hasToken) {
-      api.get('/auth/me')
-        .then(() => setIsLoading(false))
-        .catch(() => {
-          clearAuth();
-          router.push('/login');
-        });
-    } else {
-      setIsLoading(false);
-    }
-  }, [user, accessToken, router, clearAuth]);
 
   const handleLogout = async () => {
     try {
-      await api.post('/auth/logout');
+      await logoutStaff();
+      toast.success("ออกจากระบบแล้ว");
+    } catch {
+      toast.error(
+        "ออกจากเครื่องแล้ว แต่ยืนยันการยกเลิกเซสชันกับเซิร์ฟเวอร์ไม่ได้",
+      );
     } finally {
-      clearAuth();
-      router.push('/login');
-      toast.success('ออกจากระบบแล้ว');
+      router.replace("/login");
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-red-600 border-t-transparent" />
-      </div>
-    );
-  }
 
   if (!user) return null;
 
   const canAccess = (roles: string[]) => roles.includes(user.role);
 
-  const renderNavItem = (item: any) => {
+  const renderNavItem = (item: (typeof navItems)[number]["items"][number]) => {
     if (!canAccess(item.roles)) return null;
 
     return (
@@ -122,10 +176,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         key={item.href}
         href={item.href}
         className={cn(
-          'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+          "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
           pathname === item.href
-            ? 'bg-red-50 text-red-600'
-            : 'text-gray-600 hover:bg-gray-100',
+            ? "bg-red-50 text-red-600"
+            : "text-gray-600 hover:bg-gray-100",
         )}
         onClick={() => setSidebarOpen(false)}
       >
@@ -159,7 +213,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Nav */}
       <ScrollArea className="flex-1 p-3">
         {navItems.map((category) => {
-          const visibleItems = category.items.filter((item) => canAccess(item.roles));
+          const visibleItems = category.items.filter((item) =>
+            canAccess(item.roles),
+          );
           if (visibleItems.length === 0) return null;
 
           return (
@@ -212,7 +268,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Mobile Sidebar */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+          />
           <div className="fixed inset-y-0 left-0">
             <Sidebar />
           </div>
@@ -223,7 +282,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <main className="flex-1 overflow-auto">
         {/* Mobile Header */}
         <div className="lg:hidden bg-white border-b p-4 flex items-center justify-between sticky top-0 z-40">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(true)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSidebarOpen(true)}
+          >
             <Menu size={20} />
           </Button>
           <div className="flex items-center gap-2">
