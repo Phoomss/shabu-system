@@ -1,0 +1,30 @@
+(node:13647) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/payment.e2e-spec.ts (7.384 s)
+  Payment safety foundation; approved checkout remains BLOCKED
+    ✓ readiness route precedes dynamic id and cannot imply PAID or provide a guessed quote (233 ms)
+    ✓ anonymous/wrong permission/discount without explicit grant are denied (264 ms)
+    ✓ tampering totals, excessive discounts, repeated/concurrent checkout cannot write anything while policy is pending (297 ms)
+    ✓ two concurrent opening requests claim one session; database constraint also rejects direct duplicate ACTIVE insertion (233 ms)
+    ✓ same opening key retries concurrently as one resource; different input conflicts without claiming another table (211 ms)
+    ✓ idempotency keys are actor-scoped and key replay never opens a fresh session after closure (247 ms)
+    ✓ session insert failure rolls back table claim and idempotency row, and emits no OCCUPIED (163 ms)
+    ✓ rejects invalid guest count -1 before opening (26 ms)
+    ✓ rejects invalid guest count 2147483648 before opening (19 ms)
+    ✓ rejects invalid guest count 1.5 before opening (32 ms)
+    ✓ expired session cannot order or be overlapped, but approved overdue checkout is still BLOCKED (131 ms)
+    ✓ historical stored decimals are unchanged by current tier price edits; no retrospective repricing (133 ms)
+    ✓ rejects invalid settings input {} (8 ms)
+    ✓ rejects invalid settings input {"promptPayNumber":""} (14 ms)
+    ✓ rejects invalid settings input {"promptPayNumber":42} (8 ms)
+    ✓ rejects invalid settings input {"promptPayNumber":"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"} (7 ms)
+    ✓ rejects invalid settings input {"promptPayNumber":"bad\u0000reference"} (10 ms)
+    ✓ settings persist with authenticated updater; explicit null clears config (35 ms)
+    ✓ settings survive actual backend process stop/start; readiness remains disabled (1635 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       19 passed, 19 total
+Snapshots:   0 total
+Time:        7.648 s
+Ran all test suites.
+Test results written to: ../reports/final-verification/run-1792594006532/payment.results.json

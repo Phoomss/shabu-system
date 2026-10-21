@@ -1,0 +1,17 @@
+(node:13607) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/id-contract.e2e-spec.ts (5.444 s)
+  ID contract against migrated PostgreSQL + HTTP + Socket
+    ✓ opens table -> resolves QR -> orders/lists using the exact HTTP session ID and raw alias (553 ms)
+    ✓ returns 400 for malformed/wrong-entity IDs and 404 for well-formed nonexistent PKs (234 ms)
+    ✓ closes session and sets its real integer table PK to CLEANING together (133 ms)
+    ✓ rolls back the table update and emits no success if the session write fails (192 ms)
+    ✓ cron expires session/table consistently with only one session event (118 ms)
+    ✓ raw and REST-prefixed Socket join receive the same service events (126 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       6 passed, 6 total
+Snapshots:   0 total
+Time:        5.689 s
+Ran all test suites.
+Test results written to: ../reports/final-verification/run-1792594006532/ids.results.json

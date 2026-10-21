@@ -1,0 +1,18 @@
+{
+  "runId": "run-1792594006532",
+  "verdict": "NO-GO for production public access",
+  "counts": {
+    "PASS": 232,
+    "FAIL": 36,
+    "BLOCKED": 6,
+    "NOT RUN": 2
+  },
+  "reasons": [
+    "F03 authoritative pricing/payment policy remains unresolved (P0 release blocker)",
+    "No successful checkout/payment confirmation/invoice settlement path",
+    "Full-repo failures are retained and block quality gates",
+    "Order retry acceptance contract fails: duplicate resources observed over HTTP",
+    "Production grant policy and browser/mobile/provider acceptance not verified"
+  ],
+  "note": "Counts include command gates and their assertions; not a deduplicated feature/test pass rate"
+}

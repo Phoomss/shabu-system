@@ -1,0 +1,70 @@
+[
+  {
+    "args": [
+      "migrate",
+      "deploy"
+    ],
+    "exitStatus": 0,
+    "expectedExitStatus": 0
+  },
+  {
+    "args": [
+      "migrate",
+      "deploy",
+      "--config",
+      "/var/folders/ss/vccctpfj2mv5w57zd463j8yw0000gn/T/shabu-payment-migrations-FD5GBx/legacy.config.ts"
+    ],
+    "exitStatus": 0,
+    "expectedExitStatus": 0
+  },
+  {
+    "args": [
+      "migrate",
+      "deploy"
+    ],
+    "exitStatus": 0,
+    "expectedExitStatus": 0
+  },
+  {
+    "args": [
+      "migrate",
+      "deploy",
+      "--config",
+      "/var/folders/ss/vccctpfj2mv5w57zd463j8yw0000gn/T/shabu-payment-migrations-FD5GBx/legacy.config.ts"
+    ],
+    "exitStatus": 0,
+    "expectedExitStatus": 0
+  },
+  {
+    "args": [
+      "migrate",
+      "deploy"
+    ],
+    "exitStatus": 1,
+    "expectedExitStatus": 1
+  },
+  {
+    "args": [
+      "migrate",
+      "diff",
+      "--from-config-datasource",
+      "--to-schema",
+      "prisma/schema.prisma",
+      "--exit-code"
+    ],
+    "exitStatus": 0,
+    "expectedExitStatus": 0
+  },
+  {
+    "args": [
+      "migrate",
+      "diff",
+      "--from-config-datasource",
+      "--to-schema",
+      "prisma/schema.prisma",
+      "--exit-code"
+    ],
+    "exitStatus": 0,
+    "expectedExitStatus": 0
+  }
+]

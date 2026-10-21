@@ -1,0 +1,6 @@
+{
+  "rootDir": "..", "testEnvironment": "node",
+  "testMatch": ["<rootDir>/test/final-verification.e2e-spec.ts"],
+  "moduleNameMapper": { "^src/(.*)$": "<rootDir>/src/$1" },
+  "transform": { "^.+\\.ts$": "ts-jest" }, "testTimeout": 15000
+}

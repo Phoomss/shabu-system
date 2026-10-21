@@ -1,0 +1,579 @@
+[
+  {
+    "id": "ci-policy",
+    "directory": ".",
+    "command": [
+      "node",
+      "scripts/verify-ci-policy.cjs"
+    ],
+    "startedAt": "2026-10-21T14:46:46.610Z",
+    "log": "ci-policy.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:46:46.707Z"
+  },
+  {
+    "id": "backend-build",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "startedAt": "2026-10-21T14:46:46.708Z",
+    "log": "backend-build.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:46:50.309Z"
+  },
+  {
+    "id": "backend-regression",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:regression",
+      "--",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/backend-regression.results.json"
+    ],
+    "startedAt": "2026-10-21T14:46:50.309Z",
+    "log": "backend-regression.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:46:56.773Z"
+  },
+  {
+    "id": "backend-full-unit",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "test",
+      "--",
+      "--runInBand",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/backend-full-unit.results.json"
+    ],
+    "startedAt": "2026-10-21T14:46:50.313Z",
+    "log": "backend-full-unit.log",
+    "status": "FAIL",
+    "exit": 1,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:01.450Z"
+  },
+  {
+    "id": "backend-lint",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "startedAt": "2026-10-21T14:46:50.315Z",
+    "log": "backend-lint.log",
+    "status": "FAIL",
+    "exit": 1,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:02.346Z"
+  },
+  {
+    "id": "frontend-lint",
+    "directory": "frontend",
+    "command": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "startedAt": "2026-10-21T14:46:50.319Z",
+    "log": "frontend-lint.log",
+    "status": "FAIL",
+    "exit": 1,
+    "signal": null,
+    "endedAt": "2026-10-21T14:46:59.631Z"
+  },
+  {
+    "id": "frontend-tests",
+    "directory": "frontend",
+    "command": [
+      "node",
+      "--test",
+      "--test-reporter=tap",
+      "test/auth-lifecycle.test.mjs",
+      "test/id-contract.test.mjs",
+      "test/payment-display.test.mjs",
+      "test/security-clients.test.mjs",
+      "test/workflow-clients.test.mjs"
+    ],
+    "startedAt": "2026-10-21T14:46:50.323Z",
+    "log": "frontend-tests.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:46:53.138Z"
+  },
+  {
+    "id": "frontend-build",
+    "directory": "frontend",
+    "command": [
+      "npm",
+      "run",
+      "build"
+    ],
+    "startedAt": "2026-10-21T14:46:50.327Z",
+    "log": "frontend-build.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:06.001Z"
+  },
+  {
+    "id": "pricing-proposal",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:payment:proposal",
+      "--",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/pricing-proposal.results.json"
+    ],
+    "startedAt": "2026-10-21T14:47:06.005Z",
+    "log": "pricing-proposal.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:07.502Z"
+  },
+  {
+    "id": "inventory-migrate",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "migrate:deploy"
+    ],
+    "startedAt": "2026-10-21T14:47:06.344Z",
+    "log": "inventory-migrate.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:08.819Z"
+  },
+  {
+    "id": "payment-migrate",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "migrate:deploy"
+    ],
+    "startedAt": "2026-10-21T14:47:06.347Z",
+    "log": "payment-migrate.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:08.827Z"
+  },
+  {
+    "id": "workflow-migrate",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "migrate:deploy"
+    ],
+    "startedAt": "2026-10-21T14:47:06.351Z",
+    "log": "workflow-migrate.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:09.042Z"
+  },
+  {
+    "id": "security-migrate",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "migrate:deploy"
+    ],
+    "startedAt": "2026-10-21T14:47:06.361Z",
+    "log": "security-migrate.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:09.053Z"
+  },
+  {
+    "id": "ids-migrate",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "migrate:deploy"
+    ],
+    "startedAt": "2026-10-21T14:47:06.363Z",
+    "log": "ids-migrate.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:08.801Z"
+  },
+  {
+    "id": "journey-migrate",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "migrate:deploy"
+    ],
+    "startedAt": "2026-10-21T14:47:06.367Z",
+    "log": "journey-migrate.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:08.835Z"
+  },
+  {
+    "id": "ids",
+    "directory": "backend",
+    "command": [
+      "node",
+      "node_modules/jest/bin/jest.js",
+      "--runInBand",
+      "--config",
+      "test/jest-id-e2e.json",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/ids.results.json"
+    ],
+    "startedAt": "2026-10-21T14:47:08.802Z",
+    "log": "ids.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:15.140Z"
+  },
+  {
+    "id": "inventory",
+    "directory": "backend",
+    "command": [
+      "node",
+      "node_modules/jest/bin/jest.js",
+      "--runInBand",
+      "--config",
+      "test/jest-inventory-e2e.json",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/inventory.results.json"
+    ],
+    "startedAt": "2026-10-21T14:47:08.821Z",
+    "log": "inventory.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:15.237Z"
+  },
+  {
+    "id": "payment",
+    "directory": "backend",
+    "command": [
+      "node",
+      "node_modules/jest/bin/jest.js",
+      "--runInBand",
+      "--config",
+      "test/jest-payment-e2e.json",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/payment.results.json"
+    ],
+    "startedAt": "2026-10-21T14:47:08.828Z",
+    "log": "payment.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:17.051Z"
+  },
+  {
+    "id": "journey",
+    "directory": "backend",
+    "command": [
+      "node",
+      "node_modules/jest/bin/jest.js",
+      "--runInBand",
+      "--config",
+      "test/jest-final-verification.json",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/journey.results.json"
+    ],
+    "startedAt": "2026-10-21T14:47:08.835Z",
+    "log": "journey.log",
+    "status": "FAIL",
+    "exit": 1,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:14.974Z"
+  },
+  {
+    "id": "workflow",
+    "directory": "backend",
+    "command": [
+      "node",
+      "node_modules/jest/bin/jest.js",
+      "--runInBand",
+      "--config",
+      "test/jest-workflow-e2e.json",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/workflow.results.json"
+    ],
+    "startedAt": "2026-10-21T14:47:09.044Z",
+    "log": "workflow.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:16.162Z"
+  },
+  {
+    "id": "security",
+    "directory": "backend",
+    "command": [
+      "node",
+      "node_modules/jest/bin/jest.js",
+      "--runInBand",
+      "--config",
+      "test/jest-security-e2e.json",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/security.results.json"
+    ],
+    "startedAt": "2026-10-21T14:47:09.053Z",
+    "log": "security.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:17.187Z"
+  },
+  {
+    "id": "id-migrations",
+    "directory": "backend",
+    "command": [
+      "node",
+      "test/verify-migrations.cjs"
+    ],
+    "startedAt": "2026-10-21T14:47:17.188Z",
+    "log": "id-migrations.log",
+    "status": "FAIL",
+    "exit": 1,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:19.471Z"
+  },
+  {
+    "id": "payment-migrations",
+    "directory": "backend",
+    "command": [
+      "node",
+      "test/verify-payment-migrations.cjs"
+    ],
+    "startedAt": "2026-10-21T14:47:19.472Z",
+    "log": "payment-migrations.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:25.211Z"
+  },
+  {
+    "id": "inventory-migrations",
+    "directory": "backend",
+    "command": [
+      "node",
+      "test/create-inventory-db.cjs"
+    ],
+    "startedAt": "2026-10-21T14:47:25.212Z",
+    "log": "inventory-migrations.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:47:27.525Z"
+  },
+  {
+    "id": "fresh-runtime",
+    "directory": ".",
+    "command": [
+      "node",
+      "scripts/verify-fresh.cjs"
+    ],
+    "startedAt": "2026-10-21T14:47:27.526Z",
+    "log": "fresh-runtime.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:48:23.979Z"
+  },
+  {
+    "id": "compose-runtime",
+    "directory": ".",
+    "command": [
+      "node",
+      "scripts/verify-compose.cjs"
+    ],
+    "startedAt": "2026-10-21T14:48:23.980Z",
+    "log": "compose-runtime.log",
+    "status": "FAIL",
+    "exit": 1,
+    "signal": null,
+    "endedAt": "2026-10-21T14:50:26.424Z"
+  },
+  {
+    "id": "id-migrations-retest",
+    "directory": "backend",
+    "command": [
+      "node",
+      "test/verify-migrations.cjs"
+    ],
+    "startedAt": "2026-10-21T14:55:00.981Z",
+    "log": "id-migrations-retest.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:55:06.806Z"
+  },
+  {
+    "id": "payment-migrations-retest",
+    "directory": "backend",
+    "command": [
+      "node",
+      "test/verify-payment-migrations.cjs"
+    ],
+    "startedAt": "2026-10-21T14:55:06.807Z",
+    "log": "payment-migrations-retest.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:55:12.281Z"
+  },
+  {
+    "id": "backend-lint-retest",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "lint"
+    ],
+    "startedAt": "2026-10-21T14:55:12.282Z",
+    "log": "backend-lint-retest.log",
+    "status": "FAIL",
+    "exit": 1,
+    "signal": null,
+    "endedAt": "2026-10-21T14:55:17.634Z"
+  },
+  {
+    "id": "new-tests-lint",
+    "directory": "backend",
+    "command": [
+      "node",
+      "node_modules/eslint/bin/eslint.js",
+      "test/final-verification.e2e-spec.ts",
+      "test/inventory.e2e-spec.ts",
+      "test/payment.e2e-spec.ts"
+    ],
+    "startedAt": "2026-10-21T14:55:17.635Z",
+    "log": "new-tests-lint.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:55:19.983Z"
+  },
+  {
+    "id": "default-e2e-migrate",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "migrate:deploy"
+    ],
+    "startedAt": "2026-10-21T14:55:20.096Z",
+    "log": "default-e2e-migrate.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:55:21.074Z"
+  },
+  {
+    "id": "backend-default-e2e",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "test:e2e",
+      "--",
+      "--runInBand",
+      "--runTestsByPath",
+      "test/app.e2e-spec.ts",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/backend-default-e2e.results.json"
+    ],
+    "startedAt": "2026-10-21T14:55:21.074Z",
+    "log": "backend-default-e2e.log",
+    "status": "FAIL",
+    "exit": 1,
+    "signal": null,
+    "endedAt": "2026-10-21T14:55:22.511Z"
+  },
+  {
+    "id": "journey-retest-migrate",
+    "directory": "backend",
+    "command": [
+      "npm",
+      "run",
+      "migrate:deploy"
+    ],
+    "startedAt": "2026-10-21T14:55:22.583Z",
+    "log": "journey-retest-migrate.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:55:23.587Z"
+  },
+  {
+    "id": "journey-retest",
+    "directory": "backend",
+    "command": [
+      "node",
+      "node_modules/jest/bin/jest.js",
+      "--runInBand",
+      "--config",
+      "test/jest-final-verification.json",
+      "--json",
+      "--outputFile",
+      "/Users/mac/Desktop/workspace/shabu-system/reports/final-verification/run-1792594006532/journey-retest.results.json"
+    ],
+    "startedAt": "2026-10-21T14:55:23.588Z",
+    "log": "journey-retest.log",
+    "status": "FAIL",
+    "exit": 1,
+    "signal": null,
+    "endedAt": "2026-10-21T14:55:25.546Z"
+  },
+  {
+    "id": "compose-runtime-retest",
+    "directory": ".",
+    "command": [
+      "node",
+      "scripts/verify-compose.cjs"
+    ],
+    "startedAt": "2026-10-21T14:55:25.546Z",
+    "log": "compose-runtime-retest.log",
+    "status": "PASS",
+    "exit": 0,
+    "signal": null,
+    "endedAt": "2026-10-21T14:56:05.204Z"
+  }
+]

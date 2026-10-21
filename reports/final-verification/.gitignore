@@ -1,0 +1,5 @@
+**/test-environment.json
+**/compose-environment.json
+**/databases.private.json
+**/test-database.json
+**/test-databases.json

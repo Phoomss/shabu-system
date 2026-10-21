@@ -1,0 +1,270 @@
+
+> frontend@0.1.0 lint
+> eslint
+
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/categories/page.tsx
+    6:41  warning  'CardTitle' is defined but never used                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+   17:10  warning  'ScrollArea' is defined but never used                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+   74:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+   96:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  207:21  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/dashboard/page.tsx
+   15:3   warning  'Clock' is defined but never used            @typescript-eslint/no-unused-vars
+   17:3   warning  'XCircle' is defined but never used          @typescript-eslint/no-unused-vars
+   49:11  warning  'user' is assigned a value but never used    @typescript-eslint/no-unused-vars
+   61:10  warning  'socket' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  117:15  error    Unexpected any. Specify a different type     @typescript-eslint/no-explicit-any
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/kitchen-sections/page.tsx
+   7:16  warning  'CardContent' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-unused-vars
+   7:29  warning  'CardHeader' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+   7:41  warning  'CardTitle' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+   9:10  warning  'Badge' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    @typescript-eslint/no-unused-vars
+  28:30  warning  'ChefHat' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  32:11  warning  'user' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+  40:5   error    Error: Cannot access variable before it is declared
+
+`fetchKitchens` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/kitchen-sections/page.tsx:40:5
+  38 |
+  39 |   useEffect(() => {
+> 40 |     fetchKitchens();
+     |     ^^^^^^^^^^^^^ `fetchKitchens` accessed before it is declared
+  41 |   }, []);
+  42 |
+  43 |   const fetchKitchens = async () => {
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/kitchen-sections/page.tsx:43:3
+  41 |   }, []);
+  42 |
+> 43 |   const fetchKitchens = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 44 |     try {
+     | ^^^^^^^^^
+> 45 |       const res = await api.get("/kitchens");
+     | ^^^^^^^^^
+> 46 |       setKitchens(res.data.data || []);
+     | ^^^^^^^^^
+> 47 |     } catch (error) {
+     | ^^^^^^^^^
+> 48 |       console.error("Failed to fetch kitchen sections:", error);
+     | ^^^^^^^^^
+> 49 |       toast.error("ไม่สามารถโหลดข้อมูลได้");
+     | ^^^^^^^^^
+> 50 |     }
+     | ^^^^^^^^^
+> 51 |   };
+     | ^^^^^ `fetchKitchens` is declared here
+  52 |
+  53 |   const handleCreate = async () => {
+  54 |     if (!name.trim()) {  react-hooks/immutability
+  65:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+  84:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+  97:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-explicit-any
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/menus/page.tsx
+   38:3   warning  'Trash2' is defined but never used                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  111:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  124:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                 @typescript-eslint/no-explicit-any
+  394:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/orders/page.tsx
+   52:11  warning  'user' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             @typescript-eslint/no-unused-vars
+   54:10  warning  'sessions' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-unused-vars
+   55:10  warning  'socket' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+   66:5   error    Error: Cannot access variable before it is declared
+
+`fetchData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/orders/page.tsx:66:5
+  64 |
+  65 |   useEffect(() => {
+> 66 |     fetchData();
+     |     ^^^^^^^^^ `fetchData` accessed before it is declared
+  67 |
+  68 |     // Initialize socket
+  69 |     const s = getSocket();
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/orders/page.tsx:91:3
+   89 |   }, []);
+   90 |
+>  91 |   const fetchData = async () => {
+      |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+>  92 |     try {
+      | ^^^^^^^^^
+>  93 |       const [ordersRes, sessionsRes] = await Promise.all([
+      …
+      | ^^^^^^^^^
+> 102 |     }
+      | ^^^^^^^^^
+> 103 |   };
+      | ^^^^^ `fetchData` is declared here
+  104 |
+  105 |   const handleUpdateOrderStatus = async (orderId: string, status: Order["status"]) => {
+  106 |     try {  react-hooks/immutability
+  110:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+  129:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+  277:85  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              @typescript-eslint/no-explicit-any
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/pos/page.tsx
+    3:31  warning  'useRef' is defined but never used                   @typescript-eslint/no-unused-vars
+    6:21  warning  'addConnectListener' is defined but never used       @typescript-eslint/no-unused-vars
+    6:41  warning  'removeConnectListener' is defined but never used    @typescript-eslint/no-unused-vars
+   29:10  warning  'Tabs' is defined but never used                     @typescript-eslint/no-unused-vars
+   29:16  warning  'TabsContent' is defined but never used              @typescript-eslint/no-unused-vars
+   29:29  warning  'TabsList' is defined but never used                 @typescript-eslint/no-unused-vars
+   29:39  warning  'TabsTrigger' is defined but never used              @typescript-eslint/no-unused-vars
+   37:3   warning  'X' is defined but never used                        @typescript-eslint/no-unused-vars
+   38:3   warning  'Clock' is defined but never used                    @typescript-eslint/no-unused-vars
+   39:3   warning  'CheckCircle' is defined but never used              @typescript-eslint/no-unused-vars
+   45:11  warning  'user' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  184:21  error    Unexpected any. Specify a different type             @typescript-eslint/no-explicit-any
+  191:9   warning  'activeSessions' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/roles/page.tsx
+   38:11  warning  'user' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+   47:5   error    Error: Cannot access variable before it is declared
+
+`fetchData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/roles/page.tsx:47:5
+  45 |
+  46 |   useEffect(() => {
+> 47 |     fetchData();
+     |     ^^^^^^^^^ `fetchData` accessed before it is declared
+  48 |   }, []);
+  49 |
+  50 |   const fetchData = async () => {
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/roles/page.tsx:50:3
+  48 |   }, []);
+  49 |
+> 50 |   const fetchData = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 51 |     try {
+     | ^^^^^^^^^
+> 52 |       const [rolesRes, usersRes] = await Promise.all([
+     …
+     | ^^^^^^^^^
+> 61 |     }
+     | ^^^^^^^^^
+> 62 |   };
+     | ^^^^^ `fetchData` is declared here
+  63 |
+  64 |   const handleCreate = async () => {
+  65 |     if (!name.trim()) {  react-hooks/immutability
+   76:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+   95:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+  114:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-explicit-any
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/sessions/page.tsx
+    3:31  warning  'useRef' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               @typescript-eslint/no-unused-vars
+    5:21  warning  'addConnectListener' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   @typescript-eslint/no-unused-vars
+    5:41  warning  'removeConnectListener' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+    8:16  warning  'CardContent' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          @typescript-eslint/no-unused-vars
+    8:29  warning  'CardHeader' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           @typescript-eslint/no-unused-vars
+    8:41  warning  'CardTitle' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+   36:10  warning  'Clock' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                @typescript-eslint/no-unused-vars
+   42:11  warning  'user' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        @typescript-eslint/no-unused-vars
+   46:10  warning  'socket' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      @typescript-eslint/no-unused-vars
+   55:5   error    Error: Cannot access variable before it is declared
+
+`fetchData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/sessions/page.tsx:55:5
+  53 |
+  54 |   useEffect(() => {
+> 55 |     fetchData();
+     |     ^^^^^^^^^ `fetchData` accessed before it is declared
+  56 |
+  57 |     const s = getSocket();
+  58 |     setSocket(s);
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/sessions/page.tsx:71:3
+  69 |   }, []);
+  70 |
+> 71 |   const fetchData = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 72 |     try {
+     | ^^^^^^^^^
+> 73 |       const [sessionsRes, tablesRes, tiersRes] = await Promise.all([
+     …
+     | ^^^^^^^^^
+> 84 |     }
+     | ^^^^^^^^^
+> 85 |   };
+     | ^^^^^ `fetchData` is declared here
+  86 |
+  87 |   const handleCreateSession = async () => {
+  88 |     if (!selectedTable) {  react-hooks/immutability
+  111:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+  122:21  error    Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         @typescript-eslint/no-explicit-any
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/tables/page.tsx
+   25:10  warning  'ScrollArea' is defined but never used    @typescript-eslint/no-unused-vars
+   84:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  107:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/tiers/page.tsx
+   18:10  warning  'ScrollArea' is defined but never used    @typescript-eslint/no-unused-vars
+   82:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  106:21  error    Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/users/page.tsx
+   86:19  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  109:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  134:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  145:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/void-logs/page.tsx
+  28:11  warning  'user' is assigned a value but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       @typescript-eslint/no-unused-vars
+  33:5   error    Error: Cannot access variable before it is declared
+
+`fetchVoidLogs` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/void-logs/page.tsx:33:5
+  31 |
+  32 |   useEffect(() => {
+> 33 |     fetchVoidLogs();
+     |     ^^^^^^^^^^^^^ `fetchVoidLogs` accessed before it is declared
+  34 |   }, []);
+  35 |
+  36 |   const fetchVoidLogs = async () => {
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/app/(dashboard)/void-logs/page.tsx:36:3
+  34 |   }, []);
+  35 |
+> 36 |   const fetchVoidLogs = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 37 |     try {
+     | ^^^^^^^^^
+> 38 |       const res = await api.get("/orders/void-logs");
+     | ^^^^^^^^^
+> 39 |       setVoidLogs(res.data.data || []);
+     | ^^^^^^^^^
+> 40 |     } catch (error) {
+     | ^^^^^^^^^
+> 41 |       console.error("Failed to fetch void logs:", error);
+     | ^^^^^^^^^
+> 42 |       toast.error("ไม่สามารถโหลดข้อมูลได้");
+     | ^^^^^^^^^
+> 43 |     }
+     | ^^^^^^^^^
+> 44 |   };
+     | ^^^^^ `fetchVoidLogs` is declared here
+  45 |
+  46 |   const filteredLogs = voidLogs.filter((log) => {
+  47 |     const searchLower = searchQuery.toLowerCase();  react-hooks/immutability
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/components/pos/OpenTableModal.tsx
+  68:22  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/mac/Desktop/workspace/shabu-system/frontend/src/components/ui/input.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+✖ 76 problems (33 errors, 43 warnings)
+

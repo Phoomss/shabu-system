@@ -1,0 +1,48 @@
+
+> backend@0.0.1 migrate:deploy
+> prisma migrate deploy
+
+Loaded Prisma config from prisma.config.ts.
+
+Prisma schema loaded from prisma/schema.prisma.
+Datasource "db": PostgreSQL database "shabu_f04_empty_1792594026005", schema "public" at "127.0.0.1:55432"
+
+7 migrations found in prisma/migrations
+
+Applying migration `20260307164341_init`
+Applying migration `20260309080936_add_refresh_token`
+Applying migration `20260401050919_add_promptpay_to_invoice`
+Applying migration `20260401053120_add_adult_child_count_to_session`
+Applying migration `20261021070000_add_display_numbers`
+Applying migration `20261021110000_payment_safety_foundation`
+Applying migration `20261021130000_inventory_ledger`
+
+┌─────────────────────────────────────────────────────────┐
+│  Update available 7.4.2 -> 8.0.0-rc.23                  │
+│                                                         │
+│  This is a major update - please follow the guide at    │
+│  https://pris.ly/d/major-version-upgrade                │
+│                                                         │
+│  Run the following to update                            │
+│    npm i --save-dev prisma@latest                       │
+│    npm i @prisma/client@latest                          │
+└─────────────────────────────────────────────────────────┘
+The following migration(s) have been applied:
+
+migrations/
+  └─ 20260307164341_init/
+    └─ migration.sql
+  └─ 20260309080936_add_refresh_token/
+    └─ migration.sql
+  └─ 20260401050919_add_promptpay_to_invoice/
+    └─ migration.sql
+  └─ 20260401053120_add_adult_child_count_to_session/
+    └─ migration.sql
+  └─ 20261021070000_add_display_numbers/
+    └─ migration.sql
+  └─ 20261021110000_payment_safety_foundation/
+    └─ migration.sql
+  └─ 20261021130000_inventory_ledger/
+    └─ migration.sql
+
+All migrations have been successfully applied.

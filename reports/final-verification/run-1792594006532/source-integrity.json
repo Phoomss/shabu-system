@@ -1,0 +1,11 @@
+{
+  "productInputsUnchanged": true,
+  "productChanged": [],
+  "changedHarnessInputs": [
+    "backend/test/final-verification.e2e-spec.ts",
+    "scripts/final-verification.cjs",
+    "backend/test/verify-migrations.cjs",
+    "backend/test/verify-payment-migrations.cjs",
+    "scripts/verify-compose.cjs"
+  ]
+}

@@ -1,5 +1,7 @@
 # Shabu System
 
+**Final verification: NO-GO สำหรับ production public access.** Checkout/payment policy ยัง BLOCKED, order retry สร้าง duplicate ได้ และ full quality gates ยัง fail ดู [ผลรอบล่าสุด](reports/FINAL_VERIFICATION_REPORT_TH.md), [Test Matrix](reports/FINAL_TEST_MATRIX_TH.md) และ [bug/follow-up](reports/FINAL_BUG_REGISTER_TH.md) ก่อนตีความสถานะฟีเจอร์ด้านล่าง
+
 Next.js 16 / React 19 frontend, NestJS backend, Prisma 7 / PostgreSQL และ Socket.IO ใช้ Node.js 22.12+ (แนะนำ Node 22 ตาม `.nvmrc`) และ npm lockfiles แยก frontend/backend
 
 ## สถานะตามหลักฐาน

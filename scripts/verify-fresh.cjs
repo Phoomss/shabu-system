@@ -8,7 +8,9 @@ const { createRequire } = require("node:module");
 const { spawn } = require("node:child_process");
 const assert = require("node:assert/strict");
 const root = path.resolve(__dirname, "..");
-const out = path.join(root, "reports/lifecycle-evidence");
+const out =
+  process.env.SHABU_TEST_ARTIFACT_DIR ||
+  path.join(root, "reports/lifecycle-evidence");
 fs.mkdirSync(out, { recursive: true });
 const req = createRequire(path.join(root, "backend/package.json"));
 const { Client } = req("pg");

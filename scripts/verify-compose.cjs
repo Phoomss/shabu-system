@@ -8,7 +8,9 @@ const assert = require("node:assert/strict");
 if (process.env.ALLOW_SHABU_TEST_DB !== "1")
   throw Error("Test environment opt-in required");
 const root = path.resolve(__dirname, ".."),
-  out = path.join(root, "reports/lifecycle-evidence");
+  out =
+    process.env.SHABU_TEST_ARTIFACT_DIR ||
+    path.join(root, "reports/lifecycle-evidence");
 const project = `shabu-lifecycle-${Date.now()}`;
 const directory = fs.mkdtempSync(path.join(os.tmpdir(), "shabu-compose-"));
 const envFile = path.join(directory, ".env");
@@ -37,6 +39,7 @@ fs.writeFileSync(
     `NEXT_PUBLIC_APP_URL=http://${host}:3331`,
     "STAFF_PERMISSION_GRANTS={}",
     "KITCHEN_USER_ASSIGNMENTS={}",
+    "CUSTOMER_JWT_SECRET=",
   ].join("\n"),
 );
 fs.mkdirSync(out, { recursive: true });
@@ -44,7 +47,25 @@ fs.writeFileSync(
   path.join(out, "compose-environment.json"),
   JSON.stringify({ project, envFile, host }),
 );
-const base = ["compose", "--project-name", project, "--env-file", envFile];
+// Compose shell variables override --env-file. Always force this test's generated values.
+const testEnvironment = Object.fromEntries(
+  fs
+    .readFileSync(envFile, "utf8")
+    .split("\n")
+    .map((line) => {
+      const at = line.indexOf("=");
+      return [line.slice(0, at), line.slice(at + 1)];
+    }),
+);
+const base = [
+  "compose",
+  "--file",
+  path.join(root, "docker-compose.yml"),
+  "--project-name",
+  project,
+  "--env-file",
+  envFile,
+];
 async function docker(args, name) {
   const fd = fs.openSync(path.join(out, name + ".log"), "w");
   console.log(
@@ -52,6 +73,7 @@ async function docker(args, name) {
   );
   const child = spawn("docker", [...base, ...args], {
     cwd: root,
+    env: { ...process.env, ...testEnvironment, COMPOSE_PROFILES: "" },
     stdio: ["ignore", fd, fd],
   });
   fs.closeSync(fd);

@@ -1,0 +1,65 @@
+[
+  {
+    "caseId": "FV-J01-OPEN",
+    "actual": {
+      "tableId": 1,
+      "selectedTier": 1,
+      "adultCount": 2,
+      "childCount": 1,
+      "status": "ACTIVE"
+    }
+  },
+  {
+    "caseId": "FV-J01-MENU",
+    "actual": {
+      "visibleNames": [
+        "Visible fixture menu"
+      ],
+      "unavailableAndOutsideTierExcluded": true
+    }
+  },
+  {
+    "caseId": "FV-J01-SERVED",
+    "actual": {
+      "kdsReceived": true,
+      "finalItemStatus": "SERVED"
+    }
+  },
+  {
+    "caseId": "FV-J01-CHECKOUT",
+    "actual": {
+      "http": 503,
+      "code": "CHECKOUT_POLICY_PENDING",
+      "createdInvoices": 0,
+      "session": "ACTIVE",
+      "table": "OCCUPIED",
+      "verifiedPaid": false
+    }
+  },
+  {
+    "caseId": "FV-R01",
+    "actual": {
+      "statuses": [
+        201,
+        201
+      ],
+      "firstId": "031153c9-b501-4b09-9048-9702524211f6",
+      "retryId": "94e4c1e1-da54-4daf-99b2-53f13ea3b458",
+      "count": 2,
+      "sameResource": false
+    }
+  },
+  {
+    "caseId": "FV-J02",
+    "actual": {
+      "manualStatuses": [
+        "CLOSED",
+        "CLEANING",
+        "AVAILABLE"
+      ],
+      "reopenHttp": 409,
+      "invoiceCount": 0,
+      "paymentConfirmed": false
+    }
+  }
+]

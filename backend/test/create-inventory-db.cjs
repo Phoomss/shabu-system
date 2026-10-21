@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
-const out = path.resolve(root, '../reports/inventory-evidence');
+const out = process.env.SHABU_TEST_ARTIFACT_DIR || path.resolve(root, '../reports/inventory-evidence');
 if (process.env.ALLOW_SHABU_TEST_DB !== '1')
   throw Error('Isolated DB opt-in required');
 const url = new URL(

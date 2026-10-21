@@ -6,7 +6,9 @@ const os = require('node:os');
 const path = require('node:path');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
-const out = path.resolve(root, '../reports/payment-evidence');
+const out =
+  process.env.SHABU_TEST_ARTIFACT_DIR ||
+  path.resolve(root, '../reports/payment-evidence');
 fs.mkdirSync(out, { recursive: true });
 const adminUrl = new URL(
   process.env.SHABU_TEST_ADMIN_URL || 'postgresql://invalid/invalid',
@@ -25,7 +27,7 @@ const stage = fs.mkdtempSync(
 );
 fs.mkdirSync(path.join(stage, 'migrations'));
 for (const entry of fs.readdirSync(path.join(root, 'prisma/migrations'))) {
-  if (entry !== latest)
+  if (entry === 'migration_lock.toml' || entry < latest)
     fs.cpSync(
       path.join(root, 'prisma/migrations', entry),
       path.join(stage, 'migrations', entry),

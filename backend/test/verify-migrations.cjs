@@ -19,7 +19,9 @@ if (
 ) {
   throw new Error('Refusing non-isolated database target');
 }
-const artifacts = path.resolve(root, '../reports/implementation01-evidence');
+const artifacts =
+  process.env.SHABU_TEST_ARTIFACT_DIR ||
+  path.resolve(root, '../reports/implementation01-evidence');
 fs.mkdirSync(artifacts, { recursive: true });
 function prisma(args, databaseUrl) {
   const result = spawnSync(
@@ -60,7 +62,12 @@ async function main() {
   const migrations = path.join(temp, 'migrations');
   fs.mkdirSync(migrations);
   for (const entry of fs.readdirSync(path.join(root, 'prisma/migrations'))) {
-    if (entry === '20261021070000_add_display_numbers') continue;
+    // Reconstruct the schema BEFORE this migration, not a schema with newer constraints.
+    if (
+      entry !== 'migration_lock.toml' &&
+      entry >= '20261021070000_add_display_numbers'
+    )
+      continue;
     fs.cpSync(
       path.join(root, 'prisma/migrations', entry),
       path.join(migrations, entry),
@@ -81,9 +88,10 @@ async function main() {
       INSERT INTO "User" (id,"roleId",username,"passwordHash","fullName") VALUES ('legacy-user',1,'legacy','fixture','Legacy User');
       INSERT INTO "User" (id,"roleId",username,"passwordHash","fullName") VALUES ('legacy-user-2',1,'legacy-2','fixture','Legacy User 2');
       INSERT INTO "Table" (id,number) VALUES (1,'Legacy Table');
+      INSERT INTO "Table" (id,number) VALUES (2,'Legacy Table 2');
       INSERT INTO "Tier" (id,name,"priceAdult","priceChild") VALUES (1,'Legacy Tier',100,50);
       INSERT INTO "Session" (id,"tableId","tierId","qrToken","endTime") VALUES ('legacy-session',1,1,'legacy-token',now());
-      INSERT INTO "Session" (id,"tableId","tierId","qrToken","endTime") VALUES ('legacy-session-2',1,1,'legacy-token-2',now());
+      INSERT INTO "Session" (id,"tableId","tierId","qrToken","endTime") VALUES ('legacy-session-2',2,1,'legacy-token-2',now());
       INSERT INTO "Order" (id,"sessionId") VALUES ('legacy-order','legacy-session');
       INSERT INTO "Order" (id,"sessionId") VALUES ('legacy-order-2','legacy-session-2');
       INSERT INTO "Invoice" (id,"sessionId","totalAmount","netAmount","paymentMethod","createdBy") VALUES ('legacy-invoice','legacy-session',100,100,'CASH','legacy-user');

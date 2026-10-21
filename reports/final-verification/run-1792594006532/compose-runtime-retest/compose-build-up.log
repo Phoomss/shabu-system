@@ -1,0 +1,219 @@
+ Image shabu-lifecycle-1792594525627-frontend Building 
+ Image shabu-backend:local Building 
+ Image shabu-backend:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.79kB done
+#1 DONE 0.0s
+
+#2 [frontend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.08kB done
+#2 DONE 0.0s
+
+#3 [backend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 1.06kB done
+#3 DONE 0.0s
+
+#4 [auth] library/node:pull token for registry-1.docker.io
+#4 DONE 0.0s
+
+#5 [migrate internal] load metadata for docker.io/library/node:22-alpine
+#5 DONE 1.6s
+
+#6 [backend internal] load .dockerignore
+#6 transferring context: 179B done
+#6 DONE 0.0s
+
+#7 [frontend internal] load .dockerignore
+#7 transferring context: 187B done
+#7 DONE 0.0s
+
+#8 [backend builder 1/9] FROM docker.io/library/node:22-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc
+#8 resolve docker.io/library/node:22-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc 0.0s done
+#8 DONE 0.0s
+
+#9 [frontend internal] load build context
+#9 transferring context: 4.68kB 0.0s done
+#9 DONE 0.0s
+
+#10 [backend internal] load build context
+#10 transferring context: 35.27kB 0.0s done
+#10 DONE 0.0s
+
+#11 [frontend deps 3/4] COPY package.json package-lock.json ./
+#11 CACHED
+
+#12 [frontend runner 5/8] RUN mkdir .next
+#12 CACHED
+
+#13 [frontend builder 3/4] COPY . .
+#13 CACHED
+
+#14 [frontend builder 4/4] RUN npm run build
+#14 CACHED
+
+#15 [frontend runner 3/8] RUN adduser --system --uid 1001 nextjs
+#15 CACHED
+
+#16 [frontend builder 2/4] COPY --from=deps /app/node_modules ./node_modules
+#16 CACHED
+
+#17 [frontend runner 7/8] COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+#17 CACHED
+
+#18 [frontend runner 2/8] RUN addgroup --system --gid 1001 nodejs
+#18 CACHED
+
+#19 [frontend runner 6/8] RUN chown nextjs:nodejs .next
+#19 CACHED
+
+#20 [frontend deps 2/4] WORKDIR /app
+#20 CACHED
+
+#21 [frontend runner 4/8] COPY --from=builder /app/public ./public
+#21 CACHED
+
+#22 [frontend deps 4/4] RUN npm ci
+#22 CACHED
+
+#23 [frontend deps 1/4] RUN apk add --no-cache libc6-compat
+#23 CACHED
+
+#24 [frontend runner 8/8] COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+#24 CACHED
+
+#25 [migrate builder 5/9] COPY prisma.config.ts ./
+#25 CACHED
+
+#26 [migrate builder 2/9] WORKDIR /app
+#26 CACHED
+
+#27 [migrate builder 4/9] COPY prisma ./prisma
+#27 CACHED
+
+#28 [migrate builder 6/9] RUN npm ci
+#28 CACHED
+
+#29 [migrate builder 3/9] COPY package.json package-lock.json ./
+#29 CACHED
+
+#30 [migrate builder 7/9] RUN npm run prisma:generate
+#30 CACHED
+
+#31 [frontend] exporting to image
+#31 exporting layers done
+#31 exporting manifest sha256:cc36a4289277545de87457e704adf1559426ea0cf927900f50cf93c4f2884457 done
+#31 exporting config sha256:9ea1f4941e189aec64013956b7c745bee1a77743fc4fc4d27be3d8600c621119 done
+#31 exporting attestation manifest sha256:0cba8e8db8c9b0b12bfca50e4ef646e039710fc7e430ff5989524fa4e423d6d9 done
+#31 exporting manifest list sha256:cc4129519b3fd883b1e9dfc877ece23795325a46068e69e41b422027b48f168e done
+#31 naming to docker.io/library/shabu-lifecycle-1792594525627-frontend:latest done
+#31 unpacking to docker.io/library/shabu-lifecycle-1792594525627-frontend:latest done
+#31 DONE 0.1s
+
+#32 [backend builder 8/9] COPY . .
+#32 DONE 0.1s
+
+#33 [frontend] resolving provenance for metadata file
+#33 DONE 0.0s
+
+#34 [backend builder 9/9] RUN npm run build && test -f dist/main.js
+#34 0.342 
+#34 0.342 > backend@0.0.1 build
+#34 0.342 > nest build
+#34 0.342 
+#34 DONE 6.1s
+
+#35 [migrate runner 7/9] COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+#35 CACHED
+
+#36 [migrate runner 3/9] COPY --from=builder /app/dist ./dist
+#36 CACHED
+
+#37 [migrate runner 5/9] COPY --from=builder /app/package.json /app/package-lock.json ./
+#37 CACHED
+
+#38 [migrate runner 6/9] COPY --from=builder /app/prisma ./prisma
+#38 CACHED
+
+#39 [migrate runner 4/9] COPY --from=builder /app/node_modules ./node_modules
+#39 CACHED
+
+#40 [migrate runner 8/9] COPY --from=builder /app/tsconfig.json ./tsconfig.json
+#40 CACHED
+
+#41 [migrate runner 9/9] COPY --from=builder /app/register-paths.cjs ./register-paths.cjs
+#41 CACHED
+
+#35 [backend runner 7/9] COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+#35 CACHED
+
+#36 [backend runner 3/9] COPY --from=builder /app/dist ./dist
+#36 CACHED
+
+#37 [backend runner 5/9] COPY --from=builder /app/package.json /app/package-lock.json ./
+#37 CACHED
+
+#38 [backend runner 6/9] COPY --from=builder /app/prisma ./prisma
+#38 CACHED
+
+#40 [backend runner 8/9] COPY --from=builder /app/tsconfig.json ./tsconfig.json
+#40 CACHED
+
+#39 [backend runner 4/9] COPY --from=builder /app/node_modules ./node_modules
+#39 CACHED
+
+#42 [backend] exporting to image
+#42 exporting layers done
+#42 exporting manifest sha256:8a1610905d5d299ee1c93a85720264191d490eddfedb182a4a255f3447dfe683 done
+#42 exporting config sha256:3d0df597f7c3f4c1f1a9e9e39fe4219bbba1d19e565f8a53980181347000bf3f 0.0s done
+#42 exporting attestation manifest sha256:1236264479d50d538c80d2b710b94dcb568e0c952756153e09880ed867d22974 0.0s done
+#42 exporting manifest list sha256:987688ccc3c42e70851a7a7a7373349ba8773a1ca7d6e0d2d29af750d3c3eb79 done
+#42 naming to docker.io/library/shabu-backend:local done
+#42 unpacking to docker.io/library/shabu-backend:local 0.0s done
+#42 DONE 0.1s
+
+#43 [migrate] exporting to image
+#43 exporting layers done
+#43 exporting manifest sha256:3ac6a284fe099de65984b66d9da7d8d666b0237ef9edadf9e1c091fb50ec1ada 0.0s done
+#43 exporting config sha256:58ff6e84d4ba57f17ec45ed3d3939bf6cb9366dbe4b5bf6666f87bd29a79cab0 0.0s done
+#43 exporting attestation manifest sha256:c31c48856ab2544d3f04a6a683cfbf2aa88858fb5767d2b136b01abd0dd7917d 0.0s done
+#43 exporting manifest list sha256:58dcfb3b6bc8eaa0bc5894601233b62d591c60c4078c1b7206585ef5509e3323 done
+#43 naming to docker.io/library/shabu-backend:local done
+#43 unpacking to docker.io/library/shabu-backend:local 0.0s done
+#43 DONE 0.1s
+
+#44 [backend] resolving provenance for metadata file
+#44 DONE 0.0s
+
+#45 [migrate] resolving provenance for metadata file
+#45 DONE 0.0s
+ Image shabu-backend:local Built 
+ Image shabu-backend:local Built 
+ Image shabu-lifecycle-1792594525627-frontend Built 
+ Network shabu-lifecycle-1792594525627_default Creating 
+ Network shabu-lifecycle-1792594525627_default Created 
+ Volume shabu-lifecycle-1792594525627_postgres_data Creating 
+ Volume shabu-lifecycle-1792594525627_postgres_data Created 
+ Container shabu-lifecycle-1792594525627-postgres-1 Creating 
+ Container shabu-lifecycle-1792594525627-postgres-1 Created 
+ Container shabu-lifecycle-1792594525627-migrate-1 Creating 
+ Container shabu-lifecycle-1792594525627-migrate-1 Created 
+ Container shabu-lifecycle-1792594525627-backend-1 Creating 
+ Container shabu-lifecycle-1792594525627-backend-1 Created 
+ Container shabu-lifecycle-1792594525627-frontend-1 Creating 
+ Container shabu-lifecycle-1792594525627-frontend-1 Created 
+ Container shabu-lifecycle-1792594525627-postgres-1 Starting 
+ Container shabu-lifecycle-1792594525627-postgres-1 Started 
+ Container shabu-lifecycle-1792594525627-postgres-1 Waiting 
+ Container shabu-lifecycle-1792594525627-postgres-1 Healthy 
+ Container shabu-lifecycle-1792594525627-migrate-1 Starting 
+ Container shabu-lifecycle-1792594525627-migrate-1 Started 
+ Container shabu-lifecycle-1792594525627-migrate-1 Waiting 
+ Container shabu-lifecycle-1792594525627-postgres-1 Waiting 
+ Container shabu-lifecycle-1792594525627-postgres-1 Healthy 
+ Container shabu-lifecycle-1792594525627-migrate-1 Exited 
+ Container shabu-lifecycle-1792594525627-backend-1 Starting 
+ Container shabu-lifecycle-1792594525627-backend-1 Started 
+ Container shabu-lifecycle-1792594525627-backend-1 Waiting 
+ Container shabu-lifecycle-1792594525627-backend-1 Healthy 
+ Container shabu-lifecycle-1792594525627-frontend-1 Starting 
+ Container shabu-lifecycle-1792594525627-frontend-1 Started 

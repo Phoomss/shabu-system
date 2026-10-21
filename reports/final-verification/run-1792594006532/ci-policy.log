@@ -1,0 +1,3 @@
+PASS backend-ci.yml: YAML parsed; PR trigger; contents:read; no merge/push/delete/webhook
+PASS frontend-ci.yml: YAML parsed; PR trigger; contents:read; no merge/push/delete/webhook
+PASS runtime-smoke.yml: YAML parsed; PR trigger; contents:read; no merge/push/delete/webhook

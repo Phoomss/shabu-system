@@ -1,0 +1,404 @@
+ Image shabu-backend:local Building 
+ Image shabu-backend:local Building 
+ Image shabu-lifecycle-1792594104056-frontend Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.79kB done
+#1 DONE 0.0s
+
+#2 [frontend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 2.08kB done
+#2 DONE 0.0s
+
+#3 [backend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 1.06kB done
+#3 DONE 0.0s
+
+#4 [migrate internal] load metadata for docker.io/library/node:22-alpine
+#4 ...
+
+#5 [auth] library/node:pull token for registry-1.docker.io
+#5 DONE 0.0s
+
+#4 [migrate internal] load metadata for docker.io/library/node:22-alpine
+#4 DONE 3.3s
+
+#6 [migrate internal] load .dockerignore
+#6 transferring context: 179B done
+#6 DONE 0.0s
+
+#7 [frontend internal] load .dockerignore
+#7 transferring context: 187B done
+#7 DONE 0.0s
+
+#8 [frontend internal] load build context
+#8 transferring context: 4.68kB 0.0s done
+#8 DONE 0.0s
+
+#9 [migrate internal] load build context
+#9 transferring context: 71.32kB 0.0s done
+#9 DONE 0.0s
+
+#10 [migrate builder 1/9] FROM docker.io/library/node:22-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc
+#10 resolve docker.io/library/node:22-alpine@sha256:ce8d97f7cfc7c5386421eb932df20a29df99b1a7f469f6157d5c9956702ffadc 0.0s done
+#10 sha256:eaa902efe7d76fab2d93db975a5e91736452d2f040f1951a4d8b8d85c4467fdd 0B / 1.26MB 0.2s
+#10 sha256:e69e58b9ad42d3dbeea16993d71d239eb34e5decda572142e3528d61c1c10398 0B / 443B 0.2s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 0B / 55.68MB 0.2s
+#10 sha256:e69e58b9ad42d3dbeea16993d71d239eb34e5decda572142e3528d61c1c10398 443B / 443B 0.4s done
+#10 sha256:eaa902efe7d76fab2d93db975a5e91736452d2f040f1951a4d8b8d85c4467fdd 1.26MB / 1.26MB 0.9s done
+#10 sha256:eaa902efe7d76fab2d93db975a5e91736452d2f040f1951a4d8b8d85c4467fdd 1.26MB / 1.26MB 0.9s done
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 3.15MB / 55.68MB 1.4s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 7.34MB / 55.68MB 1.7s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 10.49MB / 55.68MB 1.8s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 14.68MB / 55.68MB 2.1s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 17.83MB / 55.68MB 2.3s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 20.97MB / 55.68MB 2.6s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 24.12MB / 55.68MB 2.7s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 28.31MB / 55.68MB 3.0s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 32.51MB / 55.68MB 3.3s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 36.70MB / 55.68MB 3.6s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 39.85MB / 55.68MB 3.8s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 44.04MB / 55.68MB 4.1s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 48.23MB / 55.68MB 4.4s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 53.48MB / 55.68MB 4.7s
+#10 sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 55.68MB / 55.68MB 4.8s done
+#10 extracting sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288
+#10 extracting sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 1.2s done
+#10 extracting sha256:7a1b4000baea7c64dda6441f2571d5a4e1a2248a7e5b2978910a56c92282a288 1.2s done
+#10 extracting sha256:eaa902efe7d76fab2d93db975a5e91736452d2f040f1951a4d8b8d85c4467fdd 0.0s done
+#10 extracting sha256:e69e58b9ad42d3dbeea16993d71d239eb34e5decda572142e3528d61c1c10398 done
+#10 DONE 6.1s
+
+#11 [frontend builder 2/9] WORKDIR /app
+#11 DONE 0.2s
+
+#12 [migrate builder 3/9] COPY package.json package-lock.json ./
+#12 DONE 0.0s
+
+#13 [backend builder 4/9] COPY prisma ./prisma
+#13 DONE 0.0s
+
+#14 [backend builder 5/9] COPY prisma.config.ts ./
+#14 DONE 0.0s
+
+#15 [backend builder 6/9] RUN npm ci
+#15 ...
+
+#16 [frontend runner 2/8] RUN addgroup --system --gid 1001 nodejs
+#16 DONE 0.4s
+
+#17 [frontend runner 3/8] RUN adduser --system --uid 1001 nextjs
+#17 DONE 0.2s
+
+#18 [frontend deps 1/4] RUN apk add --no-cache libc6-compat
+#18 1.363 (1/3) Installing musl-obstack (1.2.3-r2)
+#18 1.384 (2/3) Installing libucontext (1.5.1-r0)
+#18 1.400 (3/3) Installing gcompat (1.1.0-r4)
+#18 1.419 OK: 11.4 MiB in 22 packages
+#18 DONE 1.4s
+
+#19 [frontend deps 2/4] WORKDIR /app
+#19 DONE 0.0s
+
+#20 [frontend deps 3/4] COPY package.json package-lock.json ./
+#20 DONE 0.0s
+
+#15 [backend builder 6/9] RUN npm ci
+#15 1.267 npm warn ERESOLVE overriding peer dependency
+#15 1.268 npm warn While resolving: @nestjs/mapped-types@2.1.0
+#15 1.268 npm warn Found: class-validator@0.15.1
+#15 1.268 npm warn node_modules/class-validator
+#15 1.268 npm warn   class-validator@"^0.15.1" from the root project
+#15 1.268 npm warn   2 more (@nestjs/common, @nestjs/swagger)
+#15 1.268 npm warn
+#15 1.268 npm warn Could not resolve dependency:
+#15 1.268 npm warn peerOptional class-validator@"^0.13.0 || ^0.14.0" from @nestjs/mapped-types@2.1.0
+#15 1.268 npm warn node_modules/@nestjs/swagger/node_modules/@nestjs/mapped-types
+#15 1.268 npm warn   @nestjs/mapped-types@"2.1.0" from @nestjs/swagger@11.2.6
+#15 1.268 npm warn   node_modules/@nestjs/swagger
+#15 1.268 npm warn
+#15 1.268 npm warn Conflicting peer dependency: class-validator@0.14.4
+#15 1.268 npm warn node_modules/class-validator
+#15 1.268 npm warn   peerOptional class-validator@"^0.13.0 || ^0.14.0" from @nestjs/mapped-types@2.1.0
+#15 1.268 npm warn   node_modules/@nestjs/swagger/node_modules/@nestjs/mapped-types
+#15 1.268 npm warn     @nestjs/mapped-types@"2.1.0" from @nestjs/swagger@11.2.6
+#15 1.268 npm warn     node_modules/@nestjs/swagger
+#15 6.109 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+#15 ...
+
+#21 [frontend deps 4/4] RUN npm ci
+#21 5.006 npm warn deprecated node-domexception@1.0.0: Use your platform's native DOMException instead
+#21 ...
+
+#15 [backend builder 6/9] RUN npm ci
+#15 16.96 npm warn deprecated glob@7.2.3: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#15 17.65 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#15 18.09 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#15 19.12 npm warn deprecated glob@10.5.0: Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
+#15 ...
+
+#21 [frontend deps 4/4] RUN npm ci
+#21 33.83 
+#21 33.83 added 716 packages, and audited 717 packages in 34s
+#21 33.83 
+#21 33.83 239 packages are looking for funding
+#21 33.83   run `npm fund` for details
+#21 34.12 
+#21 34.12 37 vulnerabilities (2 low, 8 moderate, 25 high, 2 critical)
+#21 34.12 
+#21 34.12 To address issues that do not require attention, run:
+#21 34.12   npm audit fix
+#21 34.12 
+#21 34.12 To address all issues (including breaking changes), run:
+#21 34.12   npm audit fix --force
+#21 34.12 
+#21 34.12 Run `npm audit` for details.
+#21 34.12 npm notice
+#21 34.12 npm notice New major version of npm available! 10.9.9 -> 12.2.0
+#21 34.12 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+#21 34.12 npm notice To update run: npm install -g npm@12.2.0
+#21 34.12 npm notice
+#21 DONE 34.6s
+
+#15 [backend builder 6/9] RUN npm ci
+#15 ...
+
+#22 [frontend builder 2/4] COPY --from=deps /app/node_modules ./node_modules
+#22 ...
+
+#15 [backend builder 6/9] RUN npm ci
+#15 48.48 
+#15 48.48 added 870 packages, and audited 871 packages in 48s
+#15 48.48 
+#15 48.48 159 packages are looking for funding
+#15 48.48   run `npm fund` for details
+#15 48.95 
+#15 48.95 78 vulnerabilities (2 low, 20 moderate, 54 high, 2 critical)
+#15 48.95 
+#15 48.95 To address all issues, run:
+#15 48.95   npm audit fix
+#15 48.95 
+#15 48.95 Run `npm audit` for details.
+#15 48.95 npm notice
+#15 48.95 npm notice New major version of npm available! 10.9.9 -> 12.2.0
+#15 48.95 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+#15 48.95 npm notice To update run: npm install -g npm@12.2.0
+#15 48.95 npm notice
+#15 ...
+
+#22 [frontend builder 2/4] COPY --from=deps /app/node_modules ./node_modules
+#22 DONE 8.0s
+
+#15 [backend builder 6/9] RUN npm ci
+#15 DONE 49.4s
+
+#23 [backend builder 7/9] RUN npm run prisma:generate
+#23 ...
+
+#24 [frontend builder 3/4] COPY . .
+#24 DONE 1.2s
+
+#25 [frontend builder 4/4] RUN npm run build
+#25 0.510 
+#25 0.510 > frontend@0.1.0 build
+#25 0.510 > next build
+#25 0.510 
+#25 1.010 Attention: Next.js now collects completely anonymous telemetry regarding usage.
+#25 1.010 This information is used to shape Next.js' roadmap and prioritize features.
+#25 1.010 You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+#25 1.010 https://nextjs.org/telemetry
+#25 1.010 
+#25 1.026 ▲ Next.js 16.2.1 (Turbopack)
+#25 1.026 
+#25 1.050 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+#25 1.083   Creating an optimized production build ...
+#25 ...
+
+#23 [backend builder 7/9] RUN npm run prisma:generate
+#23 1.263 
+#23 1.263 > backend@0.0.1 prisma:generate
+#23 1.263 > prisma generate
+#23 1.263 
+#23 2.553 Loaded Prisma config from prisma.config.ts.
+#23 2.553 
+#23 2.929 Prisma schema loaded from prisma/schema.prisma.
+#23 3.708 
+#23 3.708 ✔ Generated Prisma Client (v7.4.2) to ./node_modules/@prisma/client in 566ms
+#23 3.708 
+#23 3.708 Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+#23 3.708 
+#23 3.708 
+#23 DONE 3.8s
+
+#26 [migrate builder 8/9] COPY . .
+#26 DONE 0.3s
+
+#27 [backend builder 9/9] RUN npm run build && test -f dist/main.js
+#27 0.892 
+#27 0.892 > backend@0.0.1 build
+#27 0.892 > nest build
+#27 0.892 
+#27 ...
+
+#25 [frontend builder 4/4] RUN npm run build
+#25 7.288 ✓ Compiled successfully in 5.9s
+#25 7.339   Running TypeScript ...
+#25 ...
+
+#27 [backend builder 9/9] RUN npm run build && test -f dist/main.js
+#27 DONE 9.9s
+
+#25 [frontend builder 4/4] RUN npm run build
+#25 14.89   Finished TypeScript in 7.5s ...
+#25 14.90   Collecting page data using 7 workers ...
+#25 15.67   Generating static pages using 7 workers (0/20) ...
+#25 16.11   Generating static pages using 7 workers (5/20) 
+#25 16.29   Generating static pages using 7 workers (10/20) 
+#25 16.29   Generating static pages using 7 workers (15/20) 
+#25 16.40 ✓ Generating static pages using 7 workers (20/20) in 729ms
+#25 16.41   Finalizing page optimization ...
+#25 16.71 
+#25 16.72 Route (app)
+#25 16.72 ┌ ○ /
+#25 16.72 ├ ○ /_not-found
+#25 16.72 ├ ○ /categories
+#25 16.72 ├ ○ /dashboard
+#25 16.72 ├ ○ /ingredients
+#25 16.72 ├ ○ /invoices
+#25 16.72 ├ ○ /kds
+#25 16.72 ├ ○ /kitchen-sections
+#25 16.72 ├ ○ /login
+#25 16.72 ├ ○ /menus
+#25 16.72 ├ ƒ /order/[token]
+#25 16.72 ├ ○ /orders
+#25 16.72 ├ ○ /pos
+#25 16.72 ├ ○ /roles
+#25 16.72 ├ ○ /sessions
+#25 16.72 ├ ○ /tables
+#25 16.72 ├ ○ /tiers
+#25 16.72 ├ ○ /users
+#25 16.72 └ ○ /void-logs
+#25 16.72 
+#25 16.72 
+#25 16.72 ƒ Proxy (Middleware)
+#25 16.72 
+#25 16.72 ○  (Static)   prerendered as static content
+#25 16.72 ƒ  (Dynamic)  server-rendered on demand
+#25 16.72 
+#25 16.78 npm notice
+#25 16.78 npm notice New major version of npm available! 10.9.9 -> 12.2.0
+#25 16.78 npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.2.0
+#25 16.78 npm notice To update run: npm install -g npm@12.2.0
+#25 16.78 npm notice
+#25 DONE 17.0s
+
+#28 [frontend runner 4/8] COPY --from=builder /app/public ./public
+#28 DONE 0.0s
+
+#29 [frontend runner 5/8] RUN mkdir .next
+#29 DONE 0.2s
+
+#30 [frontend runner 6/8] RUN chown nextjs:nodejs .next
+#30 DONE 0.2s
+
+#31 [frontend runner 7/8] COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+#31 DONE 0.4s
+
+#32 [frontend runner 8/8] COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+#32 DONE 0.0s
+
+#33 [frontend] exporting to image
+#33 exporting layers
+#33 exporting layers 1.7s done
+#33 exporting manifest sha256:03b12afa10ad0dc12224319457ffec2c9e5ec93b1439775db0ae85b5a317456b done
+#33 exporting config sha256:dcc3a08d5e8e85d422c9b49a61c10a5a334e715eede8c20d8fc7500264f9fd82 done
+#33 exporting attestation manifest sha256:b50a38f91d733ff214a53cd1ab311705040d8e15f93e70119b2bbee7d99fb0c5 done
+#33 exporting manifest list sha256:6930fc7b5395acc73e14a821ecc4b503a45b14d6813562b4e084a13b8002df66 done
+#33 naming to docker.io/library/shabu-lifecycle-1792594104056-frontend:latest done
+#33 unpacking to docker.io/library/shabu-lifecycle-1792594104056-frontend:latest
+#33 unpacking to docker.io/library/shabu-lifecycle-1792594104056-frontend:latest 0.4s done
+#33 DONE 2.2s
+
+#34 [frontend] resolving provenance for metadata file
+#34 DONE 0.0s
+
+#35 [backend runner 3/9] COPY --from=builder /app/dist ./dist
+#35 DONE 0.2s
+
+#36 [backend runner 4/9] COPY --from=builder /app/node_modules ./node_modules
+#36 DONE 5.1s
+
+#37 [migrate runner 5/9] COPY --from=builder /app/package.json /app/package-lock.json ./
+#37 DONE 0.2s
+
+#38 [backend runner 6/9] COPY --from=builder /app/prisma ./prisma
+#38 DONE 0.0s
+
+#39 [backend runner 7/9] COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+#39 DONE 0.0s
+
+#40 [backend runner 8/9] COPY --from=builder /app/tsconfig.json ./tsconfig.json
+#40 DONE 0.0s
+
+#41 [migrate runner 9/9] COPY --from=builder /app/register-paths.cjs ./register-paths.cjs
+#41 DONE 0.0s
+
+#42 [migrate] exporting to image
+#42 exporting layers
+#42 ...
+
+#43 [backend] exporting to image
+#43 ...
+
+#42 [migrate] exporting to image
+#42 exporting layers 15.6s done
+#42 exporting manifest sha256:ac7745d2a943dc64947d41ed1f6264a50d023a8aa266167719cd55f041d01388
+#42 exporting manifest sha256:ac7745d2a943dc64947d41ed1f6264a50d023a8aa266167719cd55f041d01388 0.0s done
+#42 exporting config sha256:e271062116009583d4a2696f58f3bd6c1c40980b6d33153b19a22236c3fc7ccf done
+#42 exporting attestation manifest sha256:23804edd3e502632a4fc9f27e06c097ffb53f3dd5b417e3e2bb257ee2673715f 0.0s done
+#42 exporting manifest list sha256:8afb1edbbd911089909869aca11887bc34e95f642e7c7b14bdb4a5a4962fd845 done
+#42 naming to docker.io/library/shabu-backend:local done
+#42 unpacking to docker.io/library/shabu-backend:local
+#42 unpacking to docker.io/library/shabu-backend:local 6.5s done
+#42 DONE 22.2s
+
+#43 [backend] exporting to image
+#43 exporting layers 15.6s done
+#43 exporting manifest sha256:0282285e1ff18e6356d770c1b1ad564f92dfdcc2b652a35b4d5219f5632bdce3 0.0s done
+#43 exporting config sha256:ee2c866368f178968159b079e63ba4ab3944d8942c0881baabf4d5c1afb5a837 done
+#43 exporting attestation manifest sha256:419a6b0e052bf199b56aa9b39443f450c80f6862e3c17972274f8809e7f8a157 0.0s done
+#43 exporting manifest list sha256:3003c95279ab459ff2e498fae85b7831ea822a8c2577e652f1b514d365bf4ab3 done
+#43 naming to docker.io/library/shabu-backend:local done
+#43 unpacking to docker.io/library/shabu-backend:local 6.5s done
+#43 DONE 22.3s
+
+#44 [migrate] resolving provenance for metadata file
+#44 DONE 0.1s
+
+#45 [backend] resolving provenance for metadata file
+#45 DONE 0.0s
+ Image shabu-backend:local Built 
+ Image shabu-backend:local Built 
+ Image shabu-lifecycle-1792594104056-frontend Built 
+ Network shabu-lifecycle-1792594104056_default Creating 
+ Network shabu-lifecycle-1792594104056_default Created 
+ Volume shabu-lifecycle-1792594104056_postgres_data Creating 
+ Volume shabu-lifecycle-1792594104056_postgres_data Created 
+ Container shabu-lifecycle-1792594104056-postgres-1 Creating 
+ Container shabu-lifecycle-1792594104056-postgres-1 Created 
+ Container shabu-lifecycle-1792594104056-migrate-1 Creating 
+ Container shabu-lifecycle-1792594104056-migrate-1 Created 
+ Container shabu-lifecycle-1792594104056-backend-1 Creating 
+ Container shabu-lifecycle-1792594104056-backend-1 Created 
+ Container shabu-lifecycle-1792594104056-frontend-1 Creating 
+ Container shabu-lifecycle-1792594104056-frontend-1 Created 
+ Container shabu-lifecycle-1792594104056-postgres-1 Starting 
+ Container shabu-lifecycle-1792594104056-postgres-1 Started 
+ Container shabu-lifecycle-1792594104056-postgres-1 Waiting 
+ Container shabu-lifecycle-1792594104056-postgres-1 Healthy 
+ Container shabu-lifecycle-1792594104056-migrate-1 Starting 
+ Container shabu-lifecycle-1792594104056-migrate-1 Started 
+ Container shabu-lifecycle-1792594104056-migrate-1 Waiting 
+ Container shabu-lifecycle-1792594104056-postgres-1 Waiting 
+ Container shabu-lifecycle-1792594104056-postgres-1 Healthy 
+ Container shabu-lifecycle-1792594104056-migrate-1 Error service "migrate" didn't complete successfully: exit 1
+service "migrate" didn't complete successfully: exit 1

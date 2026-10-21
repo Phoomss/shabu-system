@@ -1,0 +1,11 @@
+{
+  "browserControlRuntimeExposed": false,
+  "physicalHandsetAvailable": false,
+  "providerSandboxAvailable": false,
+  "realMoneyUsed": false,
+  "realCustomerDataUsed": false,
+  "lanSmoke": "HTTP and authorized Socket.IO room through server LAN interface; same host client, not handset",
+  "productionConfigAccessed": false,
+  "remoteGithubActionsRun": false,
+  "scope": "Tool discovery returned no node_repl JS/browser-control runtime. No browser/handset/provider acceptance executed."
+}

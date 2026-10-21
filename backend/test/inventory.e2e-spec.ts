@@ -15,7 +15,8 @@ import { IngredientsController } from '../src/ingredients/ingredients.controller
 import { JwtGuard } from '../src/auth/guards/jwt.guard';
 const config = JSON.parse(
   readFileSync(
-    resolve(__dirname, '../../reports/inventory-evidence/test-database.json'),
+    process.env.SHABU_INVENTORY_METADATA_FILE ||
+      resolve(__dirname, '../../reports/inventory-evidence/test-database.json'),
     'utf8',
   ),
 ) as { url: string };

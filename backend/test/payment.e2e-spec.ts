@@ -420,7 +420,9 @@ describe('Payment safety foundation; approved checkout remains BLOCKED', () => {
       const port = (probe.address() as { port: number }).port;
       await new Promise<void>((resolve) => probe.close(() => resolve()));
       const log = openSync(
-        '../reports/payment-evidence/restart-process.log',
+        process.env.SHABU_TEST_ARTIFACT_DIR
+          ? `${process.env.SHABU_TEST_ARTIFACT_DIR}/restart-process.log`
+          : '../reports/payment-evidence/restart-process.log',
         'a',
       );
       const child = spawn(

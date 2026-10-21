@@ -1,0 +1,38 @@
+(node:13667) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL test/final-verification.e2e-spec.ts (5.21 s)
+  Final acceptance probes — real HTTP/JWT/PostgreSQL; synthetic fixtures only
+    ✓ FV-J01 open/tier/counts -> scoped QR/menu -> order/KDS -> SERVED; checkout guard prevents fabricated payment (840 ms)
+    ✕ FV-R01 / BUG-FV-ORDER-RETRY: identical order retry reference must produce one resource (220 ms)
+    ✓ FV-J02 manual CLOSED/CLEANING/AVAILABLE does not invent settlement or allow unpaid table reuse (182 ms)
+
+  ● Final acceptance probes — real HTTP/JWT/PostgreSQL; synthetic fixtures only › FV-R01 / BUG-FV-ORDER-RETRY: identical order retry reference must produce one resource
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 2
+
+      Object {
+    -   "count": 1,
+    -   "sameResource": true,
+    +   "count": 2,
+    +   "sameResource": false,
+      }
+
+      259 |     });
+      260 |     // Do not replace this expectation with count=2 to hide the missing retry contract.
+    > 261 |     expect({ sameResource: firstId === retryId, count }).toEqual({
+          |                                                          ^
+      262 |       sameResource: true,
+      263 |       count: 1,
+      264 |     });
+
+      at Object.<anonymous> (test/final-verification.e2e-spec.ts:261:58)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 2 passed, 3 total
+Snapshots:   0 total
+Time:        5.471 s
+Ran all test suites.
+Test results written to: ../reports/final-verification/run-1792594006532/journey.results.json

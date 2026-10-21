@@ -1,0 +1,21 @@
+(node:13627) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS test/inventory.e2e-spec.ts (5.534 s)
+  F14 real PostgreSQL transactions and ledger
+    ✓ parallel unique adjustments have no lost updates and reconcile exactly (915 ms)
+    ✓ parallel duplicate event/retry adjusts once and mismatched reuse conflicts (941 ms)
+    ✓ parallel insufficient stock permits only one debit with no failed ledger row (195 ms)
+    ✓ ledger insert failure rolls back balance and emits nothing (146 ms)
+    ✓ uses stored threshold including equality, ignores previous ratio and replay (255 ms)
+    ✓ prevents balance/unit bypass, history deletion and ledger mutation (90 ms)
+    ✓ mixed concurrent credits/debits preserve each recorded balance (441 ms)
+    ✓ confirmation and audited void do not apply unapproved recipe stock policy (258 ms)
+    ✓ parallel HTTP requests preserve stock and validate the new event contract (453 ms)
+    ✓ preserves full database precision without rounding balances at 20 digits (30 ms)
+
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        5.783 s
+Ran all test suites.
+Test results written to: ../reports/final-verification/run-1792594006532/inventory.results.json

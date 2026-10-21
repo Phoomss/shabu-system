@@ -1,0 +1,8 @@
+RUN docker compose config --quiet (isolated project shabu-lifecycle-1792594104056)
+RUN docker compose up --build -d (isolated project shabu-lifecycle-1792594104056)
+RUN docker compose stop (isolated project shabu-lifecycle-1792594104056)
+Stopped only the test project. Test containers and database volume retained.
+Docker command failed: see compose-build-up.log
+
+1 !== 0
+
