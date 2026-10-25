@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsString, IsArray, IsInt, ValidateNested, Min } from "class-validator";
+import { IsString, IsArray, IsInt, IsOptional, ValidateNested, Min } from "class-validator";
 import { Type } from "class-transformer";
 
 export class CreateOrderItemDto {
@@ -11,6 +11,11 @@ export class CreateOrderItemDto {
   @IsInt()
   @Min(1)
   quantity: number;
+
+  // Accepted for POS compatibility; the server uses the menu item's kitchenId.
+  @IsOptional()
+  @IsInt()
+  kitchenId?: number;
 }
 
 export class CreateOrderDto {

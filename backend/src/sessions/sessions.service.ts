@@ -172,15 +172,15 @@ export class SessionsService {
     return {
       ...session,
       id: this.idTransformer.encode(session.id, IdPrefix.SESSION),
-      tableId: this.idTransformer.encodeInt(session.tableId, IdPrefix.TABLE),
-      tierId: this.idTransformer.encodeInt(session.tierId, IdPrefix.TIER),
+      tableId: session.tableId,
+      tierId: session.tierId,
       table: {
         ...session.table,
-        id: this.idTransformer.encodeInt(session.table.id, IdPrefix.TABLE),
+        id: session.table.id,
       },
       tier: {
         ...session.tier,
-        id: this.idTransformer.encodeInt(session.tier.id, IdPrefix.TIER),
+        id: session.tier.id,
       },
     };
   }

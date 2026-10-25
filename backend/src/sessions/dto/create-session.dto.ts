@@ -1,5 +1,5 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsInt } from "class-validator";
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { IsInt, IsOptional, Min } from "class-validator";
 
 export class CreateSessionDto {
   @ApiProperty({ example: 1, description: 'Table ID' })
@@ -10,11 +10,15 @@ export class CreateSessionDto {
   @IsInt()
   tierId: number;
 
-  @ApiProperty({ example: 2, description: 'จำนวนผู้ใหญ่' })
+  @ApiPropertyOptional({ example: 2, description: 'จำนวนผู้ใหญ่ (ค่าเริ่มต้น 1)' })
+  @IsOptional()
   @IsInt()
-  adultCount: number;
+  @Min(0)
+  adultCount?: number;
 
-  @ApiProperty({ example: 1, description: 'จำนวนเด็ก' })
+  @ApiPropertyOptional({ example: 1, description: 'จำนวนเด็ก (ค่าเริ่มต้น 0)' })
+  @IsOptional()
   @IsInt()
-  childCount: number;
+  @Min(0)
+  childCount?: number;
 }

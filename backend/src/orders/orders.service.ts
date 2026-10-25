@@ -10,6 +10,7 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { UpdateItemStatusDto } from './dto/update-item-status.dto';
 import { VoidItemDto } from './dto/void-item.dto';
 import { SessionStatus, ItemStatus, OrderStatus } from '@prisma/client';
+import { IdTransformer } from '../common/utils/id-transformer.util';
 
 const orderItemSelect = {
   id: true,
@@ -24,13 +25,14 @@ export class OrdersService {
   constructor(
     private prisma: PrismaService,
     private events: EventsGateway,
+    private idTransformer: IdTransformer,
   ) {}
 
   // ─── Order ───────────────────────────────────────────────
 
   async findAll(sessionId?: string) {
     return this.prisma.order.findMany({
-      where: sessionId ? { sessionId } : undefined,
+      where: sessionId ? { sessionId: this.idTransformer.decode(sessionId) } : undefined,
       include: { items: { select: orderItemSelect } },
       orderBy: { createdAt: 'desc' },
     });
@@ -46,9 +48,10 @@ export class OrdersService {
   }
 
   async create(dto: CreateOrderDto) {
+    const rawSessionId = this.idTransformer.decode(dto.sessionId);
     // เช็ค session
     const session = await this.prisma.session.findUnique({
-      where: { id: dto.sessionId },
+      where: { id: rawSessionId },
     });
     if (!session) throw new NotFoundException(`Session #${dto.sessionId} not found`);
     if (session.status !== SessionStatus.ACTIVE) {
@@ -75,7 +78,7 @@ export class OrdersService {
     // สร้าง order
     const order = await this.prisma.order.create({
       data: {
-        sessionId: dto.sessionId,
+        sessionId: rawSessionId,
         items: {
           create: dto.items.map((item) => {
             const menuItem = menuItems.find((m) => m.id === item.menuItemId)!;

@@ -1,7 +1,8 @@
 import { Controller, Get, Post, Body, Patch, Param, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { SessionsService } from './sessions.service';
-import { CreateSessionDto, SessionResponse } from './dto/session-response.dto';
+import { SessionResponse } from './dto/session-response.dto';
+import { CreateSessionDto } from './dto/create-session.dto';
 import { UpdateSessionStatusDto } from './dto/update-session-status.dto';
 import { JwtGuard } from 'src/auth/guards/jwt.guard';
 

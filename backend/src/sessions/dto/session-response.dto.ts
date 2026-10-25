@@ -1,12 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsInt, IsString, IsOptional, IsEnum } from 'class-validator';
-import { Type } from 'class-transformer';
 import { SessionStatus, TableStatus } from '@prisma/client';
 
 // --- Child classes first (to avoid reference errors) ---
 
 export class TableInfo {
-  @ApiProperty({ example: 'tbl_000001', description: 'Table ID (prefixed)' })
+  @ApiProperty({ example: 1, description: 'Table ID' })
   id: number;
 
   @ApiProperty({ example: 'A1' })
@@ -20,7 +18,7 @@ export class TableInfo {
 }
 
 export class TierInfo {
-  @ApiProperty({ example: 'tier_1', description: 'Tier ID (prefixed)' })
+  @ApiProperty({ example: 1, description: 'Tier ID' })
   id: number;
 
   @ApiProperty({ example: 'Silver' })
@@ -43,24 +41,6 @@ export class OrderCountInfo {
 
 // --- Main DTO classes ---
 
-export class CreateSessionDto {
-  @ApiProperty({ example: 1, description: 'Table ID' })
-  @IsInt()
-  tableId: number;
-
-  @ApiProperty({ example: 1, description: 'Tier ID' })
-  @IsInt()
-  tierId: number;
-
-  @ApiProperty({ example: 2, description: 'จำนวนผู้ใหญ่' })
-  @IsInt()
-  adultCount: number;
-
-  @ApiProperty({ example: 1, description: 'จำนวนเด็ก' })
-  @IsInt()
-  childCount: number;
-}
-
 export class SessionResponse {
   @ApiProperty({ example: 'ses_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Session ID (prefixed)' })
   id: string;
@@ -68,10 +48,10 @@ export class SessionResponse {
   @ApiProperty({ example: 1, description: 'Session Number (sequential)' })
   sessionNumber: number;
 
-  @ApiProperty({ example: 'tbl_000001', description: 'Table ID (prefixed)' })
+  @ApiProperty({ example: 1, description: 'Table ID' })
   tableId: number;
 
-  @ApiProperty({ example: 'tier_1', description: 'Tier ID (prefixed)' })
+  @ApiProperty({ example: 1, description: 'Tier ID' })
   tierId: number;
 
   @ApiProperty({ example: 'qr-token-uuid' })
