@@ -120,11 +120,13 @@ export class InvoicesService {
       id: this.idTransformer.encode(invoice.id, IdPrefix.INVOICE),
       sessionId: this.idTransformer.encode(invoice.sessionId, IdPrefix.SESSION),
       createdBy: this.idTransformer.encode(invoice.createdBy, IdPrefix.USER),
+      tableNumber: invoice.session.table.number,
       session: {
         ...invoice.session,
         id: this.idTransformer.encode(invoice.session.id, IdPrefix.SESSION),
         tableId: this.idTransformer.encodeInt(invoice.session.tableId, IdPrefix.TABLE),
         tierId: this.idTransformer.encodeInt(invoice.session.tierId, IdPrefix.TIER),
+        tableNumber: invoice.session.table.number,
         table: {
           ...invoice.session.table,
           id: this.idTransformer.encodeInt(invoice.session.table.id, IdPrefix.TABLE),

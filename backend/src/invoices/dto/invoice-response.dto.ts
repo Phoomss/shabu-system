@@ -48,6 +48,9 @@ export class InvoiceResponse {
   @ApiProperty({ example: 648.00 })
   netAmount: number;
 
+  @ApiProperty({ example: 'A1' })
+  tableNumber: string;
+
   @ApiProperty({ example: 'เงินสด' })
   paymentMethod: string;
 

@@ -17,6 +17,7 @@ import { IngredientsModule } from './ingredients/ingredients.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { SettingsModule } from './settings/settings.module';
 import { IdTransformerModule } from './common/id-transformer.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 
 @Module({
@@ -38,7 +39,8 @@ import { IdTransformerModule } from './common/id-transformer.module';
     OrdersModule,
     IngredientsModule,
     InvoicesModule,
-    SettingsModule
+    SettingsModule,
+    DashboardModule,
   ],
 })
 export class AppModule { }

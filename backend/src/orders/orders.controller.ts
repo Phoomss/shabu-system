@@ -44,6 +44,14 @@ export class OrdersController {
     return this.ordersService.findAll(sessionId);
   }
 
+  @Get('void-logs')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth('JWT')
+  @ApiOperation({ summary: 'Get all void logs' })
+  findVoidLogs() {
+    return this.ordersService.findVoidLogs();
+  }
+
   @Get(':id')
   @UseGuards(JwtGuard)
   @ApiBearerAuth('JWT')
@@ -94,11 +102,4 @@ export class OrdersController {
     return this.ordersService.voidItem(itemId, dto, user.id);
   }
 
-  @Get('void-logs')
-  @UseGuards(JwtGuard)
-  @ApiBearerAuth('JWT')
-  @ApiOperation({ summary: 'Get all void logs' })
-  findVoidLogs() {
-    return this.ordersService.findVoidLogs();
-  }
 }
