@@ -19,6 +19,12 @@ const COOKIE_OPTIONS = {
 export class AuthController {
   constructor(private authService: AuthService) {}
 
+  @Get('demo-users')
+  @ApiOperation({ summary: 'List active demo accounts' })
+  getDemoUsers() {
+    return this.authService.getDemoUsers();
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login' })

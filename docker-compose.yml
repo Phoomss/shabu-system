@@ -32,10 +32,15 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        DEMO_LOGIN_PASSWORD: ${DEMO_LOGIN_PASSWORD:-}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:3000}
     container_name: shabu-frontend
     restart: always
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
+      NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:3000}
     ports:
       - "3001:3000"
     depends_on:

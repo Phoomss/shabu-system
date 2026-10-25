@@ -14,6 +14,7 @@ const demoUsers = [
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
   const password = process.env.DEMO_USER_PASSWORD;
+  const resetExistingPasswords = process.env.DEMO_RESET_PASSWORDS === 'true';
 
   if (!databaseUrl) throw new Error('DATABASE_URL is required.');
   if (!password || password.length < 8) {
@@ -38,7 +39,15 @@ async function main() {
       });
 
       if (existing) {
-        console.log(`Skipped ${demoUser.username}: account already exists.`);
+        if (resetExistingPasswords) {
+          await prisma.user.update({
+            where: { username: demoUser.username },
+            data: { passwordHash, roleId: role.id, isActive: true },
+          });
+          console.log(`Updated ${demoUser.username} (${demoUser.role}).`);
+        } else {
+          console.log(`Skipped ${demoUser.username}: account already exists.`);
+        }
         continue;
       }
 

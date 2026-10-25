@@ -8,6 +8,26 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(private prisma: PrismaService, private jwtService: JwtService) {}
 
+  async getDemoUsers() {
+    const users = await this.prisma.user.findMany({
+      where: {
+        username: { in: ['demo_owner', 'demo_manager', 'demo_staff', 'demo_kitchen'] },
+        isActive: true,
+      },
+      select: {
+        username: true,
+        fullName: true,
+        role: { select: { name: true } },
+      },
+    });
+
+    return users.map((user) => ({
+      username: user.username,
+      fullName: user.fullName,
+      role: user.role.name,
+    }));
+  }
+
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({
       where: { username: dto.username },
