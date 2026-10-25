@@ -350,6 +350,14 @@ shabu-system/
 
 ### ขั้นตอนการติดตั้ง / Installation Steps
 
+For a complete local demo with one Docker command, run from the repository root:
+
+```bash
+docker compose up -d --build
+```
+
+Open `http://localhost:3001/login`, select a demo user, and sign in. The default demo password is `demo12345`. See [SEED_GUIDE.md](backend/SEED_GUIDE.md#visitor-showcase-setup) for the sample data and password options.
+
 ```bash
 # ==================== BACKEND ====================
 cd backend
@@ -371,6 +379,10 @@ npm run seed
 # ตั้งค่า DEMO_USER_PASSWORD ก่อน แล้วรัน:
 npm run seed:demo-users
 
+# To prepare a disposable visitor demo with catalog, sample activity, and demo accounts:
+# Set DEMO_USER_PASSWORD (8+ characters), then run instead of the commands above:
+npm run seed:visitor
+
 # 5. รัน Backend Server
 npm run start:dev
 
@@ -390,7 +402,7 @@ npm install
 npm run dev
 ```
 
-Demo account setup and sign-in details: [DEMO_USERS.md](DEMO_USERS.md).
+Demo account setup and sign-in details: [DEMO_USERS.md](DEMO_USERS.md). Docker visitor setup: [SEED_GUIDE.md](backend/SEED_GUIDE.md#visitor-showcase-setup).
 
 ### Environment Variables
 

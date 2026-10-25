@@ -136,7 +136,7 @@ backend/
 │   └── main.ts            # Entry point
 ├── prisma/
 │   ├── schema.prisma      # Database schema
-│   └── seed.ts            # Seed data script
+│   └── seed.cjs           # Seed data script
 ├── test/                  # Tests
 └── package.json
 ```

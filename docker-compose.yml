@@ -11,8 +11,26 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  setup:
+    image: shabu-backend:local
+    container_name: shabu-setup
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-shabu_db}?schema=public
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-demo12345}
+    command: ["sh", "-c", "npx prisma migrate deploy && npm run seed:visitor"]
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   backend:
+    image: shabu-backend:local
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -26,14 +44,15 @@ services:
     ports:
       - "3000:3000"
     depends_on:
-      - postgres
+      setup:
+        condition: service_completed_successfully
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        DEMO_LOGIN_PASSWORD: ${DEMO_LOGIN_PASSWORD:-}
+        DEMO_LOGIN_PASSWORD: ${DEMO_USER_PASSWORD:-demo12345}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3000}
         NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:3000}
     container_name: shabu-frontend

@@ -1,6 +1,48 @@
 # 🌱 Seed Data Guide
 
-For login accounts only, use the repeatable `npm run seed:demo-users` command described in [Demo users](../DEMO_USERS.md). The full seed below also inserts restaurant sample data and is intended for a fresh database.
+For login accounts only, use the repeatable `npm run seed:demo-users` command described in [Demo users](../DEMO_USERS.md). The full seed below also inserts restaurant sample data and can be run again without duplicating its records.
+
+## Visitor showcase setup
+
+`docker compose up -d --build` starts PostgreSQL, waits until it is ready, applies migrations, ensures the catalog and visitor examples exist, then starts the backend and frontend. Existing restaurant records and edits are retained.
+
+From the repository root:
+
+```bash
+docker compose up -d --build
+```
+
+Open `http://localhost:3001/login`. The four demo users are `demo_owner`, `demo_manager`, `demo_staff`, and `demo_kitchen`. The default password is `demo12345`, and the login page fills it when a demo account is selected. This default is for a disposable local demo. To change it, set `DEMO_USER_PASSWORD` in a root `.env` file before running the same Docker command; Compose uses it for both the accounts and the login page.
+
+See [Demo users](../DEMO_USERS.md) for role access. On a fresh database, the original eight sample accounts also use the chosen password. Each setup run sets the password and role for the four demo accounts; it leaves existing non-demo accounts alone. If setup fails, inspect `docker compose logs setup`.
+
+Run this only against a disposable demo database. The command can be run again: existing scenario sessions and their later edits are skipped.
+
+## Test scenarios
+
+After running the full seed on a fresh database, add operational test data:
+
+```bash
+cd backend
+npm run seed:test-data
+```
+
+This adds 11 sessions, 12 orders, five invoices, and two void logs using the existing menu, tiers, tables, and `manager` account:
+
+| Table | State | Test flow |
+| --- | --- | --- |
+| A2 | Occupied, Gold | Confirmed order with preparing, pending, and served items |
+| A3 | Occupied, Silver | Pending order to confirm from POS or kitchen |
+| A4 | Cleaning, Platinum | Closed session, cash invoice, and a voided item with an approval log |
+| A5 | Occupied, Gold | Cancelled order and replacement order |
+| A6 | Occupied, Premium | Bar, dessert, and hot kitchen items |
+| B1–B4 | Available | Paid sessions from the previous four days, with varied payment methods |
+| C1 | Occupied, Premium | VIP table with a pending order |
+| OUT1 | Cleaning, Silver | Expired outdoor session |
+
+Open `/order/test-data-active-kitchen-a2` to test customer ordering. Re-running the command skips scenarios already present, so later changes to those orders are preserved. It skips a scenario table that is already occupied by other data. It requires `DATABASE_URL` and does not create or change login passwords.
+
+The base `npm run seed` command can be rerun to fill missing restaurant catalog records without duplicating existing ones. Compose runs it automatically.
 
 ## ✅ Seed Completed Successfully!
 
@@ -177,7 +219,7 @@ npm run seed
 ## 📝 Notes
 
 - All menu items are marked as `isAvailable: true` by default
-- All tables are set to `AVAILABLE` status
+- A1 is `OCCUPIED` for the sample active session; other tables start `AVAILABLE`
 - All users have `isActive: true`
 - Password for all test users: `admin123`
 - Sample session is set to expire 2 hours from creation

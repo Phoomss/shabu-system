@@ -37,6 +37,88 @@ const scenarios = [
     ],
     invoice: { totalAmount: 1997, discount: 100, netAmount: 1897, paymentMethod: 'CASH' },
   },
+  {
+    table: 'A5', tier: 'Gold', token: 'test-data-cancelled-order-a5',
+    status: 'ACTIVE', tableStatus: 'OCCUPIED', adults: 3, children: 0,
+    orders: [
+      { status: 'CANCELLED', items: [
+        { name: 'เนื้อหมูหมัก', quantity: 2, status: 'VOIDED', voidReason: 'Duplicate order' },
+      ] },
+      { status: 'CONFIRMED', items: [
+        { name: 'กุ้งสด', quantity: 2, status: 'PREPARING' },
+        { name: 'น้ำเปล่า', quantity: 3, status: 'SERVED' },
+      ] },
+    ],
+  },
+  {
+    table: 'A6', tier: 'Premium', token: 'test-data-bar-dessert-a6',
+    status: 'ACTIVE', tableStatus: 'OCCUPIED', adults: 2, children: 0,
+    orders: [
+      { status: 'CONFIRMED', items: [
+        { name: 'ไอศกรีมวานิลลา', quantity: 2, status: 'PREPARING' },
+        { name: 'ชาเย็น', quantity: 2, status: 'PENDING' },
+        { name: 'เนื้อวัวพรีเมียม', quantity: 1, status: 'SERVED' },
+      ] },
+    ],
+  },
+  {
+    table: 'B1', tier: 'Silver', token: 'test-data-paid-yesterday-b1',
+    status: 'CLOSED', tableStatus: 'AVAILABLE', adults: 2, children: 0,
+    daysAgo: 1,
+    orders: [{ status: 'CONFIRMED', items: [
+      { name: 'เนื้อหมูหมัก', quantity: 2, status: 'SERVED' },
+      { name: 'ผักบุ้ง', quantity: 1, status: 'SERVED' },
+    ] }],
+    invoice: { totalAmount: 798, discount: 0, netAmount: 798, paymentMethod: 'QR_CODE' },
+  },
+  {
+    table: 'B2', tier: 'Gold', token: 'test-data-paid-two-days-b2',
+    status: 'CLOSED', tableStatus: 'AVAILABLE', adults: 3, children: 1,
+    daysAgo: 2,
+    orders: [{ status: 'CONFIRMED', items: [
+      { name: 'กุ้งสด', quantity: 2, status: 'SERVED' },
+      { name: 'น้ำอัดลม', quantity: 4, status: 'SERVED' },
+    ] }],
+    invoice: { totalAmount: 2096, discount: 100, netAmount: 1996, paymentMethod: 'CREDIT_CARD' },
+  },
+  {
+    table: 'B3', tier: 'Platinum', token: 'test-data-paid-three-days-b3',
+    status: 'CLOSED', tableStatus: 'AVAILABLE', adults: 2, children: 2,
+    daysAgo: 3,
+    orders: [{ status: 'CONFIRMED', items: [
+      { name: 'เนื้อวัวพรีเมียม', quantity: 3, status: 'SERVED' },
+      { name: 'ไอศกรีมวานิลลา', quantity: 4, status: 'SERVED' },
+    ] }],
+    invoice: { totalAmount: 2396, discount: 0, netAmount: 2396, paymentMethod: 'DEBIT_CARD' },
+  },
+  {
+    table: 'B4', tier: 'Premium', token: 'test-data-paid-four-days-b4',
+    status: 'CLOSED', tableStatus: 'AVAILABLE', adults: 4, children: 0,
+    daysAgo: 4,
+    orders: [{ status: 'CONFIRMED', items: [
+      { name: 'กุ้งสด', quantity: 4, status: 'SERVED' },
+      { name: 'ชาเย็น', quantity: 4, status: 'SERVED' },
+    ] }],
+    invoice: { totalAmount: 3996, discount: 200, netAmount: 3796, paymentMethod: 'CASH' },
+  },
+  {
+    table: 'C1', tier: 'Premium', token: 'test-data-vip-c1',
+    status: 'ACTIVE', tableStatus: 'OCCUPIED', adults: 4, children: 1,
+    orders: [{ status: 'PENDING', items: [
+      { name: 'เนื้อวัวพรีเมียม', quantity: 4, status: 'PENDING' },
+      { name: 'ไอศกรีมวานิลลา', quantity: 2, status: 'PENDING' },
+      { name: 'ชาเย็น', quantity: 4, status: 'PENDING' },
+    ] }],
+  },
+  {
+    table: 'OUT1', tier: 'Silver', token: 'test-data-expired-out1',
+    status: 'EXPIRED', tableStatus: 'CLEANING', adults: 2, children: 0,
+    hoursAgo: 4,
+    orders: [{ status: 'CONFIRMED', items: [
+      { name: 'เนื้อหมูหมัก', quantity: 2, status: 'SERVED' },
+      { name: 'ผักกาดขาว', quantity: 1, status: 'SERVED' },
+    ] }],
+  },
 ];
 
 async function main() {
@@ -80,13 +162,13 @@ async function main() {
         const activeSession = await tx.session.findFirst({
           where: { tableId: table.id, status: 'ACTIVE' },
         });
-        if (currentTable.status !== 'AVAILABLE' || activeSession) {
-          throw new Error(`Table ${scenario.table} is in use; choose a fresh database for test scenarios.`);
-        }
+        if (currentTable.status !== 'AVAILABLE' || activeSession) return 'busy';
 
         const now = new Date();
-        const startTime = scenario.status === 'CLOSED'
-          ? new Date(now.getTime() - 3 * 60 * 60 * 1000) : now;
+        const startTime = new Date(now.getTime()
+          - (scenario.daysAgo || 0) * 24 * 60 * 60 * 1000
+          - (scenario.hoursAgo ?? (scenario.status === 'CLOSED' ? 3 : 0)) * 60 * 60 * 1000);
+        const orderTime = new Date(startTime.getTime() + 20 * 60 * 1000);
         const session = await tx.session.create({
           data: {
             tableId: table.id,
@@ -102,7 +184,7 @@ async function main() {
 
         for (const orderData of scenario.orders) {
           const order = await tx.order.create({
-            data: { sessionId: session.id, status: orderData.status },
+            data: { sessionId: session.id, status: orderData.status, createdAt: orderTime },
           });
           for (const itemData of orderData.items) {
             const menuItem = byMenu.get(itemData.name);
@@ -121,6 +203,7 @@ async function main() {
                   orderItemId: item.id,
                   reason: itemData.voidReason,
                   approvedBy: manager.id,
+                  createdAt: orderTime,
                 },
               });
             }
@@ -129,7 +212,12 @@ async function main() {
 
         if (scenario.invoice) {
           await tx.invoice.create({
-            data: { sessionId: session.id, createdBy: manager.id, ...scenario.invoice },
+            data: {
+              sessionId: session.id,
+              createdBy: manager.id,
+              createdAt: new Date(startTime.getTime() + 80 * 60 * 1000),
+              ...scenario.invoice,
+            },
           });
         }
         await tx.table.update({
@@ -137,7 +225,9 @@ async function main() {
         });
         return 'created';
       });
-      console.log(`${result === 'created' ? 'Created' : 'Skipped'} ${scenario.table}: ${scenario.token}`);
+      const action = result === 'created' ? 'Created'
+        : result === 'busy' ? 'Skipped busy table' : 'Skipped existing scenario';
+      console.log(`${action} ${scenario.table}: ${scenario.token}`);
     }
   } finally {
     await prisma.$disconnect();

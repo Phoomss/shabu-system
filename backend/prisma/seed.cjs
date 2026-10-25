@@ -1,11 +1,18 @@
-import 'dotenv/config';
-import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import * as bcrypt from 'bcrypt';
+require('dotenv/config');
+const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const bcrypt = require('bcrypt');
+
+if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required.');
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+});
+
+async function findOrCreate(model, where, data) {
+  return (await model.findFirst({ where })) || model.create({ data });
+}
 
 async function main() {
-  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
-  const prisma = new PrismaClient({ adapter });
 
   console.log('🌱 Starting database seed...\n');
 
@@ -22,7 +29,7 @@ async function main() {
 
   // ==================== 2. USERS ====================
   console.log('👥 Creating users...');
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+  const hashedPassword = await bcrypt.hash(process.env.SEED_DEFAULT_PASSWORD || 'admin123', 10);
 
   const users = await Promise.all([
     prisma.user.upsert({
@@ -130,16 +137,16 @@ async function main() {
   // ==================== 4. CATEGORIES ====================
   console.log('📑 Creating categories...');
   const categories = await Promise.all([
-    prisma.category.create({ data: { name: 'เนื้อวัว', iconUrl: '/icons/beef.svg' } }),
-    prisma.category.create({ data: { name: 'เนื้อหมู', iconUrl: '/icons/pork.svg' } }),
-    prisma.category.create({ data: { name: 'อาหารทะเล', iconUrl: '/icons/seafood.svg' } }),
-    prisma.category.create({ data: { name: 'ลูกชิ้น', iconUrl: '/icons/meatball.svg' } }),
-    prisma.category.create({ data: { name: 'ผัก', iconUrl: '/icons/vegetable.svg' } }),
-    prisma.category.create({ data: { name: 'เส้น', iconUrl: '/icons/noodle.svg' } }),
-    prisma.category.create({ data: { name: 'ไข่', iconUrl: '/icons/egg.svg' } }),
-    prisma.category.create({ data: { name: 'ขนมหวาน', iconUrl: '/icons/dessert.svg' } }),
-    prisma.category.create({ data: { name: 'เครื่องดื่ม', iconUrl: '/icons/drink.svg' } }),
-    prisma.category.create({ data: { name: 'น้ำจิ้ม', iconUrl: '/icons/sauce.svg' } }),
+    findOrCreate(prisma.category, { name: 'เนื้อวัว' }, { name: 'เนื้อวัว', iconUrl: '/icons/beef.svg' }),
+    findOrCreate(prisma.category, { name: 'เนื้อหมู' }, { name: 'เนื้อหมู', iconUrl: '/icons/pork.svg' }),
+    findOrCreate(prisma.category, { name: 'อาหารทะเล' }, { name: 'อาหารทะเล', iconUrl: '/icons/seafood.svg' }),
+    findOrCreate(prisma.category, { name: 'ลูกชิ้น' }, { name: 'ลูกชิ้น', iconUrl: '/icons/meatball.svg' }),
+    findOrCreate(prisma.category, { name: 'ผัก' }, { name: 'ผัก', iconUrl: '/icons/vegetable.svg' }),
+    findOrCreate(prisma.category, { name: 'เส้น' }, { name: 'เส้น', iconUrl: '/icons/noodle.svg' }),
+    findOrCreate(prisma.category, { name: 'ไข่' }, { name: 'ไข่', iconUrl: '/icons/egg.svg' }),
+    findOrCreate(prisma.category, { name: 'ขนมหวาน' }, { name: 'ขนมหวาน', iconUrl: '/icons/dessert.svg' }),
+    findOrCreate(prisma.category, { name: 'เครื่องดื่ม' }, { name: 'เครื่องดื่ม', iconUrl: '/icons/drink.svg' }),
+    findOrCreate(prisma.category, { name: 'น้ำจิ้ม' }, { name: 'น้ำจิ้ม', iconUrl: '/icons/sauce.svg' }),
   ]);
   const [beefCat, porkCat, seafoodCat, meatballCat, vegCat, noodleCat, eggCat, dessertCat, drinkCat, sauceCat] = categories;
   console.log(`   ✅ Created ${categories.length} categories\n`);
@@ -237,9 +244,13 @@ async function main() {
   ];
 
   // Create menu items in batches to avoid too many promises
-  const menuItems: any[] = [];
+  const menuItems = [];
   for (const itemData of menuItemsData) {
-    const item = await prisma.menuItem.create({ data: itemData });
+    const item = await findOrCreate(prisma.menuItem, {
+      name: itemData.name,
+      categoryId: itemData.categoryId,
+      kitchenId: itemData.kitchenId,
+    }, itemData);
     menuItems.push(item);
   }
   
@@ -251,24 +262,36 @@ async function main() {
   // Silver tier - first 30 items
   const silverItems = menuItems.slice(0, 30);
   for (const item of silverItems) {
-    await prisma.tierMenuItem.create({ data: { tierId: silver.id, menuItemId: item.id } });
+    await prisma.tierMenuItem.upsert({
+      where: { tierId_menuItemId: { tierId: silver.id, menuItemId: item.id } },
+      update: {}, create: { tierId: silver.id, menuItemId: item.id },
+    });
   }
   
   // Gold tier - first 45 items
   const goldItems = menuItems.slice(0, 45);
   for (const item of goldItems) {
-    await prisma.tierMenuItem.create({ data: { tierId: gold.id, menuItemId: item.id } });
+    await prisma.tierMenuItem.upsert({
+      where: { tierId_menuItemId: { tierId: gold.id, menuItemId: item.id } },
+      update: {}, create: { tierId: gold.id, menuItemId: item.id },
+    });
   }
   
   // Platinum tier - first 55 items
   const platinumItems = menuItems.slice(0, 55);
   for (const item of platinumItems) {
-    await prisma.tierMenuItem.create({ data: { tierId: platinum.id, menuItemId: item.id } });
+    await prisma.tierMenuItem.upsert({
+      where: { tierId_menuItemId: { tierId: platinum.id, menuItemId: item.id } },
+      update: {}, create: { tierId: platinum.id, menuItemId: item.id },
+    });
   }
   
   // Premium tier - all items
   for (const item of menuItems) {
-    await prisma.tierMenuItem.create({ data: { tierId: premium.id, menuItemId: item.id } });
+    await prisma.tierMenuItem.upsert({
+      where: { tierId_menuItemId: { tierId: premium.id, menuItemId: item.id } },
+      update: {}, create: { tierId: premium.id, menuItemId: item.id },
+    });
   }
   
   console.log(`   ✅ Created tier-menu relationships\n`);
@@ -287,7 +310,7 @@ async function main() {
     ...Array.from({ length: 4 }).map((_, i) => ({ number: `OUT${i + 1}`, zone: 'Outdoor' })),
   ];
 
-  const tables: any[] = [];
+  const tables = [];
   for (const tableData of tablesData) {
     const table = await prisma.table.upsert({
       where: { number: tableData.number },
@@ -321,9 +344,10 @@ async function main() {
     { name: 'ซอสมะเขือเทศ', unit: 'ขวด', currentStock: 25 },
   ];
 
-  const ingredients: any[] = [];
+  const ingredients = [];
   for (const ingData of ingredientsData) {
-    const ing = await prisma.ingredient.create({ data: ingData });
+    const ing = await findOrCreate(prisma.ingredient,
+      { name: ingData.name, unit: ingData.unit }, ingData);
     ingredients.push(ing);
   }
   
@@ -347,12 +371,16 @@ async function main() {
   ];
 
   for (const recipeData of recipesData) {
-    await prisma.recipe.create({
-      data: {
-        menuItemId: menuItems[recipeData.menuItemIndex].id,
-        ingredientId: ingredients[recipeData.ingredientIndex].id,
-        quantityUsed: recipeData.quantityUsed,
-      },
+    const data = {
+      menuItemId: menuItems[recipeData.menuItemIndex].id,
+      ingredientId: ingredients[recipeData.ingredientIndex].id,
+      quantityUsed: recipeData.quantityUsed,
+    };
+    await prisma.recipe.upsert({
+      where: { menuItemId_ingredientId: {
+        menuItemId: data.menuItemId, ingredientId: data.ingredientId,
+      } },
+      update: {}, create: data,
     });
   }
   
@@ -361,38 +389,46 @@ async function main() {
   // ==================== 11. SAMPLE SESSION & ORDER ====================
   console.log('📋 Creating sample session and order...');
   
-  // Create a sample active session
-  const activeSession = await prisma.session.create({
-    data: {
-      tableId: tables[0].id,
-      tierId: gold.id,
-      qrToken: `qr_${Date.now()}_sample`,
-      startTime: new Date(),
-      endTime: new Date(Date.now() + 2 * 60 * 60 * 1000),
-      status: 'ACTIVE',
-    },
-  });
+  const sampleToken = 'seed-base-a1';
+  const [existingSample, currentTable, activeAtTable] = await Promise.all([
+    prisma.session.findUnique({ where: { qrToken: sampleToken } }),
+    prisma.table.findUnique({ where: { id: tables[0].id } }),
+    prisma.session.findFirst({ where: { tableId: tables[0].id, status: 'ACTIVE' } }),
+  ]);
+  if (!existingSample && currentTable.status === 'AVAILABLE' && !activeAtTable) {
+    await prisma.$transaction(async (tx) => {
+      const startTime = new Date();
+      const activeSession = await tx.session.create({
+        data: {
+          tableId: tables[0].id,
+          tierId: gold.id,
+          qrToken: sampleToken,
+          startTime,
+          endTime: new Date(startTime.getTime() + gold.timeLimit * 60 * 1000),
+          status: 'ACTIVE',
+        },
+      });
+      await tx.order.create({
+        data: {
+          sessionId: activeSession.id,
+          status: 'CONFIRMED',
+          items: {
+            create: [
+              { menuItemId: menuItems[0].id, kitchenId: hotKitchen.id, quantity: 2, status: 'SERVED' },
+              { menuItemId: menuItems[4].id, kitchenId: hotKitchen.id, quantity: 2, status: 'SERVED' },
+              { menuItemId: menuItems[16].id, kitchenId: coldKitchen.id, quantity: 1, status: 'SERVED' },
+              { menuItemId: menuItems[27].id, kitchenId: coldKitchen.id, quantity: 1, status: 'SERVED' },
+            ],
+          },
+        },
+      });
+      await tx.table.update({ where: { id: tables[0].id }, data: { status: 'OCCUPIED' } });
+    });
+  }
   
-  // Create sample order
-  await prisma.order.create({
-    data: {
-      sessionId: activeSession.id,
-      status: 'CONFIRMED',
-      items: {
-        create: [
-          { menuItemId: menuItems[0].id, kitchenId: hotKitchen.id, quantity: 2, status: 'SERVED' },
-          { menuItemId: menuItems[4].id, kitchenId: hotKitchen.id, quantity: 2, status: 'SERVED' },
-          { menuItemId: menuItems[16].id, kitchenId: coldKitchen.id, quantity: 1, status: 'SERVED' },
-          { menuItemId: menuItems[27].id, kitchenId: coldKitchen.id, quantity: 1, status: 'SERVED' },
-        ],
-      },
-    },
-  });
-  
-  console.log(`   ✅ Created sample session and order\n`);
+  console.log(`   ✅ Ensured sample session and order when A1 is available\n`);
 
   // ==================== SUMMARY ====================
-  await prisma.$disconnect();
   
   console.log('\n✅ ============================================');
   console.log('   SEED COMPLETED SUCCESSFULLY!');
@@ -411,14 +447,15 @@ async function main() {
   console.log(`   • Sample Order: 1\n`);
   
   console.log('🔐 Test Credentials:');
-  console.log('   • admin / admin123 (OWNER)');
-  console.log('   • manager / admin123 (MANAGER)');
-  console.log('   • somchai / admin123 (MANAGER)');
-  console.log('   • staff / admin123 (STAFF)');
-  console.log('   • somsri / admin123 (STAFF)');
-  console.log('   • witree / admin123 (STAFF)');
-  console.log('   • kitchen / admin123 (KITCHEN)');
-  console.log('   • chef1 / admin123 (KITCHEN)\n');
+  const passwordLabel = process.env.SEED_DEFAULT_PASSWORD ? '[configured]' : 'admin123';
+  console.log(`   • admin / ${passwordLabel} (OWNER)`);
+  console.log(`   • manager / ${passwordLabel} (MANAGER)`);
+  console.log(`   • somchai / ${passwordLabel} (MANAGER)`);
+  console.log(`   • staff / ${passwordLabel} (STAFF)`);
+  console.log(`   • somsri / ${passwordLabel} (STAFF)`);
+  console.log(`   • witree / ${passwordLabel} (STAFF)`);
+  console.log(`   • kitchen / ${passwordLabel} (KITCHEN)`);
+  console.log(`   • chef1 / ${passwordLabel} (KITCHEN)\n`);
   
   console.log('💎 Pricing Tiers:');
   console.log(`   • Silver: ${silver.priceAdult}฿ adult / ${silver.priceChild}฿ child (${silver.timeLimit} min)`);
@@ -434,7 +471,8 @@ async function main() {
 }
 
 main()
-  .catch(console.error)
-  .finally(async () => {
-    process.exit(0);
-  });
+  .catch((error) => {
+    console.error('Could not seed database:', error);
+    process.exitCode = 1;
+  })
+  .finally(() => prisma.$disconnect());
