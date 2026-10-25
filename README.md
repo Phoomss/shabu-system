@@ -367,6 +367,10 @@ npx prisma migrate deploy
 # 4. รัน Seed Data (Optional)
 npm run seed
 
+# หรือสร้างเฉพาะบัญชีสาธิต (ดู DEMO_USERS.md)
+# ตั้งค่า DEMO_USER_PASSWORD ก่อน แล้วรัน:
+npm run seed:demo-users
+
 # 5. รัน Backend Server
 npm run start:dev
 
@@ -385,6 +389,8 @@ npm install
 # 3. รัน Frontend Server
 npm run dev
 ```
+
+Demo account setup and sign-in details: [DEMO_USERS.md](DEMO_USERS.md).
 
 ### Environment Variables
 

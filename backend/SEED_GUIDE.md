@@ -1,5 +1,7 @@
 # 🌱 Seed Data Guide
 
+For login accounts only, use the repeatable `npm run seed:demo-users` command described in [Demo users](../DEMO_USERS.md). The full seed below also inserts restaurant sample data and is intended for a fresh database.
+
 ## ✅ Seed Completed Successfully!
 
 The database has been seeded with comprehensive test data for the Shabu Restaurant Management System.
