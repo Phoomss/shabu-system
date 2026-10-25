@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -16,7 +17,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 
 const loginSchema = z.object({
   username: z.string().min(1, "กรุณากรอก Username"),
@@ -54,10 +55,6 @@ export default function LoginPage() {
       const res = await api.post("/auth/login", data);
       const { accessToken, user } = res.data.data;
 
-      console.log('=== LOGIN SUCCESS ===');
-      console.log('User:', user);
-      console.log('User Role:', user.role);
-      
       setAuth(user, accessToken);
       toast.success(`ยินดีต้อนรับ ${user.fullName}`);
 
@@ -68,9 +65,6 @@ export default function LoginPage() {
         ? "/kds"
         : "/pos";
 
-      console.log('=== REDIRECTING ===');
-      console.log('To:', redirectPath);
-      
       // ใช้ setTimeout ให้ Zustand ทัน persist token
       setTimeout(() => {
         window.location.replace(redirectPath);
@@ -82,35 +76,46 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-50">
-      <div className="w-full max-w-md px-4">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="text-6xl mb-3">🍲</div>
-          <h1 className="text-3xl font-bold text-red-600">Shabu Restaurant</h1>
-          <p className="text-gray-500 mt-1">ระบบจัดการร้านชาบู</p>
+    <div className="grid min-h-dvh bg-[#f8f5f1] lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.85fr)]">
+      <div className="relative hidden flex-col justify-between overflow-hidden bg-[#3c2a24] p-12 text-white lg:flex xl:p-16">
+        <div className="relative z-10 flex items-center gap-3 text-xl font-bold"><span className="flex size-12 items-center justify-center rounded-2xl bg-[#b84328] text-2xl">🍲</span> Shabu<span className="-ml-3 text-[#efb195]">.</span></div>
+        <div className="relative z-10 max-w-xl">
+          <p className="mb-5 text-xs font-bold uppercase tracking-[0.2em] text-[#e4aa8d]">RESTAURANT OS</p>
+          <h1 className="text-4xl font-bold leading-tight tracking-tight xl:text-5xl">จัดการทุกจังหวะของร้านได้ง่ายขึ้น</h1>
+          <p className="mt-5 max-w-md leading-8 text-[#dfd0c8]">หน้าขาย โต๊ะ ออเดอร์ และห้องครัวอยู่ในระบบเดียว เพื่อให้ทีมทำงานต่อกันได้อย่างราบรื่น</p>
+        </div>
+        <p className="relative z-10 text-sm text-[#bba79b]">Shabu Restaurant Management</p>
+        <div className="pointer-events-none absolute -bottom-36 -right-28 size-[480px] rounded-full border-[80px] border-white/5" />
+      </div>
+      <div className="flex items-center justify-center px-5 py-10 sm:px-10">
+      <div className="w-full max-w-md">
+        <Link href="/" className="mb-10 inline-flex items-center gap-3 lg:hidden"><span className="flex size-11 items-center justify-center rounded-2xl bg-[#b84328] text-2xl">🍲</span><span className="text-xl font-bold">Shabu<span className="text-[#b84328]">.</span></span></Link>
+        <div className="mb-7">
+          <span className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-[#fff0e9] text-[#b84328]"><ShieldCheck size={22} /></span>
+          <h2 className="text-3xl font-bold tracking-tight text-[#2d241f]">ยินดีต้อนรับกลับ</h2>
+          <p className="mt-2 text-sm text-[#756b64]">เข้าสู่ระบบเพื่อเริ่มงานในพื้นที่ของคุณ</p>
         </div>
 
         {/* Card */}
-        <Card className="shadow-lg border-0">
+        <Card className="border-[#eadfd7] shadow-[0_12px_40px_rgba(58,32,19,0.07)]">
           <CardHeader className="pb-4">
-            <CardTitle className="text-xl">เข้าสู่ระบบ</CardTitle>
-            <CardDescription>กรุณากรอก Username และ Password</CardDescription>
+            <CardTitle className="text-lg">เข้าสู่ระบบ</CardTitle>
+            <CardDescription>กรอกชื่อผู้ใช้และรหัสผ่านที่ได้รับจากผู้ดูแลระบบ</CardDescription>
           </CardHeader>
 
           <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
               {/* Username */}
               <div className="space-y-1.5">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="username">ชื่อผู้ใช้</Label>
                 <Input
                   id="username"
-                  placeholder="กรอก Username"
+                  placeholder="กรอกชื่อผู้ใช้"
                   autoComplete="username"
                   {...register("username")}
                 />
                 {errors.username && (
-                  <p className="text-sm text-red-500">
+                  <p role="alert" className="text-sm text-red-600">
                     {errors.username.message}
                   </p>
                 )}
@@ -118,18 +123,19 @@ export default function LoginPage() {
 
               {/* Password */}
               <div className="space-y-1.5">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">รหัสผ่าน</Label>
                 <div className="relative">
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="กรอก Password"
+                    placeholder="กรอกรหัสผ่าน"
                     autoComplete="current-password"
                     className="pr-10"
                     {...register("password")}
                   />
                   <button
                     type="button"
+                    aria-label={showPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
@@ -137,7 +143,7 @@ export default function LoginPage() {
                   </button>
                 </div>
                 {errors.password && (
-                  <p className="text-sm text-red-500">
+                  <p role="alert" className="text-sm text-red-600">
                     {errors.password.message}
                   </p>
                 )}
@@ -146,7 +152,7 @@ export default function LoginPage() {
               {/* Submit */}
               <Button
                 type="submit"
-                className="w-full bg-red-600 hover:bg-red-700"
+                className="h-11 w-full"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -155,12 +161,14 @@ export default function LoginPage() {
                     กำลังเข้าสู่ระบบ...
                   </>
                 ) : (
-                  "เข้าสู่ระบบ"
+                  <span className="inline-flex items-center gap-2">เข้าสู่ระบบ <ArrowRight size={17} /></span>
                 )}
               </Button>
             </form>
           </CardContent>
         </Card>
+        <p className="mt-6 text-center text-xs text-[#8a7e75]">หากเข้าใช้งานไม่ได้ กรุณาติดต่อผู้ดูแลระบบ</p>
+      </div>
       </div>
     </div>
   );

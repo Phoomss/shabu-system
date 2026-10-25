@@ -55,6 +55,7 @@ export default function CustomerOrderPage() {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isOrderHistoryOpen, setIsOrderHistoryOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [timeLeft, setTimeLeft] = useState(0);
@@ -137,7 +138,7 @@ export default function CustomerOrderPage() {
 
       setSession(sessionRes.data.data);
       setMenuItems(menuRes.data.data || []);
-      await fetchOrders();
+      await fetchOrders(sessionRes.data.data.id);
     } catch (error) {
       console.error("Failed to fetch data:", error);
       toast.error("ไม่สามารถโหลดข้อมูลได้");
@@ -146,10 +147,10 @@ export default function CustomerOrderPage() {
     }
   };
 
-  const fetchOrders = async () => {
-    if (!session) return;
+  const fetchOrders = async (sessionId = session?.id) => {
+    if (!sessionId) return;
     try {
-      const res = await publicApi.get(`/orders?sessionId=${session.id}`).catch(() => ({ data: { data: [] } }));
+      const res = await publicApi.get(`/orders?sessionId=${sessionId}`).catch(() => ({ data: { data: [] } }));
       setOrders(res.data.data || []);
     } catch (error) {
       console.error("Failed to fetch orders:", error);
@@ -188,8 +189,9 @@ export default function CustomerOrderPage() {
   };
 
   const submitOrder = async () => {
-    if (!session || cart.length === 0) return;
+    if (!session || cart.length === 0 || isSubmittingOrder) return;
 
+    setIsSubmittingOrder(true);
     try {
       const orderItems = cart.map((item) => ({
         menuItemId: item.id,
@@ -203,6 +205,7 @@ export default function CustomerOrderPage() {
 
       toast.success("ส่งออเดอร์สำเร็จ!");
       setCart([]);
+      setIsCartOpen(false);
       fetchOrders();
 
       socket?.emit("new-order", {
@@ -212,6 +215,8 @@ export default function CustomerOrderPage() {
     } catch (error: any) {
       console.error("Failed to submit order:", error);
       toast.error(error.response?.data?.message || "ส่งออเดอร์ไม่สำเร็จ");
+    } finally {
+      setIsSubmittingOrder(false);
     }
   };
 
@@ -298,19 +303,19 @@ export default function CustomerOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-32">
+    <div className="min-h-screen bg-[#f8f5f1] pb-32">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <header className="sticky top-0 z-40 border-b border-[#eee5dd] bg-[#fffdfa]/95 shadow-sm backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-4 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold">🍲 Shabu Restaurant</h1>
-              <p className="text-sm text-gray-500">
+              <h1 className="text-lg font-bold text-[#2d241f] sm:text-xl">🍲 Shabu<span className="text-[#b84328]">.</span></h1>
+              <p className="text-sm text-[#756b64]">
                 โต๊ะ {session.table.number} - {session.tier.name}
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <div className="flex items-center gap-1 rounded-xl bg-[#fff0e9] px-2 py-2 text-xs font-semibold text-[#87331e] sm:gap-2 sm:px-3 sm:text-sm">
                 <Timer className="h-4 w-4" />
                 <span className={timeLeft < 15 ? "text-red-600 font-bold" : ""}>
                   {timeLeft} นาที
@@ -321,7 +326,7 @@ export default function CustomerOrderPage() {
                 size="sm"
                 onClick={() => setIsOrderHistoryOpen(true)}
               >
-                ประวัติออเดอร์
+                <span className="hidden sm:inline">ประวัติออเดอร์</span><span className="sm:hidden">ออเดอร์</span>
               </Button>
             </div>
           </div>
@@ -340,7 +345,7 @@ export default function CustomerOrderPage() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main className="mx-auto max-w-7xl px-4 py-6">
         {/* Category Tabs */}
         <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="mb-6">
           <TabsList className="w-full justify-start overflow-x-auto">
@@ -354,17 +359,17 @@ export default function CustomerOrderPage() {
         </Tabs>
 
         {/* Menu Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {filteredItems.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-[#e2d4ca] bg-white px-5 py-14 text-center">
+            <Utensils className="mx-auto mb-3 size-8 text-[#b48b77]" />
+            <p className="font-semibold">ยังไม่มีเมนูในหมวดนี้</p>
+            <p className="mt-1 text-sm text-[#786c64]">ลองเลือกหมวดหมู่อื่นเพื่อดูรายการอาหาร</p>
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 sm:gap-4">
           {filteredItems.map((item) => (
-            <Card
-              key={item.id}
-              className={`cursor-pointer transition-all ${
-                item.isAvailable
-                  ? "hover:shadow-lg hover:scale-105"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
-              onClick={() => addToCart(item)}
-            >
+            <button key={item.id} type="button" disabled={!item.isAvailable} onClick={() => addToCart(item)} aria-label={`เพิ่ม ${item.name} ลงตะกร้า`} className="min-w-0 rounded-2xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50">
+            <Card className="h-full cursor-pointer overflow-hidden transition-shadow hover:shadow-lg">
               <div className="aspect-square relative bg-gray-100 rounded-t-lg overflow-hidden">
                 {item.imageUrl ? (
                   <Image
@@ -389,6 +394,7 @@ export default function CustomerOrderPage() {
                 <p className="text-xs text-gray-500">{item.category.name}</p>
               </CardContent>
             </Card>
+            </button>
           ))}
         </div>
       </main>
@@ -396,7 +402,7 @@ export default function CustomerOrderPage() {
       {/* Floating Cart Button */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
         <Button
-          className="w-full h-16 text-lg font-bold bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 shadow-2xl rounded-full"
+          className="h-14 w-full rounded-2xl bg-[#b84328] text-base font-bold shadow-xl hover:bg-[#96321d]"
           onClick={() => setIsCartOpen(true)}
           disabled={cart.length === 0}
         >
@@ -501,12 +507,13 @@ export default function CustomerOrderPage() {
                     ล้างตะกร้า
                   </Button>
                   <Button
-                    className="flex-1 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700"
+                    className="flex-1 bg-[#b84328] hover:bg-[#96321d]"
                     size="lg"
                     onClick={submitOrder}
+                    disabled={isSubmittingOrder}
                   >
                     <CheckCircle className="h-5 w-5 mr-2" />
-                    ส่งออเดอร์
+                    {isSubmittingOrder ? "กำลังส่ง..." : "ส่งออเดอร์"}
                   </Button>
                 </div>
               </div>

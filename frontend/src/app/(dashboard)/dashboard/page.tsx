@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useAuthStore } from "@/stores/authStore";
 import { getSocket } from "@/lib/socket";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ import {
   CheckCircle,
   XCircle,
   Utensils,
+  ArrowUpRight,
 } from "lucide-react";
 import { Socket } from "socket.io-client";
 import api from "@/lib/api";
@@ -164,21 +166,27 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-gray-500">ภาพรวมร้านอาหารและสถิติ</p>
+      <div className="flex flex-col gap-5 rounded-3xl bg-[#3c2a24] p-6 text-white sm:flex-row sm:items-end sm:justify-between sm:p-8">
+        <div>
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[#e6ad8e]">ภาพรวมวันนี้</p>
+          <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">สวัสดี {user?.fullName ?? 'ทีมงาน'}</h2>
+          <p className="mt-2 text-sm text-[#dfd0c8]">ดูยอดขาย ออเดอร์ โต๊ะ และเรื่องที่ต้องจัดการในหน้าเดียว</p>
+        </div>
+        <Link href="/pos" className="inline-flex min-h-11 items-center justify-center gap-2 self-start rounded-xl bg-white px-4 text-sm font-semibold text-[#91341e] transition-colors hover:bg-[#fff0e9] sm:self-auto">
+          เปิดหน้าขาย <ArrowUpRight size={17} />
+        </Link>
       </div>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
-          <Card key={stat.title}>
+          <Card key={stat.title} className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
+              <CardTitle className="text-sm font-medium text-[#746960]">{stat.title}</CardTitle>
+              <span className={`flex size-9 items-center justify-center rounded-xl ${stat.bgColor}`}><stat.icon className={`h-4 w-4 ${stat.color}`} /></span>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-3xl font-bold tracking-tight text-[#30241e]">{stat.value}</div>
             </CardContent>
           </Card>
         ))}
@@ -267,34 +275,21 @@ export default function DashboardPage() {
       {/* Quick Actions */}
       <Card>
         <CardHeader>
-          <CardTitle>การกระทำด่วน</CardTitle>
+          <CardTitle>ทางลัดสำหรับงานประจำวัน</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <a href="/pos">
-              <div className="flex flex-col items-center justify-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer">
-                <ShoppingCart className="h-8 w-8 text-blue-600 mb-2" />
-                <span className="font-medium">POS</span>
-              </div>
-            </a>
-            <a href="/kds">
-              <div className="flex flex-col items-center justify-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors cursor-pointer">
-                <Utensils className="h-8 w-8 text-green-600 mb-2" />
-                <span className="font-medium">ห้องครัว</span>
-              </div>
-            </a>
-            <a href="/tables">
-              <div className="flex flex-col items-center justify-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors cursor-pointer">
-                <Users className="h-8 w-8 text-purple-600 mb-2" />
-                <span className="font-medium">จัดการโต๊ะ</span>
-              </div>
-            </a>
-            <a href="/menus">
-              <div className="flex flex-col items-center justify-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer">
-                <CheckCircle className="h-8 w-8 text-orange-600 mb-2" />
-                <span className="font-medium">เมนู</span>
-              </div>
-            </a>
+            {[
+              { href: '/pos', label: 'รับออเดอร์', icon: ShoppingCart },
+              { href: '/kds', label: 'คิวห้องครัว', icon: Utensils },
+              { href: '/tables', label: 'สถานะโต๊ะ', icon: Users },
+              { href: '/menus', label: 'จัดการเมนู', icon: CheckCircle },
+            ].map((action) => (
+              <Link key={action.href} href={action.href} className="group flex min-h-24 flex-col items-start justify-between rounded-2xl border border-[#f0e7df] bg-[#fffaf6] p-4 transition-colors hover:border-[#e9bb9e] hover:bg-[#fff0e9]">
+                <action.icon className="h-6 w-6 text-[#ac482b]" />
+                <span className="flex w-full items-center justify-between gap-2 font-semibold text-[#3a2b24]">{action.label}<ArrowUpRight size={16} className="text-[#a99689] transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" /></span>
+              </Link>
+            ))}
           </div>
         </CardContent>
       </Card>

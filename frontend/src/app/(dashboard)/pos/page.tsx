@@ -57,6 +57,7 @@ export default function POSPage() {
   const [selectedTier, setSelectedTier] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState<Socket | null>(null);
 
@@ -132,6 +133,7 @@ export default function POSPage() {
   });
 
   const handleCheckout = async () => {
+    if (isSubmittingOrder) return;
     if (!selectedTable) {
       toast.error("กรุณาเลือกโต๊ะ");
       return;
@@ -145,6 +147,7 @@ export default function POSPage() {
       return;
     }
 
+    setIsSubmittingOrder(true);
     try {
       // Check if table already has active session
       const existingSession = sessions.find(
@@ -193,11 +196,17 @@ export default function POSPage() {
     } catch (error: any) {
       console.error("Checkout error:", error);
       toast.error(error.response?.data?.message || "สร้างออเดอร์ไม่สำเร็จ");
+    } finally {
+      setIsSubmittingOrder(false);
     }
   };
 
-  const availableTables = tables.filter((t) => t.status === "AVAILABLE");
   const activeSessions = sessions.filter((s) => s.status === "ACTIVE");
+  const availableTables = tables.filter((t) => t.status === "AVAILABLE");
+  const orderableTables = tables.filter((t) =>
+    t.status === "AVAILABLE" || activeSessions.some((session) => session.tableId === t.id)
+  );
+  const selectedSession = activeSessions.find((session) => session.tableId === Number(selectedTable));
 
   if (loading) {
     return (
@@ -208,13 +217,13 @@ export default function POSPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-8rem)] flex gap-4">
+    <div className="flex min-w-0 flex-col gap-5 xl:h-[calc(100dvh-11rem)] xl:flex-row">
       {/* Menu Section */}
-      <div className="flex-1 flex flex-col gap-4">
+      <div className="flex min-w-0 flex-1 flex-col gap-4">
         {/* Filters */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -225,7 +234,7 @@ export default function POSPage() {
                 />
               </div>
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-[200px]">
+              <SelectTrigger className="w-full sm:w-[200px]">
                   <SelectValue placeholder="หมวดหมู่" />
                 </SelectTrigger>
                 <SelectContent>
@@ -242,14 +251,19 @@ export default function POSPage() {
         </Card>
 
         {/* Menu Grid */}
-        <ScrollArea className="flex-1">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <ScrollArea className="min-h-0 flex-1">
+          {filteredItems.length === 0 && (
+            <div className="flex min-h-64 flex-col items-center justify-center rounded-2xl border border-dashed border-[#e2d4ca] bg-white px-5 text-center">
+              <Search className="mb-3 size-8 text-[#b48b77]" />
+              <p className="font-semibold text-[#392c25]">ไม่พบเมนูที่พร้อมขาย</p>
+              <p className="mt-1 text-sm text-[#786c64]">ลองเปลี่ยนคำค้นหาหรือหมวดหมู่</p>
+              <Button variant="outline" className="mt-4" onClick={() => { setSearchQuery(""); setSelectedCategory("all"); }}>ล้างตัวกรอง</Button>
+            </div>
+          )}
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 2xl:grid-cols-4">
             {filteredItems.map((item) => (
-              <Card
-                key={item.id}
-                className="cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => addItem(item)}
-              >
+              <button key={item.id} type="button" className="min-w-0 rounded-2xl text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" onClick={() => addItem(item)} aria-label={`เพิ่ม ${item.name} ลงตะกร้า`}>
+              <Card className="h-full cursor-pointer overflow-hidden transition-shadow hover:shadow-lg">
                 <div className="aspect-square relative bg-gray-100 rounded-t-lg overflow-hidden">
                   {item.imageUrl ? (
                     <Image
@@ -274,13 +288,14 @@ export default function POSPage() {
                   <p className="text-xs text-gray-500">{item.category.name}</p>
                 </CardContent>
               </Card>
+              </button>
             ))}
           </div>
         </ScrollArea>
       </div>
 
       {/* Cart Section */}
-      <Card className="w-96 flex flex-col">
+      <Card className="flex min-h-[360px] w-full flex-col xl:w-[340px] xl:shrink-0 2xl:w-96">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2">
             <ShoppingCart className="h-5 w-5" />
@@ -288,7 +303,7 @@ export default function POSPage() {
           </CardTitle>
         </CardHeader>
         <Separator />
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="min-h-0 flex-1 p-4">
           {items.length === 0 ? (
             <div className="text-center text-gray-500 py-8">
               <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -304,7 +319,8 @@ export default function POSPage() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-9 w-9"
+                        aria-label={`ลดจำนวน ${item.name}`}
                         onClick={() =>
                           updateQuantity(
                             item.id,
@@ -320,7 +336,8 @@ export default function POSPage() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-7 w-7"
+                        className="h-9 w-9"
+                        aria-label={`เพิ่มจำนวน ${item.name}`}
                         onClick={() =>
                           updateQuantity(item.id, item.quantity + 1)
                         }
@@ -332,7 +349,8 @@ export default function POSPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 text-red-500"
+                    className="h-9 w-9 text-red-500"
+                    aria-label={`นำ ${item.name} ออกจากตะกร้า`}
                     onClick={() => removeItem(item.id)}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -345,8 +363,8 @@ export default function POSPage() {
         <Separator />
         <div className="p-4 space-y-4">
           <div className="flex justify-between text-lg font-bold">
-            <span>รวม</span>
-            <span>฿{totalItems().toLocaleString()}</span>
+            <span>รายการที่เลือก</span>
+            <span>{totalItems().toLocaleString()} รายการ</span>
           </div>
           <Button
             className="w-full"
@@ -354,7 +372,7 @@ export default function POSPage() {
             disabled={items.length === 0}
             onClick={() => setIsCheckoutOpen(true)}
           >
-            ชำระเงิน
+            ส่งออเดอร์
           </Button>
         </div>
       </Card>
@@ -363,19 +381,23 @@ export default function POSPage() {
       <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>ชำระเงิน</DialogTitle>
+            <DialogTitle>ยืนยันออเดอร์</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>เลือกโต๊ะ (ว่าง: {availableTables.length} โต๊ะ)</Label>
-              <Select value={selectedTable} onValueChange={setSelectedTable}>
+              <Label>เลือกโต๊ะ (ว่าง {availableTables.length} โต๊ะ)</Label>
+              <Select value={selectedTable} onValueChange={(value) => {
+                setSelectedTable(value);
+                const activeSession = activeSessions.find((session) => session.tableId === Number(value));
+                setSelectedTier(activeSession ? String(activeSession.tierId) : "");
+              }}>
                 <SelectTrigger>
                   <SelectValue placeholder="เลือกโต๊ะ" />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableTables.map((table) => (
+                  {orderableTables.map((table) => (
                     <SelectItem key={table.id} value={table.id.toString()}>
-                      โต๊ะ {table.number} ({table.zone || "-"})
+                      โต๊ะ {table.number} ({table.zone || "-"}){activeSessions.some((session) => session.tableId === table.id) ? " · กำลังใช้" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -383,7 +405,7 @@ export default function POSPage() {
             </div>
             <div>
               <Label>ระดับราคา</Label>
-              <Select value={selectedTier} onValueChange={setSelectedTier}>
+              <Select value={selectedTier} onValueChange={setSelectedTier} disabled={!!selectedSession}>
                 <SelectTrigger>
                   <SelectValue placeholder="เลือกระดับราคา" />
                 </SelectTrigger>
@@ -395,11 +417,12 @@ export default function POSPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {selectedSession && <p className="mt-2 text-xs text-[#756b64]">โต๊ะนี้เปิดใช้งานอยู่แล้ว ระบบจะเพิ่มออเดอร์ในรอบเดิม</p>}
             </div>
             <Separator />
             <div className="flex justify-between text-lg font-bold">
-              <span>ยอดรวม</span>
-              <span>฿{totalItems().toLocaleString()}</span>
+              <span>จำนวนอาหาร</span>
+              <span>{totalItems().toLocaleString()} รายการ</span>
             </div>
             <div className="flex gap-2">
               <Button
@@ -409,8 +432,8 @@ export default function POSPage() {
               >
                 ยกเลิก
               </Button>
-              <Button className="flex-1" onClick={handleCheckout}>
-                ยืนยันการชำระเงิน
+              <Button className="flex-1" onClick={handleCheckout} disabled={isSubmittingOrder}>
+                {isSubmittingOrder ? "กำลังส่ง..." : "ยืนยันและส่งออเดอร์"}
               </Button>
             </div>
           </div>
